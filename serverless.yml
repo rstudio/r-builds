@@ -1,0 +1,64 @@
+service: r-builds
+
+plugins:
+  - serverless-python-requirements
+  - serverless-step-functions
+  - serverless-pseudo-parameters
+custom: ${file(./serverless-custom.yml)}
+
+package:
+ exclude:
+   - integration/**
+   - builder/**
+   - docs/**
+
+provider:
+  name: aws
+  runtime: python3.6
+  deploymentBucket:
+    name: ${self:custom.deploymentBucket}
+  stackTags: ${self:custom.stackTags}
+  iamRoleStatements:
+    -  Effect: Allow
+       Action:
+         - "batch:*"
+       Resource: '*'
+    -  Effect: Allow
+       Action:
+         - "s3:*"
+       Resource:
+        - arn:aws:s3:::${self:custom.s3Bucket}
+        - arn:aws:s3:::${self:custom.s3Bucket}/*
+  environment:
+    S3_BUCKET: ${self:custom.s3Bucket}
+    JOB_QUEUE_ARN:
+      Ref: rBuildsBatchJobQueue
+    JOB_DEFINITION_ARN_ubuntu_1604:
+      Ref: rBuildsBatchJobDefinitionUbuntu1604
+    JOB_DEFINITION_ARN_ubuntu_1804:
+      Ref: rBuildsBatchJobDefinitionUbuntu1804
+    JOB_DEFINITION_ARN_debian_9:
+      Ref: rBuildsBatchJobDefinitionDebian9
+    JOB_DEFINITION_ARN_centos_6:
+      Ref: rBuildsBatchJobDefinitionCentos6
+    JOB_DEFINITION_ARN_centos_7:
+      Ref: rBuildsBatchJobDefinitionCentos7
+    JOB_DEFINITION_ARN_opensuse_42:
+      Ref: rBuildsBatchJobDefinitionOpensuse42
+    JOB_DEFINITION_ARN_opensuse_15:
+      Ref: rBuildsBatchJobDefinitionOpensuse15
+    SUPPORTED_PLATFORMS: ubuntu-1604,ubuntu-1804,debian-9,centos-6,centos-7,opensuse-42,opensuse-15
+
+functions:
+  queueBuilds:
+    timeout: 30
+    handler: handler.queue_builds
+  jobQueueStatus:
+    handler: handler.poll_running_jobs
+
+
+stepFunctions:
+  stateMachines: ${file(./serverless-stepf.yml)}
+
+resources:
+  Resources: ${file(./serverless-resources.yml)}

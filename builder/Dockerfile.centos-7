@@ -1,0 +1,77 @@
+FROM centos:centos7
+
+ENV OS_IDENTIFIER centos-7
+
+RUN yum -y update \
+    && yum -y install epel-release \
+    && yum clean all
+
+RUN yum -y update \
+    && yum -y install \
+    atlas-devel \
+    autoconf \
+    automake \
+    blas-devel \
+    bzip2-devel \
+    cairo-devel \
+    gcc-c++ \
+    gcc-gfortran \
+    gcc-objc \
+    java-1.8.0-openjdk-devel \
+    java-1.8.0-openjdk-headless \
+    lapack-devel \
+    less \
+    libICE-devel \
+    libSM-devel \
+    libX11-devel \
+    libXmu-devel \
+    libXt-devel \
+    libcurl-devel \
+    libicu-devel \
+    libjpeg-devel \
+    libpng-devel \
+    libtiff-devel \
+    libtool \
+    make \
+    ncurses-devel \
+    openblas-devel \
+    pango-devel \
+    pcre-devel \
+    pcre2-devel \
+    python-pip \
+    readline-devel \
+    tcl-devel \
+    tex \
+    texinfo-tex \
+    texlive-collection-latexrecommended \
+    tk-devel \
+    tre-devel \
+    valgrind-devel \
+    wget \
+    xpdf \
+    xz-devel \
+    zlib-devel \
+    && yum clean all
+
+RUN pip install awscli
+
+RUN chmod 0777 /opt
+
+# Configure flags for CentOS 7 that don't use the defaults in build.sh
+ENV CONFIGURE_OPTIONS="\
+    --enable-R-shlib \
+    --with-tcltk \
+    --enable-memory-profiling \
+    --with-x \
+    --with-system-valgrind-headers \
+    --with-tcl-config=/usr/lib64/tclConfig.sh \
+    --with-tk-config=/usr/lib64/tkConfig.sh \
+    --enable-BLAS-shlib \
+    --enable-prebuilt-html \
+    --with-system-tre"
+
+# RHEL 7 doesn't have the inconsolata font, so override the defaults.
+ENV R_RD4PDF="times,hyper"
+
+COPY build.sh .
+ENTRYPOINT ./build.sh

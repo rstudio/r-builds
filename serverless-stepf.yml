@@ -1,0 +1,38 @@
+rBuilds:
+  Comment: "R Builds"
+  id: RBuildsStepFunction
+  definition:
+    StartAt: QueueBuilds
+    States:
+      QueueBuilds:
+        Type: Task
+        Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-queueBuilds
+        Next: Wait
+      Wait:
+        Type: Wait
+        Seconds: 60
+        Next: JobQueueStatus
+      JobQueueStatus:
+        Type: Task
+        Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-jobQueueStatus
+        Next: QueueEmpty?
+      QueueEmpty?:
+        Type: Choice
+        Choices:
+          - Variable: "$.unfinishedJobCount"
+            NumericGreaterThan: 0
+            Next: Wait
+          - Variable: "$.unfinishedJobCount"
+            NumericEquals: 0
+            Next: SuccessOrFail
+      SuccessOrFail:
+        Type: Choice
+        Choices:
+          - Variable: "$.failedJobCount"
+            NumericGreaterThan: 0
+            Next: Fail
+        Default: Succeed
+      Fail:
+        Type: Fail
+      Succeed:
+        Type: Succeed

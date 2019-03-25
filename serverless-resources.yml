@@ -1,0 +1,240 @@
+rBuildsBatchIamRole:
+  Type: AWS::IAM::Role
+  Properties:
+    Path: /service-role/
+    AssumeRolePolicyDocument:
+      Version: '2012-10-17'
+      Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - batch.amazonaws.com
+          Action: sts:AssumeRole
+    ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+rBuildsSpotFleetIamRole:
+  Type: AWS::IAM::Role
+  Properties:
+    Path: /service-role/
+    AssumeRolePolicyDocument:
+      Version: '2012-10-17'
+      Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - spotfleet.amazonaws.com
+          Action: sts:AssumeRole
+    ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
+rBuildsInstanceIamRole:
+  Type: AWS::IAM::Role
+  Properties:
+    AssumeRolePolicyDocument:
+      Version: '2012-10-17'
+      Statement:
+        - Effect: 'Allow'
+          Principal:
+            Service:
+              - 'ec2.amazonaws.com'
+          Action:
+            - 'sts:AssumeRole'
+    Path: '/'
+    ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+rBuildsIamInstanceProfile:
+  Type: AWS::IAM::InstanceProfile
+  Properties:
+    Path: '/'
+    Roles:
+      - Ref: rBuildsInstanceIamRole
+rBuildsEcsTaskIamRole:
+  Type: AWS::IAM::Role
+  Properties:
+    Path: /service-role/
+    AssumeRolePolicyDocument:
+      Version: '2012-10-17'
+      Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - ecs-tasks.amazonaws.com
+          Action: sts:AssumeRole
+    ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+    Policies:
+      - PolicyName: 's3-r-builds-bucket'
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:*
+              Resource:
+                - arn:aws:s3:::${self:custom.s3Bucket}
+                - arn:aws:s3:::${self:custom.s3Bucket}/*
+
+rBuildsBatchComputeEnvironment:
+  Type: AWS::Batch::ComputeEnvironment
+  DependsOn: rBuildsBatchIamRole
+  Properties:
+    Type: MANAGED
+    ServiceRole:
+      "Fn::GetAtt": [ rBuildsBatchIamRole, Arn ]
+    ComputeResources:
+      SpotIamFleetRole:
+        "Fn::GetAtt": [ rBuildsSpotFleetIamRole, Arn ]
+      SecurityGroupIds: ${self:custom.securityGroupIds}
+      Subnets: ${self:custom.subnets}
+      Type: SPOT
+      BidPercentage: 40
+      InstanceRole:
+        "Fn::GetAtt": [ rBuildsIamInstanceProfile, Arn ]
+      InstanceTypes:
+        - m4.large
+        - m4.xlarge
+        - m4.2xlarge
+        - m4.4xlarge
+        - m4.10xlarge
+        - m4.16xlarge
+        - r4.large
+        - r4.xlarge
+        - r4.2xlarge
+        - r4.4xlarge
+      Ec2KeyPair: ${self:custom.ec2KeyPair}
+      Tags: ${self:provider.stackTags}
+      MinvCpus: 0
+      DesiredvCpus: 0
+      MaxvCpus: 256
+
+rBuildsBatchJobQueue:
+  Type: AWS::Batch::JobQueue
+  Properties:
+    ComputeEnvironmentOrder:
+      - Order: 1
+        ComputeEnvironment:
+          Ref: rBuildsBatchComputeEnvironment
+    State: ENABLED
+    Priority: 1
+
+rBuildsBatchJobDefinitionUbuntu1604:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-1604"
+rBuildsBatchJobDefinitionUbuntu1804:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-1804"
+rBuildsBatchJobDefinitionDebian9:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-9"
+rBuildsBatchJobDefinitionCentos6:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-6"
+rBuildsBatchJobDefinitionCentos7:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-7"
+rBuildsBatchJobDefinitionOpensuse42:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-42"
+rBuildsBatchJobDefinitionOpensuse15:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-15"
+
+# step function cloudwatch event trigger resources
+rBuildsEventRuleIamRole:
+  Type: AWS::IAM::Role
+  Properties:
+    Path: /service-role/
+    AssumeRolePolicyDocument:
+      Version: '2012-10-17'
+      Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - events.amazonaws.com
+          Action: sts:AssumeRole
+    Policies:
+      - PolicyName: 'allow-step-function-execution'
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - states:StartExecution
+              Resource:
+                Ref: RBuildsStepFunction
+
+rBuildsEventRule:
+  Type: AWS::Events::Rule
+  Properties:
+    Description: Check for New R Versions
+    ScheduleExpression: rate(1 hour)
+    Targets:
+      - Id: rbuilds
+        Input: '{}'
+        RoleArn:
+          Fn::GetAtt: [ rBuildsEventRuleIamRole, Arn ]
+        Arn:
+          Ref: RBuildsStepFunction

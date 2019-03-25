@@ -1,0 +1,80 @@
+version: '2.0'
+
+services:
+  ubuntu-1604:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu-1604
+    image: r-builds:ubuntu-1604
+    volumes:
+      - ./integration/tmp:/tmp/output
+  ubuntu-1804:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu-1804
+    image: r-builds:ubuntu-1804
+    volumes:
+      - ./integration/tmp:/tmp/output
+  debian-9:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.debian-9
+    image: r-builds:debian-9
+    volumes:
+      - ./integration/tmp:/tmp/output
+  centos-6:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.centos-6
+    image: r-builds:centos-6
+    volumes:
+      - ./integration/tmp:/tmp/output
+  centos-7:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.centos-7
+    image: r-builds:centos-7
+    volumes:
+      - ./integration/tmp:/tmp/output
+  opensuse-42:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.opensuse-42
+    image: r-builds:opensuse-42
+    volumes:
+      - ./integration/tmp:/tmp/output
+  opensuse-15:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.opensuse-15
+    image: r-builds:opensuse-15
+    volumes:
+      - ./integration/tmp:/tmp/output

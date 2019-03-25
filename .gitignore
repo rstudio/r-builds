@@ -1,0 +1,4 @@
+R-*
+builder/integration/**
+node_modules
+serverless-custom.yml

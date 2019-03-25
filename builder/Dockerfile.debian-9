@@ -1,0 +1,17 @@
+FROM debian:stretch
+
+ENV OS_IDENTIFIER debian-9
+
+RUN set -x \
+  && export DEBIAN_FRONTEND=noninteractive \
+  && echo 'deb-src http://deb.debian.org/debian stretch main' >> /etc/apt/sources.list \
+  && apt-get update \
+  && apt-get install -y libatlas3-base libcurl4-openssl-dev libicu-dev wget python-pip \
+  && apt-get build-dep -y r-base
+
+RUN pip install awscli
+
+RUN chmod 0777 /opt
+
+COPY build.sh .
+ENTRYPOINT ./build.sh

@@ -1,0 +1,17 @@
+FROM ubuntu:xenial
+
+ENV OS_IDENTIFIER ubuntu-1604
+
+RUN set -x \
+  && sed -i "s|# deb-src|deb-src|g" /etc/apt/sources.list \
+  && export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update \
+  && apt-get install -y libatlas3-base libcurl4-openssl-dev libicu-dev wget python-pip \
+  && apt-get build-dep -y r-base
+
+RUN pip install awscli
+
+RUN chmod 0777 /opt
+
+COPY build.sh .
+ENTRYPOINT ./build.sh
