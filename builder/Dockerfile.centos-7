@@ -51,7 +51,8 @@ RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
     python get-pip.py
 
 # Install AWS CLI.
-RUN pip install awscli --upgrade --user
+RUN pip install awscli --upgrade --user && \
+    ln -s /root/.local/bin/aws /usr/bin/aws
 
 RUN chmod 0777 /opt
 
