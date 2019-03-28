@@ -3,10 +3,6 @@ FROM centos:centos7
 ENV OS_IDENTIFIER centos-7
 
 RUN yum -y update \
-    && yum -y install epel-release \
-    && yum clean all
-
-RUN yum -y update \
     && yum -y install \
     atlas-devel \
     autoconf \
@@ -34,26 +30,28 @@ RUN yum -y update \
     libtool \
     make \
     ncurses-devel \
-    openblas-devel \
     pango-devel \
     pcre-devel \
     pcre2-devel \
-    python-pip \
     readline-devel \
     tcl-devel \
     tex \
     texinfo-tex \
     texlive-collection-latexrecommended \
     tk-devel \
-    tre-devel \
     valgrind-devel \
+    which \
     wget \
-    xpdf \
     xz-devel \
     zlib-devel \
     && yum clean all
 
-RUN pip install awscli
+# Install pip for python
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+    python get-pip.py
+
+# Install AWS CLI.
+RUN pip install awscli --upgrade --user
 
 RUN chmod 0777 /opt
 
@@ -67,8 +65,7 @@ ENV CONFIGURE_OPTIONS="\
     --with-tcl-config=/usr/lib64/tclConfig.sh \
     --with-tk-config=/usr/lib64/tkConfig.sh \
     --enable-BLAS-shlib \
-    --enable-prebuilt-html \
-    --with-system-tre"
+    --enable-prebuilt-html"
 
 # RHEL 7 doesn't have the inconsolata font, so override the defaults.
 ENV R_RD4PDF="times,hyper"

@@ -3,10 +3,6 @@ FROM centos:centos6
 ENV OS_IDENTIFIER centos-6
 
 RUN yum -y update \
-    && yum -y install epel-release \
-    && yum clean all
-
-RUN yum -y update \
     && yum -y install \
     atlas-devel \
     blas-devel \
@@ -31,7 +27,6 @@ RUN yum -y update \
     libicu-devel \
     libidn-devel \
     libjpeg-devel \
-    libmetalink-devel \
     libpng-devel \
     libssh2-devel \
     libtiff-devel \
@@ -43,14 +38,11 @@ RUN yum -y update \
     openssl-devel \
     pango-devel \
     pcre-devel \
-    pcre2-devel \
     pkgconfig \
     python \
-    python-pip \
     readline-devel \
     stunnel \
     tcl-devel \
-    tex \
     texinfo-tex \
     texlive-latex \
     tk-devel \
@@ -59,6 +51,13 @@ RUN yum -y update \
     xz-devel \
     zlib-devel \
     && yum clean all
+
+# Install pip
+RUN curl "https://bootstrap.pypa.io/2.6/get-pip.py" -o "get-pip.py" && \
+    python get-pip.py
+
+# Install AWS CLI.
+RUN pip install awscli --upgrade --user
 
 RUN pip install awscli
 
@@ -168,7 +167,7 @@ RUN curl -fsSL "https://curl.haxx.se/download/curl-{$CURL_VERSION}.tar.gz" -o cu
     && CWD=`pwd` && TMP=`mktemp -d` \
     && tar -C $TMP -zxvf curl.tar.gz \
     && cd $TMP/curl* \
-    && CFLAGS="-fpic -fPIC" ./configure --enable-static=yes --enable-shared=no --with-ssl --enable-ipv6 --with-gssapi --with-libidn --enable-ldaps --with-libssh2 --enable-threaded-resolver --with-libmetalink --prefix=/tmp/extra \
+    && CFLAGS="-fpic -fPIC" ./configure --enable-static=yes --enable-shared=no --with-ssl --enable-ipv6 --with-gssapi --with-libidn --enable-ldaps --with-libssh2 --enable-threaded-resolver --prefix=/tmp/extra \
     && make V=1 \
     && make install \
     && cd $CWD && rm -rf $TMP && rm -rf curl.tar.gz
