@@ -1,6 +1,7 @@
 PLATFORMS := ubuntu-1604 ubuntu-1804 debian-9 centos-6 centos-7 opensuse-42 opensuse-15
+SLS_BINARY ?= ./node_modules/serverless/bin/serverless
 
-npm-install:
+deps:
 	npm install
 
 docker-build:
@@ -29,7 +30,10 @@ ecr-login:
 fetch-serverless-custom-file:
 	aws s3 cp s3://rstudio-serverless/serverless/r-builds/serverless-custom.yml .
 
-serverless-deploy: npm-install fetch-serverless-custom-file
-	serverless deploy --stage dev
+rebuild-all: deps fetch-serverless-custom-file
+	$(SLS_BINARY) invoke stepf -n rBuilds -d '{"force": true}'
 
-.PHONY: docker-build docker-push docker-down docker-build-package docker-shell-package-env ecr-login npm-install fetch-serverless-custom-file serverless-deploy
+serverless-deploy: deps fetch-serverless-custom-file
+	$(SLS_BINARY) deploy --stage dev
+
+.PHONY: deps docker-build docker-push docker-down docker-build-package docker-shell-package-env ecr-login fetch-serverless-custom-file serverless-deploy
