@@ -1,6 +1,69 @@
 # r-builds
 
-The environment which produces R builds obtainable from: https://cdn.rstudio.com/r/versions.json
+This repository orchestrates tools to produce R binaries obtainable from:
+https://cdn.rstudio.com/r/versions.json. The binaries are available as a
+community resource, **they are not professionally supported by RStudio**. 
+The R language is open source, please see the official documentation at https://www.r-project.org/.
+
+These binaries are not a replacement to existing binary distributions for R.
+The binaries were built with the following considerations:
+- They use a minimal, documented set of
+  [build](https://github.com/rstudio/r-builds/tree/master/builder) and
+  [runtime](https://github.com/rstudio/r-docker) dependencies.  
+- They are designed to be used side-by-side, e.g., on [RStudio Server Pro]().
+- They give users a consistent option for accessing R across different Linux distributions.
+
+These binaries have been extensively tested, and are used in production everyday
+on [RStudio Cloud](https://rstudio.cloud) and
+[shinyapps.io](https://shinyapps.io). Please open an issue to report a specific
+bug, and address questions on [RStudio
+Community](https://community.rstudio.com).
+
+## Example Usage
+
+These binaries are designed to be copied onto a server, as opposed to installed
+using a system package manager like `apt` or `yum`. This approach allows administrators
+to offer multiple versions of R side-by-side. 
+
+```
+# Pre-req install runtime pre-reqs
+# Then copy the desired R version from the CD
+
+OS_IDENTIFIER=ubuntu-1804
+R_VERSION=3.5.3
+
+wget -O R-${R_VERSION}.tar.gz https://cdn.rstudio.com/r/${OS_IDENTIFIER}/R-${R_VERSION}-${OS_IDENTIFIER}.tar.gz 
+mkdir -p /opt/R 
+tar zx -C /opt/R -f ./R-${R_VERSION}.tar.gz 
+rm R-${R_VERSION}.tar.gz
+
+# execute R from this directory
+/opt/R/${R_VERSION}/bin/R -e 'capabilities()'
+
+# optionally add this version to the path
+PATH=/opt/R/${R_VERSION}/bin:${PATH}
+
+# OR optionally link the binaries to /usr
+ln -s /opt/R/${R_VERSION}/bin/R /usr/bin/R 
+ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/bin/Rscript
+ln -s /opt/R/${R_VERSION}/lib/R /usr/lib/R 
+```
+
+Please see [r-docker](https://github.com/rstudio/r-docker) and
+[r-system-requirements](https://github.com/rstudio/r-system-requirements) for
+more information on using these binaries. The `r-docker` repository documents
+required runtime system dependencies and provides users with docker images
+containing these dependencies. The `r-system-requirements` repository contains
+information on the additional system dependencies that may be required to
+install and use R packages.
+
+---
+
+# Developer Documentation
+
+This repository orchestrates builds using a variety of tools built. The
+instructions below outline the components in the stack and describe how to add a
+new platform or inspect an existing platform.
 
 ## Adding a new platform.
 
