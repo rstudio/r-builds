@@ -73,7 +73,6 @@ compile_r() {
   # set some common environment variables for the configure step
   AWK=/usr/bin/awk \
   LIBnn=lib \
-  PAGER=/usr/bin/pager \
   PERL=/usr/bin/perl \
   R_PDFVIEWER=xdg-open \
   R_BROWSER=xdg-open \

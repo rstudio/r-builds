@@ -17,7 +17,6 @@ RUN yum -y update \
     krb5-devel \
     krb5-libs \
     lapack-devel \
-    less \
     libICE-devel \
     libSM-devel \
     libX11-devel \
