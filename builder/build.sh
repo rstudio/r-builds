@@ -19,6 +19,12 @@ upload_r() {
   if [ -n "$S3_BUCKET" ] && [ "$S3_BUCKET" != "" ]; then
     echo "Storing artifact on s3: ${S3_BUCKET}, tarball: ${TARBALL_NAME}"
     aws s3 cp /tmp/${TARBALL_NAME} s3://${S3_BUCKET}/${S3_BUCKET_PREFIX}${baseName}/${TARBALL_NAME}
+    # check if PKG_FILE has been set by a packager script and act accordingly
+    if [ -n "$PKG_FILE" ] && [ "$PKG_FILE" != "" ]; then
+      if [ -f "$PKG_FILE" ]; then
+	aws s3 cp ${PKG_FILE} s3://${S3_BUCKET}/${S3_BUCKET_PREFIX}${baseName}/pkgs/$(basename ${PKG_FILE})
+      fi
+    fi
   fi
   if [ -n "$LOCAL_STORE" ] && [ "$LOCAL_STORE" != '' ]; then
     echo "Storing artifact locally: ${LOCAL_STORE}, tarball: ${TARBALL_NAME}"
@@ -89,6 +95,16 @@ compile_r() {
   make install
 }
 
+# check for packager script
+## If it exists this build is ready for packaging with fpm, so run the script
+## else do nothing
+package_r() {
+  if [[ -f /package.sh ]]; then
+    export R_VERSION=${1}
+    source /package.sh
+  fi
+}
+
 set_up_environment() {
   mkdir -p /opt/R
 }
@@ -101,6 +117,7 @@ _version_is_greater_than() {
 set_up_environment
 fetch_r_source $R_VERSION
 compile_r $R_VERSION
+package_r $R_VERSION
 clean_r
 archive_r $R_VERSION
 upload_r $R_VERSION

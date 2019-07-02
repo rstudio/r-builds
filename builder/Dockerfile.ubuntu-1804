@@ -11,10 +11,15 @@ RUN set -x \
 
 RUN pip install awscli
 
+RUN apt-get install -y gcc make ruby ruby-dev wget
+
+RUN gem install fpm
+
 RUN chmod 0777 /opt
 
 # Override the default pager used by R
 ENV PAGER /usr/bin/pager
 
+COPY package.ubuntu-1804 /package.sh
 COPY build.sh .
 ENTRYPOINT ./build.sh

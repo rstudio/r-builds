@@ -1,0 +1,50 @@
+if [[ ! -d /tmp/output/ubuntu-1804 ]]; then
+  mkdir /tmp/output/ubuntu-1804
+fi
+
+fpm \
+  -s dir \
+  -t deb \
+  -v ${BUILD_NO} \
+  -n R-${R_VERSION} \
+  -p /tmp/output/ubuntu-1804/ \
+  --prefix=/opt/R \
+  -d zip \
+  -d unzip \
+  -d libpaper-utils \
+  -d xdg-utils \
+  -d libblas3 \
+  -d libatlas3-base \
+  -d libblas3 \
+  -d libopenblas-base \
+  -d libbz2-1.0 \
+  -d libc6 \
+  -d libcairo2 \
+  -d libcurl4 \
+  -d libglib2.0-0 \
+  -d libgomp1 \
+  -d libicu60 \
+  -d libjpeg8 \
+  -d liblapack3 \
+  -d libatlas3-base \
+  -d liblapack3 \
+  -d libopenblas-base \
+  -d liblzma5 \
+  -d libpango-1.0-0 \
+  -d libpangocairo-1.0-0 \
+  -d libpcre3 \
+  -d libpng16-16 \
+  -d libreadline7 \
+  -d libtcl8.6 \
+  -d libtiff5 \
+  -d libtk8.6 \
+  -d libx11-6 \
+  -d libxt6 \
+  -d zlib1g \
+  -d ucf \
+  -d ca-certificates \
+  /opt/R/${R_VERSION}
+
+shopt -s extglob
+export PKG_FILE=$(ls /tmp/output/ubuntu-1804/[rR]-${R_VERSION}*.@(deb|rpm) | head -1)
+
