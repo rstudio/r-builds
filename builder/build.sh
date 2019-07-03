@@ -117,7 +117,7 @@ _version_is_greater_than() {
 set_up_environment
 fetch_r_source $R_VERSION
 compile_r $R_VERSION
-package_r $R_VERSION
 clean_r
+package_r $R_VERSION
 archive_r $R_VERSION
 upload_r $R_VERSION
