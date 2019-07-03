@@ -1,5 +1,5 @@
 if [[ ! -d /tmp/output/ubuntu-1804 ]]; then
-  mkdir /tmp/output/ubuntu-1804
+  mkdir -p /tmp/output/ubuntu-1804
 fi
 
 fpm \
