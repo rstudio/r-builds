@@ -8,7 +8,12 @@ fpm \
   -v ${BUILD_NO} \
   -n R-${R_VERSION} \
   --deb-priority "optional" \
-  -p /tmp/output/ubuntu-1804/ \ # --prefix=/opt/R \
+  --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
+  --url "http://www.r-project.org/" \
+  --description "GNU R statistical computation and graphics system" \
+  --maintainer "RStudio Inc https://github.com/rstudio" \
+  --license "GPL-2" \
+  -p /tmp/output/ubuntu-1804/ \
   -d zip \
   -d unzip \
   -d libpaper-utils \
