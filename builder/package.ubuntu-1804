@@ -7,15 +7,11 @@ fpm \
   -t deb \
   -v ${BUILD_NO} \
   -n R-${R_VERSION} \
-  -p /tmp/output/ubuntu-1804/ \
-  --prefix=/opt/R \
+  -p /tmp/output/ubuntu-1804/ \ # --prefix=/opt/R \
   -d zip \
   -d unzip \
   -d libpaper-utils \
   -d xdg-utils \
-  -d libblas3 \
-  -d libatlas3-base \
-  -d libblas3 \
   -d libopenblas-base \
   -d libbz2-1.0 \
   -d libc6 \
@@ -26,9 +22,6 @@ fpm \
   -d libicu60 \
   -d libjpeg8 \
   -d liblapack3 \
-  -d libatlas3-base \
-  -d liblapack3 \
-  -d libopenblas-base \
   -d liblzma5 \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
