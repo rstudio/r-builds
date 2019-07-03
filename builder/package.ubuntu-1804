@@ -11,7 +11,7 @@ fpm \
   --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
   --url "http://www.r-project.org/" \
   --description "GNU R statistical computation and graphics system" \
-  --maintainer "RStudio Inc https://github.com/rstudio" \
+  --maintainer "RStudio Inc https://github.com/rstudio/r-builds" \
   --license "GPL-2" \
   -p /tmp/output/ubuntu-1804/ \
   -d zip \
