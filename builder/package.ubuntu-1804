@@ -7,6 +7,7 @@ fpm \
   -t deb \
   -v ${BUILD_NO} \
   -n R-${R_VERSION} \
+  --deb-priority "optional" \
   -p /tmp/output/ubuntu-1804/ \ # --prefix=/opt/R \
   -d zip \
   -d unzip \
