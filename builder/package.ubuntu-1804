@@ -27,7 +27,6 @@ fpm \
   -d libgomp1 \
   -d libicu60 \
   -d libjpeg8 \
-  -d liblapack3 \
   -d liblzma5 \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
