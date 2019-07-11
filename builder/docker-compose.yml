@@ -4,7 +4,7 @@ services:
   ubuntu-1604:
     command: ./build.sh
     environment:
-      - BUILD_NO=${BUILD_NUMBER}
+      - BUILD_NUMBER=${BUILD_NUMBER}
       - R_VERSION=${R_VERSION}
       - LOCAL_STORE=/tmp/output
     build:
@@ -16,7 +16,7 @@ services:
   ubuntu-1804:
     command: ./build.sh
     environment:
-      - BUILD_NO=${BUILD_NUMBER}
+      - BUILD_NUMBER=${BUILD_NUMBER}
       - R_VERSION=${R_VERSION}
       - LOCAL_STORE=/tmp/output
     build:
@@ -28,7 +28,7 @@ services:
   debian-9:
     command: ./build.sh
     environment:
-      - BUILD_NO=${BUILD_NUMBER}
+      - BUILD_NUMBER=${BUILD_NUMBER}
       - R_VERSION=${R_VERSION}
       - LOCAL_STORE=/tmp/output
     build:
@@ -40,7 +40,7 @@ services:
   centos-6:
     command: ./build.sh
     environment:
-      - BUILD_NO=${BUILD_NUMBER}
+      - BUILD_NUMBER=${BUILD_NUMBER}
       - R_VERSION=${R_VERSION}
       - LOCAL_STORE=/tmp/output
     build:
@@ -52,7 +52,7 @@ services:
   centos-7:
     command: ./build.sh
     environment:
-      - BUILD_NO=${BUILD_NUMBER}
+      - BUILD_NUMBER=${BUILD_NUMBER}
       - R_VERSION=${R_VERSION}
       - LOCAL_STORE=/tmp/output
     build:
@@ -64,7 +64,7 @@ services:
   opensuse-42:
     command: ./build.sh
     environment:
-      - BUILD_NO=${BUILD_NUMBER}
+      - BUILD_NUMBER=${BUILD_NUMBER}
       - R_VERSION=${R_VERSION}
       - LOCAL_STORE=/tmp/output
     build:
@@ -76,7 +76,7 @@ services:
   opensuse-15:
     command: ./build.sh
     environment:
-      - BUILD_NO=${BUILD_NUMBER}
+      - BUILD_NUMBER=${BUILD_NUMBER}
       - R_VERSION=${R_VERSION}
       - LOCAL_STORE=/tmp/output
     build:
