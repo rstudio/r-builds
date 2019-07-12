@@ -6,12 +6,10 @@ RUN set -x \
   && sed -i "s|# deb-src|deb-src|g" /etc/apt/sources.list \
   && export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
-  && apt-get install -y libcurl4-openssl-dev libicu-dev libopenblas-base wget python-pip \
+  && apt-get install -y libcurl4-openssl-dev libicu-dev libopenblas-base wget python-pip ruby ruby-dev \
   && apt-get build-dep -y r-base
 
 RUN pip install awscli
-
-RUN apt-get install -y gcc make ruby ruby-dev wget
 
 RUN gem install fpm
 
