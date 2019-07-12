@@ -5,7 +5,7 @@ fi
 fpm \
   -s dir \
   -t deb \
-  -v ${BUILD_NUMBER} \
+  -v 1 \
   -n R-${R_VERSION} \
   --deb-priority "optional" \
   --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
