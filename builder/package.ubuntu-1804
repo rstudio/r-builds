@@ -27,7 +27,6 @@ fpm \
   -d libjpeg8 \
   -d liblapack-dev \
   -d liblzma5 \
-  -d libopenblas-base \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
   -d libpaper-utils \
