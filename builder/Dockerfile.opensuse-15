@@ -8,8 +8,6 @@ ENV OS_IDENTIFIER opensuse-15
 
 RUN zypper --non-interactive update
 RUN zypper --non-interactive --gpg-auto-import-keys -n install \
-    atlascpp-devel \
-    blas-devel \
     bzip2 \
     cairo-devel \
     fdupes \
@@ -20,7 +18,6 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     glibc-locale \
     help2man \
     java-1_8_0-openjdk-devel \
-    lapack-devel \
     libX11-devel \
     libXScrnSaver-devel \
     libXmu-devel \
@@ -70,8 +67,6 @@ RUN chmod 0777 /opt
 # Configure flags for SUSE that don't use the defaults in build.sh
 ENV CONFIGURE_OPTIONS="\
     --enable-R-shlib \
-    --with-blas \
-    --with-lapack \
     --with-tcltk \
     --with-x \
     --enable-memory-profiling \
