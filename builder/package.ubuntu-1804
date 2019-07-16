@@ -25,8 +25,8 @@ fpm \
   -d libgomp1 \
   -d libicu60 \
   -d libjpeg8 \
-  -d liblapack-dev \
   -d liblzma5 \
+  -d libopenblas-dev \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
   -d libpaper-utils \
