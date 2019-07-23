@@ -71,7 +71,7 @@ The following operating systems are supported:
 
 The R binaries are built on these open source containers, but have been tested
 on their commerical equivalents. For example, the CentOS binaries also work on
-RedHat Enterprise Linux (REHL) and the OpenSUSE binaries also worn on SUSE Linux
+RedHat Enterprise Linux (REHL) and the OpenSUSE binaries also work on SUSE Linux
 Enterprise Server (SLES).
 
 Please see [r-docker](https://github.com/rstudio/r-docker) and
@@ -86,7 +86,7 @@ install and use R packages.
 
 # Developer Documentation
 
-This repository orchestrates builds using a variety of tools built. The
+This repository orchestrates builds using a variety of tools. The
 instructions below outline the components in the stack and describe how to add a
 new platform or inspect an existing platform.
 
