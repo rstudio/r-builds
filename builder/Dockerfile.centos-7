@@ -30,6 +30,9 @@ RUN yum -y update \
     pcre-devel \
     pcre2-devel \
     readline-devel \
+    rpm-build \
+    ruby \
+    ruby-devel \
     tcl-devel \
     tex \
     texinfo-tex \
@@ -50,6 +53,8 @@ RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
 RUN pip install awscli --upgrade --user && \
     ln -s /root/.local/bin/aws /usr/bin/aws
 
+RUN gem install fpm
+
 RUN chmod 0777 /opt
 
 # Configure flags for CentOS 7 that don't use the defaults in build.sh
@@ -66,5 +71,6 @@ ENV CONFIGURE_OPTIONS="\
 # RHEL 7 doesn't have the inconsolata font, so override the defaults.
 ENV R_RD4PDF="times,hyper"
 
+COPY package.centos-7 /package.sh
 COPY build.sh .
 ENTRYPOINT ./build.sh
