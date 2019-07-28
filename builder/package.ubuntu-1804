@@ -41,7 +41,6 @@ fpm \
   -d make \
   -d ucf \
   -d unzip \
-  -d xdg-utils \
   -d zip \
   -d zlib1g \
   /opt/R/${R_VERSION}
