@@ -7,7 +7,7 @@ fpm \
   -t deb \
   -v 1 \
   -n R-${R_VERSION} \
-  --vendor "R Project" \
+  --vendor "RStudio Inc." \
   --deb-priority "optional" \
   --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
   --url "http://www.r-project.org/" \
