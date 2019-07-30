@@ -6,15 +6,19 @@ RUN set -x \
   && export DEBIAN_FRONTEND=noninteractive \
   && echo 'deb-src http://deb.debian.org/debian stretch main' >> /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y libcurl4-openssl-dev libicu-dev libopenblas-base wget python-pip \
+  && apt-get install -y gcc libcurl4-openssl-dev libicu-dev \
+     libopenblas-base make python-pip ruby ruby-dev wget \
   && apt-get build-dep -y r-base
 
 RUN pip install awscli
 
 RUN chmod 0777 /opt
 
+RUN gem install fpm
+
 # Override the default pager used by R
 ENV PAGER /usr/bin/pager
 
+COPY package.debian-9 /package.sh
 COPY build.sh .
 ENTRYPOINT ./build.sh

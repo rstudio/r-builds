@@ -1,0 +1,51 @@
+if [[ ! -d /tmp/output/debian-9 ]]; then
+  mkdir -p /tmp/output/debian-9
+fi
+
+fpm \
+  -s dir \
+  -t deb \
+  -v 1 \
+  -n R-${R_VERSION} \
+  --vendor "RStudio Inc." \
+  --deb-priority "optional" \
+  --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
+  --url "http://www.r-project.org/" \
+  --description "GNU R statistical computation and graphics system" \
+  --maintainer "RStudio Inc https://github.com/rstudio/r-builds" \
+  --license "GPL-2" \
+  -p /tmp/output/debian-9/ \
+  -d ca-certificates \
+  -d g++ \
+  -d gcc \
+  -d gfortran \
+  -d libbz2-1.0 \
+  -d libc6 \
+  -d libcairo2 \
+  -d libcurl4-openssl-dev \
+  -d libglib2.0-0 \
+  -d libgomp1 \
+  -d libicu57 \
+  -d liblzma5 \
+  -d libopenblas-dev \
+  -d libpango-1.0-0 \
+  -d libpangocairo-1.0-0 \
+  -d libpaper-utils \
+  -d libpcre3 \
+  -d libpng16-16 \
+  -d libreadline7 \
+  -d libtcl8.6 \
+  -d libtiff5 \
+  -d libtk8.6 \
+  -d libx11-6 \
+  -d libxt6 \
+  -d make \
+  -d ucf \
+  -d unzip \
+  -d zip \
+  -d zlib1g \
+  /opt/R/${R_VERSION}
+
+shopt -s extglob
+export PKG_FILE=$(ls /tmp/output/debian-9/[rR]-${R_VERSION}*.@(deb|rpm) | head -1)
+
