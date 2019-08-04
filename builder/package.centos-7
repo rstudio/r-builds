@@ -38,12 +38,10 @@ fpm \
   -d pcre-devel \
   -d pcre2-devel \
   -d perl-Digest-MD5 \
-  -d sudo \
   -d tcl \
   -d tk \
   -d tre \
-  -d vim \
-  -d wget \
+  -d which \
   -d xz-devel \
   -d zlib-devel \
   /opt/R/${R_VERSION}
