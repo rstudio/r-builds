@@ -1,5 +1,5 @@
-if [[ ! -d /tmp/output/ubuntu-1804 ]]; then
-  mkdir -p /tmp/output/ubuntu-1804
+if [[ ! -d /tmp/output/debian-9 ]]; then
+  mkdir -p /tmp/output/debian-9
 fi
 
 fpm \
@@ -14,18 +14,18 @@ fpm \
   --description "GNU R statistical computation and graphics system" \
   --maintainer "RStudio Inc https://github.com/rstudio/r-builds" \
   --license "GPL-2" \
-  -p /tmp/output/ubuntu-1804/ \
+  -p /tmp/output/debian-9/ \
+  -d ca-certificates \
   -d g++ \
   -d gcc \
   -d gfortran \
   -d libbz2-1.0 \
   -d libc6 \
   -d libcairo2 \
-  -d libcurl4 \
+  -d libcurl4-openssl-dev \
   -d libglib2.0-0 \
   -d libgomp1 \
-  -d libicu60 \
-  -d libjpeg8 \
+  -d libicu57 \
   -d liblzma5 \
   -d libopenblas-dev \
   -d libpango-1.0-0 \
@@ -47,5 +47,5 @@ fpm \
   /opt/R/${R_VERSION}
 
 shopt -s extglob
-export PKG_FILE=$(ls /tmp/output/ubuntu-1804/[rR]-${R_VERSION}*.@(deb|rpm) | head -1)
+export PKG_FILE=$(ls /tmp/output/debian-9/[rR]-${R_VERSION}*.@(deb|rpm) | head -1)
 
