@@ -1,0 +1,59 @@
+if [[ ! -d /tmp/output/centos-7 ]]; then
+  mkdir -p /tmp/output/centos-7
+fi
+
+# create post-install script required for openblas
+cat <<EOF >> /post-install.sh
+mv /opt/R/${R_VERSION}/lib/R/lib/libRblas.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so.keep 
+ln -s /usr/lib64/libopenblasp.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so
+EOF
+
+# create after-remove script to remove internal blas
+cat <<EOF >> /before-remove.sh
+if [ -d /opt/R/${R_VERSION} ]; then
+  rm -r /opt/R/${R_VERSION}
+fi
+EOF
+
+fpm \
+  -s dir \
+  -t rpm \
+  -v 1 \
+  -n R-${R_VERSION} \
+  --vendor "RStudio Inc." \
+  --deb-priority "optional" \
+  --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
+  --url "http://www.r-project.org/" \
+  --description "GNU R statistical computation and graphics system" \
+  --maintainer "RStudio Inc https://github.com/rstudio/r-builds" \
+  --license "GPL-2" \
+  --after-install /post-install.sh \
+  --after-remove /before-remove.sh \
+  -p /tmp/output/centos-7/ \
+  -d bzip2-devel \
+  -d gcc \
+  -d gcc-c++ \
+  -d gcc-gfortran \
+  -d libcurl-devel \
+  -d libicu-devel \
+  -d libSM \
+  -d libtiff \
+  -d libXmu \
+  -d libXt \
+  -d make \
+  -d openblas-devel \
+  -d pango \
+  -d pcre-devel \
+  -d pcre2-devel \
+  -d perl-Digest-MD5 \
+  -d tcl \
+  -d tk \
+  -d tre \
+  -d which \
+  -d xz-devel \
+  -d zlib-devel \
+  /opt/R/${R_VERSION}
+
+shopt -s extglob
+export PKG_FILE=$(ls /tmp/output/centos-7/[rR]-${R_VERSION}*.@(deb|rpm) | head -1)
+
