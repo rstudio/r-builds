@@ -47,8 +47,10 @@ fpm \
   -d pcre2-devel \
   -d tcl \
   -d tk \
+  -d unzip \
   -d which \
   -d xz-devel \
+  -d zip \
   -d zlib-devel \
   /opt/R/${R_VERSION}
 
