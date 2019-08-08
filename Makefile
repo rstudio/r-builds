@@ -24,6 +24,9 @@ docker-build-r: docker-build
 docker-shell-r-env:
 	@cd builder && docker-compose run --entrypoint /bin/bash ubuntu-1604
 
+docker-test-r:
+	@cd test && docker-compose up
+
 ecr-login:
 	@eval $(shell aws ecr get-login --no-include-email --region $(AWS_REGION))
 
@@ -45,4 +48,4 @@ bash:
 		-w /r-builds \
 		${TARGET_IMAGE} /bin/bash
 
-.PHONY: deps docker-build docker-push docker-down docker-build-package docker-shell-package-env ecr-login fetch-serverless-custom-file serverless-deploy
+.PHONY: deps docker-build docker-push docker-down docker-build-package docker-shell-package-env docker-test-r ecr-login fetch-serverless-custom-file serverless-deploy
