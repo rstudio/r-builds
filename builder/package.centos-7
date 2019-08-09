@@ -45,12 +45,12 @@ fpm \
   -d pango \
   -d pcre-devel \
   -d pcre2-devel \
-  -d perl-Digest-MD5 \
   -d tcl \
   -d tk \
-  -d tre \
+  -d unzip \
   -d which \
   -d xz-devel \
+  -d zip \
   -d zlib-devel \
   /opt/R/${R_VERSION}
 
