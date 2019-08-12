@@ -28,6 +28,7 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     libjpeg-devel \
     libpng-devel \
     libtiff-devel \
+    make \
     pango-devel \
     pcre-devel \
     perl \
@@ -36,6 +37,8 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     python-pip \
     readline-devel \
     rpm-build \
+    ruby \
+    ruby-devel \
     shadow \
     tcl-devel \
     texinfo \
@@ -62,6 +65,8 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
 
 RUN pip install awscli
 
+RUN gem install fpm && ln -s /usr/lib64/ruby/gems/2.5.0/gems/fpm-1.11.0/bin/fpm /bin/fpm
+
 RUN chmod 0777 /opt
 
 # Configure flags for SUSE that don't use the defaults in build.sh
@@ -73,5 +78,6 @@ ENV CONFIGURE_OPTIONS="\
     --with-tcl-config=/usr/lib64/tclConfig.sh \
     --with-tk-config=/usr/lib64/tkConfig.sh"
 
+COPY package.opensuse-15 /package.sh
 COPY build.sh .
 ENTRYPOINT ./build.sh

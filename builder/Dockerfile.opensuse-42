@@ -28,6 +28,7 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     libjpeg-devel \
     libpng-devel \
     libtiff-devel \
+    make \
     pango-devel \
     pcre-devel \
     perl \
@@ -36,6 +37,8 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     python-pip \
     readline-devel \
     rpm-build \
+    ruby \
+    ruby-devel \
     shadow \
     tcl-devel \
     texinfo \
@@ -62,6 +65,8 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
 
 RUN pip install awscli
 
+RUN gem install fpm && ln -s /usr/lib64/ruby/gems/2.1.0/gems/fpm-1.11.0/bin/fpm /bin/fpm
+
 RUN chmod 0777 /opt
 
 # SUSE 12 doesn't have texi2any, so use makeinfo.
@@ -77,5 +82,6 @@ ENV CONFIGURE_OPTIONS="\
     --with-tk-config=/usr/lib64/tkConfig.sh \
     --enable-prebuilt-html"
 
+COPY package.opensuse-42 /package.sh
 COPY build.sh .
 ENTRYPOINT ./build.sh
