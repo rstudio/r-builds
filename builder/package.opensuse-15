@@ -20,7 +20,7 @@ fpm \
   -t rpm \
   -v 1 \
   -n R-${R_VERSION} \
-  --vendor "R-Project" \
+  --vendor "RStudio Inc." \
   --deb-priority "optional" \
   --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
   --url "http://www.r-project.org/" \
@@ -52,6 +52,7 @@ fpm \
   -d tar \
   -d tcl \
   -d tk \
+  -d unzip \
   -d which \
   -d xorg-x11 \
   -d xorg-x11-fonts-100dpi \
