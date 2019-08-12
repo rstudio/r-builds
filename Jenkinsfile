@@ -13,6 +13,52 @@ pipeline {
         sh 'make docker-build'
       }
     }
+    stage('test images') {
+      parallel {
+        stage('R 3.1') {
+          agent { label 'docker' }
+          steps {
+            sh 'R_VERSION=3.1.3 make docker-build-r'
+            sh 'R_VERSION=3.1.3 make docker-test-r'
+          }
+        }
+        stage('R 3.2') {
+          agent { label 'docker' }
+          steps {
+            sh 'R_VERSION=3.2.5 make docker-build-r'
+            sh 'R_VERSION=3.2.5 make docker-test-r'
+          }
+        }
+        stage('R 3.3') {
+          agent { label 'docker' }
+          steps {
+            sh 'R_VERSION=3.3.3 make docker-build-r'
+            sh 'R_VERSION=3.3.3 make docker-test-r'
+          }
+        }
+        stage('R 3.4') {
+          agent { label 'docker' }
+          steps {
+            sh 'R_VERSION=3.4.4 make docker-build-r'
+            sh 'R_VERSION=3.4.4 make docker-test-r'
+          }
+        }
+        stage('R 3.5') {
+          agent { label 'docker' }
+          steps {
+            sh 'R_VERSION=3.5.3 make docker-build-r'
+            sh 'R_VERSION=3.5.3 make docker-test-r'
+          }
+        }
+        stage('R 3.6') {
+          agent { label 'docker' }
+          steps {
+            sh 'R_VERSION=3.6.1 make docker-build-r'
+            sh 'R_VERSION=3.6.1 make docker-test-r'
+          }
+        }
+      }
+    }
     stage('push images') {
       agent { label 'docker-4x' }
       when {
