@@ -8,7 +8,7 @@ if [ ! -f ${PKG_FILE} ]; then
     exit 0
 fi
 
-zypper --non-interactive install ${PKG_FILE}
+zypper --non-interactive --no-gpg-checks install ${PKG_FILE}
 
 # Show rpm info
 rpm -qi R-${R_VERSION}
