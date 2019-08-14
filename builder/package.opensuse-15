@@ -43,11 +43,11 @@ fpm \
   -d libgomp1 \
   -d libicu-devel \
   -d libjpeg62 \
+  -d libpango-1_0-0 \
   -d libreadline7 \
   -d libtiff5 \
   -d make \
   -d openblas-devel \
-  -d pango-tools \
   -d pcre-devel \
   -d tar \
   -d tcl \
