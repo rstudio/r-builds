@@ -10,6 +10,7 @@ RUN zypper --non-interactive update
 RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     bzip2 \
     cairo-devel \
+    curl \
     fdupes \
     gcc \
     gcc-c++ \
@@ -58,7 +59,6 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     wget \
     xdg-utils \
     xorg-x11-devel \
-    xz-devel \
     zip \
     zlib-devel \
     && zypper clean
@@ -68,6 +68,19 @@ RUN pip install awscli
 RUN gem install fpm && ln -s /usr/lib64/ruby/gems/2.1.0/gems/fpm-1.11.0/bin/fpm /bin/fpm
 
 RUN chmod 0777 /opt
+
+# Install an older xz 5.0.5 for compatibility with SLES 12
+ARG XZ_VERSION=5.0.5
+ARG XZ_DOWNLOAD_SHA1=26fec2c1e409f736e77a85e4ab314dc74987def0
+RUN curl -fsSL "https://sourceforge.net/projects/lzmautils/files/xz-{$XZ_VERSION}.tar.gz/download" -o xz.tar.gz \
+    && echo "$XZ_DOWNLOAD_SHA1  xz.tar.gz" | sha1sum -c - \
+    && CWD=`pwd` && TMP=`mktemp -d` \
+    && tar -C $TMP -zxvf xz.tar.gz \
+    && cd $TMP/xz* \
+    && ./configure \
+    && make \
+    && make install \
+    && cd $CWD && rm -rf $TMP && rm -rf xz.tar.gz
 
 # SUSE 12 doesn't have texi2any, so use makeinfo.
 ENV MAKEINFO=makeinfo
