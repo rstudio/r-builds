@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "dependencies": {},
   "devDependencies": {
+    "serverless": "^1.42.3",
     "serverless-pseudo-parameters": "^2.2.0",
     "serverless-python-requirements": "^4.2.5",
     "serverless-step-functions": "^1.8.0"
