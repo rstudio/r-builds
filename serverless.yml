@@ -29,10 +29,10 @@ provider:
        Action:
          - "s3:*"
        Resource:
-        - arn:aws:s3:::${self:custom.s3Bucket}
-        - arn:aws:s3:::${self:custom.s3Bucket}/*
+        - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}
+        - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}/*
   environment:
-    S3_BUCKET: ${self:custom.s3Bucket}
+    S3_BUCKET: ${self:custom.${self:provider.stage}.s3Bucket}
     JOB_QUEUE_ARN:
       Ref: rBuildsBatchJobQueue
     JOB_DEFINITION_ARN_ubuntu_1604:

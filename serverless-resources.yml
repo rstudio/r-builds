@@ -71,13 +71,13 @@ rBuildsEcsTaskIamRole:
               Action:
                 - s3:*
               Resource:
-                - arn:aws:s3:::${self:custom.s3Bucket}
-                - arn:aws:s3:::${self:custom.s3Bucket}/*
+                - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}
+                - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}/*
 
 rBuildsEcsLaunchTemplate:
   Type: AWS::EC2::LaunchTemplate
   Properties:
-    LaunchTemplateName: r-builds-batch-managed-ecs-larger-volume
+    LaunchTemplateName: r-builds-${self:provider.stage}-batch-managed-ecs-larger-volume
     LaunchTemplateData:
       BlockDeviceMappings:
         - DeviceName: /dev/xvdcz
