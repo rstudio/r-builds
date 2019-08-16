@@ -35,7 +35,7 @@ pipeline {
         branch 'master'
       }
       steps {
-        sh 'make serverless-deploy'
+        sh 'make serverless-deploy.production'
       }
     }
   }
