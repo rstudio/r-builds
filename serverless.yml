@@ -7,17 +7,19 @@ plugins:
 custom: ${file(./serverless-custom.yml)}
 
 package:
- exclude:
-   - integration/**
-   - builder/**
-   - docs/**
+  exclude:
+    - integration/**
+    - builder/**
+    - docs/**
+    - node_modules/**
 
 provider:
   name: aws
   runtime: python3.6
+  stage: ${opt:stage, self:custom.defaultStage}
   deploymentBucket:
     name: ${self:custom.deploymentBucket}
-  stackTags: ${self:custom.stackTags}
+  stackTags: ${self:custom.${self:provider.stage}.stackTags}
   iamRoleStatements:
     -  Effect: Allow
        Action:
