@@ -74,6 +74,17 @@ rBuildsEcsTaskIamRole:
                 - arn:aws:s3:::${self:custom.s3Bucket}
                 - arn:aws:s3:::${self:custom.s3Bucket}/*
 
+rBuildsEcsLaunchTemplate:
+  Type: AWS::EC2::LaunchTemplate
+  Properties:
+    LaunchTemplateName: r-builds-batch-managed-ecs-larger-volume
+    LaunchTemplateData:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvdcz
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: 64
+
 rBuildsBatchComputeEnvironment:
   Type: AWS::Batch::ComputeEnvironment
   DependsOn: rBuildsBatchIamRole
@@ -82,6 +93,9 @@ rBuildsBatchComputeEnvironment:
     ServiceRole:
       "Fn::GetAtt": [ rBuildsBatchIamRole, Arn ]
     ComputeResources:
+      LaunchTemplate:
+        LaunchTemplateId:
+          Ref: rBuildsEcsLaunchTemplate
       SpotIamFleetRole:
         "Fn::GetAtt": [ rBuildsSpotFleetIamRole, Arn ]
       SecurityGroupIds: ${self:custom.securityGroupIds}
