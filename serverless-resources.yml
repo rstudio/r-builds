@@ -71,8 +71,19 @@ rBuildsEcsTaskIamRole:
               Action:
                 - s3:*
               Resource:
-                - arn:aws:s3:::${self:custom.s3Bucket}
-                - arn:aws:s3:::${self:custom.s3Bucket}/*
+                - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}
+                - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}/*
+
+rBuildsEcsLaunchTemplate:
+  Type: AWS::EC2::LaunchTemplate
+  Properties:
+    LaunchTemplateName: r-builds-${self:provider.stage}-batch-managed-ecs-larger-volume
+    LaunchTemplateData:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvdcz
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: 64
 
 rBuildsBatchComputeEnvironment:
   Type: AWS::Batch::ComputeEnvironment
@@ -82,12 +93,15 @@ rBuildsBatchComputeEnvironment:
     ServiceRole:
       "Fn::GetAtt": [ rBuildsBatchIamRole, Arn ]
     ComputeResources:
+      LaunchTemplate:
+        LaunchTemplateId:
+          Ref: rBuildsEcsLaunchTemplate
       SpotIamFleetRole:
         "Fn::GetAtt": [ rBuildsSpotFleetIamRole, Arn ]
       SecurityGroupIds: ${self:custom.securityGroupIds}
       Subnets: ${self:custom.subnets}
       Type: SPOT
-      BidPercentage: 40
+      BidPercentage: 60
       InstanceRole:
         "Fn::GetAtt": [ rBuildsIamInstanceProfile, Arn ]
       InstanceTypes:
@@ -231,6 +245,7 @@ rBuildsEventRule:
   Properties:
     Description: Check for New R Versions
     ScheduleExpression: rate(1 hour)
+    State: ${self:custom.${self:provider.stage}.eventRuleState}
     Targets:
       - Id: rbuilds
         Input: '{}'

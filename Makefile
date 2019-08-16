@@ -33,7 +33,7 @@ fetch-serverless-custom-file:
 rebuild-all: deps fetch-serverless-custom-file
 	$(SLS_BINARY) invoke stepf -n rBuilds -d '{"force": true}'
 
-serverless-deploy: deps fetch-serverless-custom-file
-	$(SLS_BINARY) deploy --stage dev
+serverless-deploy.%: deps fetch-serverless-custom-file
+	$(SLS_BINARY) deploy --stage $*
 
 .PHONY: deps docker-build docker-push docker-down docker-build-package docker-shell-package-env ecr-login fetch-serverless-custom-file serverless-deploy
