@@ -1,6 +1,7 @@
 rBuilds:
   Comment: "R Builds"
   id: RBuildsStepFunction
+  name: r-builds-${self:provider.stage}
   definition:
     StartAt: QueueBuilds
     States:
