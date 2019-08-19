@@ -15,6 +15,12 @@ if [ -d /opt/R/${R_VERSION} ]; then
 fi
 EOF
 
+# Preserve the default HTTP user agent for R 3.6+
+cat <<'EOF' >> /opt/R/${R_VERSION}/lib/R/etc/Rprofile.site
+# Add OS version info to the HTTP user agent
+options(HTTPUserAgent = paste(c(utils::sessionInfo()$running, getOption("HTTPUserAgent")), collapse = "; "))
+EOF
+
 fpm \
   -s dir \
   -t rpm \
