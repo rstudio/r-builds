@@ -2,10 +2,10 @@ if [[ ! -d /tmp/output/ubuntu-1804 ]]; then
   mkdir -p /tmp/output/ubuntu-1804
 fi
 
-# Preserve the default HTTP user agent for R 3.6+
+# Set default HTTP user agent for R 3.6+
 cat <<'EOF' >> /opt/R/${R_VERSION}/lib/R/etc/Rprofile.site
-# Add OS version info to the HTTP user agent
-options(HTTPUserAgent = paste(c(utils::sessionInfo()$running, getOption("HTTPUserAgent")), collapse = "; "))
+# Set default HTTP user agent
+options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(), paste(getRversion(), R.version$platform, R.version$arch, R.version$os)))
 EOF
 
 fpm \
