@@ -62,12 +62,18 @@ Enable the [Extra Packages for Enterprise Linux](https://fedoraproject.org/wiki/
 repository:
 
 ```bash
+# CentOS / RHEL 6
+sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+
 # CentOS / RHEL 7
 sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 ```
 
 Download the rpm package:
 ```bash
+# CentOS / RHEL 6
+wget https://cdn.rstudio.com/r/centos-6/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+
 # CentOS / RHEL 7
 wget https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
