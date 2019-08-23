@@ -2,12 +2,6 @@ if [[ ! -d /tmp/output/ubuntu-1804 ]]; then
   mkdir -p /tmp/output/ubuntu-1804
 fi
 
-# Set default HTTP user agent for R 3.6+
-cat <<'EOF' >> /opt/R/${R_VERSION}/lib/R/etc/Rprofile.site
-# Set default HTTP user agent
-options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(), paste(getRversion(), R.version$platform, R.version$arch, R.version$os)))
-EOF
-
 fpm \
   -s dir \
   -t deb \
