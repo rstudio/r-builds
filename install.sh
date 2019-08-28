@@ -6,32 +6,8 @@
 SCRIPT_ACTION=$1
 SCRIPT_ACTION=${SCRIPT_ACTION:-install}
 
-CWD=`pwd`
-
-# User running the command
-ME=`whoami`
-
-# To automate, set the version and RUN_UNATTENDED=1, for example:
-# RUN_UNATTENDED=1 R_VERSION=3.5.2 /path/to/install.sh
-#
 # Set to the full version to install. Must be either available on S3 or in the working directory
 R_VERSION=${R_VERSION:-}
-#
-# Run unattended; show no questions, assume default answers. This was
-# ported from Connect and only affects usages of the `ask_yes_no`
-# function
-RUN_UNATTENDED=${RUN_UNATTENDED:-0}
-
-# A list of short versions versions.
-# The first version will always be considered "latest".
-R_DISTROS="\
-debian-9 \
-centos-6 \
-centos-7 \
-opensuse-42 \
-opensuse-15 \
-ubuntu-1604 \
-ubuntu-1804"
 
 SUDO=
 if [[ $(id -u) != "0" ]]; then
@@ -123,14 +99,6 @@ detect_installer_type () {
   fi
 }
 
-# Lists available distros
-show_distros () {
-  for v in ${R_DISTROS}
-  do
-    echo "  ${v}"
-  done
-}
-
 # Lists available R versions
 show_versions () {
   for v in ${R_VERSIONS}
@@ -214,7 +182,7 @@ valid_version () {
 }
 
 # Prompts for the version until a valid version is entered.
-SELECTED_VERSION=${RSPM_VERSION}
+SELECTED_VERSION=${R_VERSION}
 prompt_version () {
   while [ "$SELECTED_VERSION" = "" ]; do
     echo "Available Versions"
@@ -370,35 +338,6 @@ check_command () {
     fi
 }
 
-# This asks a yes/no question and waits for an answer.  If running unattended, return
-# the default as the answer without asking the question.
-ask_yes_no () {
-    prompt=$1
-    default=$2
-    answer=
-    if [[ "${RUN_UNATTENDED}" -eq "0" ]]; then
-        letters="yn"
-        if [[ "Y" = "${default}" ]]; then
-            letters="Yn"
-        elif [[ "N" = "${default}" ]]; then
-            letters="yN"
-        fi
-        prefix=
-        while true; do
-            read -r -p "${prefix}${prompt} [${letters}]? " answer
-            [[ -z "${answer}" ]] && { answer=${default}; }
-            case ${answer} in
-                [Yy]*) echo "Y"; return;;
-                [Nn]*) echo "N"; return;;
-                *) prefix=$'\nPlease answer with y or n.\n';;
-            esac
-        done
-    else
-        answer=${default}
-    fi
-    echo "${answer}"
-}
-
 has_sudo () {
   if [[ "${SUDO}" == "" ]]; then
     test "0" == "0"
@@ -411,7 +350,7 @@ has_sudo () {
   fi
 }
 
-check_curl () {
+check_commands () {
   curl_rc=$(check_command "curl")
   if [[ "${curl_rc}" != "" ]]; then
     echo "The curl command is required."
@@ -430,7 +369,7 @@ check_curl () {
 do_install () {
 
   # Check for curl
-  check_curl
+  check_commands
 
   # Detect OS
   os=$(detect_os)
