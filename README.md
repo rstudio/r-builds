@@ -26,6 +26,16 @@ R binaries are built for the following Linux operating systems:
 
 ## Installation
 
+### Quick Installer
+
+To use our quick install script to install R, simply run the following
+command. To use the quick installer, you must have root or sudo privileges,
+and `curl` must be installed.
+
+```sh
+bash -c "$(curl -L https://rstd.io/r-install)"
+```
+
 ### Specify R version
 
 Define the version of R that you want to install. Available versions
@@ -34,7 +44,7 @@ of R can be found here: https://cdn.rstudio.com/r/versions.json
 R_VERSION=3.5.3
 ```
 
-### Download and install R
+### Download and install R Manually
 
 #### Ubuntu/Debian Linux
 
