@@ -94,13 +94,22 @@ compile_r() {
   make
   make install
 
-  # Preserve the default HTTP user agent for R 3.6.0 and later
-  if _version_is_greater_than ${1} 3.6; then
-    cat <<'EOF' >> /opt/R/${1}/lib/R/etc/Rprofile.site
-# Set default HTTP user agent
-options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(), paste(getRversion(), R.version$platform, R.version$arch, R.version$os)))
+  # Add OS identifier to the default HTTP user agent
+  cat <<EOF >> /opt/R/${1}/lib/R/etc/Rprofile.site
+## Set the default HTTP user agent
+local({
+  os_identifier <- if (file.exists("/etc/os-release")) {
+    os <- readLines("/etc/os-release")
+    id <- gsub('^ID=|"', "", grep("^ID=", os, value = TRUE))
+    version <- gsub('^VERSION_ID=|"', "", grep("^VERSION_ID=", os, value = TRUE))
+    sprintf("%s-%s", id, version)
+  } else {
+    "${OS_IDENTIFIER}"
+  }
+  options(HTTPUserAgent = sprintf("R/%s (%s) R (%s)", getRversion(), os_identifier,
+    paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))
+})
 EOF
-  fi
 }
 
 # check for packager script
