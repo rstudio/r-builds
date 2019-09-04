@@ -42,6 +42,7 @@ fpm \
   --after-remove /before-remove.sh \
   -p /tmp/output/centos-6/ \
   -d bzip2-devel \
+  -d dejavu-sans-fonts \
   -d gcc \
   -d gcc-c++ \
   -d gcc-gfortran \
