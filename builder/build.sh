@@ -94,8 +94,9 @@ compile_r() {
   make
   make install
 
-  # Add OS identifier to the default HTTP user agent
-  cat <<EOF >> /opt/R/${1}/lib/R/etc/Rprofile.site
+  # Add OS identifier to the default HTTP user agent.
+  # Set this in the system Rprofile so it works when R is run with --vanilla.
+  cat <<EOF >> /opt/R/${1}/lib/R/library/base/R/Rprofile
 ## Set the default HTTP user agent
 local({
   os_identifier <- if (file.exists("/etc/os-release")) {
