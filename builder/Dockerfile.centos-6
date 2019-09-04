@@ -37,6 +37,7 @@ RUN yum -y update \
     pkgconfig \
     python \
     readline-devel \
+    rpm-build \
     stunnel \
     tcl-devel \
     texinfo-tex \
@@ -189,9 +190,34 @@ ENV MAKEINFO=makeinfo
 # RHEL 6 doesn't have the inconsolata font, so override the defaults.
 ENV R_RD4PDF="times,hyper"
 
+#-- required for fpm --
+## install rvm
+RUN curl -sSL https://rvm.io/mpapis.asc | gpg2 --import - \
+   && curl -sSL https://rvm.io/pkuczynski.asc | gpg2 --import - \
+   && curl -L get.rvm.io | bash -s stable
+## use rvm to install ruby
+RUN source /etc/profile.d/rvm.sh \
+   && /usr/local/rvm/bin/rvm reload \
+   && /usr/local/rvm/bin/rvm requirements run \
+   && /usr/local/rvm/bin/rvm install 2.6.3 \
+   && /usr/local/rvm/bin/rvm use 2.6.3 --default
+
+
+# RUN gem install fpm -v 0.4.26
+RUN export PATH=/usr/local/rvm/rubies/ruby-2.6.3/bin/:/.gems/bin:${PATH} \
+   && export GEM_HOME=/.gems \
+   && export GEM_PATH=/.gems \
+   && gem install --no-document fpm \
+   && /usr/local/rvm/bin/rvm repair wrappers
+
+RUN echo 'source /etc/profile.d/rvm.sh' >> .bashrc
+#----------------------
+
+
 # Copy a script to help set up the environment
 COPY env_centos6.sh ./env.sh
 
+COPY package.centos-6 /package.sh
 COPY build.sh .
 
 # Copy a script to clean up after the build
