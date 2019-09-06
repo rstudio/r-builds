@@ -8,6 +8,10 @@ SCRIPT_ACTION=${SCRIPT_ACTION:-install}
 
 # Set to the full version to install. Must be either available on S3 or in the working directory
 R_VERSION=${R_VERSION:-}
+# The version may optionally be provided as a second argument
+if [[ "$2" != "" ]]; then
+  R_VERSION=$2cd
+fi
 
 SUDO=
 if [[ $(id -u) != "0" ]]; then
@@ -20,7 +24,7 @@ CDN_URL='https://cdn.rstudio.com/r'
 # The URL for listing available R versions
 VERSIONS_URL="${CDN_URL}/versions.json"
 
-R_VERSIONS=$(curl ${VERSIONS_URL} | \
+R_VERSIONS=$(curl -s ${VERSIONS_URL} | \
   # Matches the JSON line that contains the r versions
   grep r_versions | \
   # Gets the value of the `r_version` property (e.g., "[ 3.0.0, 3.0.3, ... ]")
@@ -104,6 +108,14 @@ show_versions () {
   for v in ${R_VERSIONS}
   do
     echo "  ${v}"
+  done
+}
+
+# Same as above but for automation purposes
+do_show_versions () {
+  for v in ${R_VERSIONS}
+  do
+    echo "${v}"
   done
 }
 
@@ -367,7 +379,6 @@ check_commands () {
 }
 
 do_install () {
-
   # Check for curl
   check_commands
 
@@ -401,5 +412,8 @@ do_install () {
 case ${SCRIPT_ACTION} in
   "install")
     do_install
+    ;;
+  "version")
+    do_show_versions
     ;;
 esac
