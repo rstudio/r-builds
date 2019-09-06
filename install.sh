@@ -1,4 +1,5 @@
 #!/bin/bash
+THIS_VERSION="1.0"
 
 # Call with:
 #   bash -c "$(curl -L https://rstd.io/r-install)"
@@ -10,7 +11,7 @@ SCRIPT_ACTION=${SCRIPT_ACTION:-install}
 R_VERSION=${R_VERSION:-}
 # The version may optionally be provided as a second argument
 if [[ "$2" != "" ]]; then
-  R_VERSION=$2cd
+  R_VERSION=$2
 fi
 
 SUDO=
@@ -409,12 +410,28 @@ do_install () {
   install "${installer_type}" "${installer_file_name}" "${os}" "${os_ver}"
 }
 
+do_show_usage() {
+  echo "r-builds quick install version ${THIS_VERSION}"
+  echo "Usage: `basename $0` [-i|-r|-v|-h|install|rversions|version|help]"
+  echo "Where:"
+  echo "'-i' or 'install' [version] (default) install the given version or list R versions available for quick install and prompt for one if none is provided"
+  echo "'-r' or 'rversions' list the R versions available for quick install, one per line"
+  echo "'-v' or 'versions' shows the version of this command"
+  echo "'-h' or 'help' show this info"
+}
+
 # Choose a command to perform
 case ${SCRIPT_ACTION} in
-  "install")
+  "-i"|"install")
     do_install
     ;;
-  "versions")
+  "-r"|"rversions")
     do_show_versions
     ;;
+  "-v"|"version")
+    echo "r-builds quick install version ${THIS_VERSION}"
+    ;;
+  "-h"|"help"|*)
+    do_show_usage
+    ;;   
 esac
