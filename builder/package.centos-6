@@ -47,7 +47,7 @@ fpm \
   -d gcc-c++ \
   -d gcc-gfortran \
   -d libcurl-devel \
-  -d libicu-devel \
+  -d libicu \
   -d libSM \
   -d libtiff \
   -d libXmu \
