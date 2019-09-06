@@ -379,6 +379,7 @@ check_commands () {
 }
 
 do_install () {
+
   # Check for curl
   check_commands
 
@@ -413,7 +414,7 @@ case ${SCRIPT_ACTION} in
   "install")
     do_install
     ;;
-  "version")
+  "versions")
     do_show_versions
     ;;
 esac
