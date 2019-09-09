@@ -34,6 +34,9 @@ R_VERSIONS=$(curl -s ${VERSIONS_URL} | \
   cut -f2 -d "[" | cut -f1 -d "]" | \
   # Removes the quotes and commas from the values
   sed -e 's/\"//g' | sed -e 's/\,//g' | \
+  # Appends a placeholder to the end of the string. Without an extra element at the
+  # end, the last version will be missing after we reverse the order.
+  { IFS= read -r vers; printf '%s placeholder' "$vers"; } | \
   # Reverses the order of the list
   ( while read -d ' ' f;do g="$f${g+ }$g" ;done;echo "$g" ))
 
@@ -43,19 +46,27 @@ detect_os () {
   distro=$($OS | grep DISTRIB_ID | cut -f2 -d "=")
   if test -f /etc/SuSE-release
   then
-   distro="SUSE"
+   distro="LEAP12"
   fi
   if [[ -f /etc/centos-release || -f /etc/redhat-release ]]
   then
    distro="RedHat"
   fi
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:suse:sles:12: ]]
+  then
+    distro="SLES12"
+  fi
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:opensuse:leap:42. ]]
+  then
+    distro="LEAP12"
+  fi
   if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') == "\"cpe:/o:opensuse:leap:15.0\"" ]]
   then
-   distro="SUSE15"
+   distro="SLES15"
   fi
   if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') == "\"cpe:/o:suse:sles:15\"" ]]
   then
-   distro="SUSE15"
+   distro="LEAP15"
   fi
   if [[ $(cat /etc/os-release | grep -e "^ID\=*" | cut -f 2 -d '=') == "debian" ]]; then
     distro="Debian"
@@ -89,19 +100,14 @@ detect_os_version () {
 # Returns the installer type
 detect_installer_type () {
   os=$1
-  if [ "${os}" = "SUSE" ]; then
-    echo "rpm"
-  else
-    if [ "${os}" = "SUSE15" ]; then
+  case $os in
+    "RedHat" | "CentOS" | "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
       echo "rpm"
-    else
-      if [ "${os}" = "RedHat" ]; then
-        echo "rpm"
-      else
-        echo "deb"
-      fi
-    fi
-  fi
+      ;;
+    "Ubuntu" | "Debian")
+      echo "deb"
+      ;;
+  esac
 }
 
 # Lists available R versions
@@ -131,7 +137,7 @@ download_name () {
     "Ubuntu" | "Debian")
       echo "r-${version}_1_amd64.deb"
       ;;
-    "SUSE" | "SUSE15")
+    "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
       echo "R-${version}-1-1.x86_64.rpm"
       ;;
   esac
@@ -159,10 +165,10 @@ download_url () {
       "Debian")
         echo "${CDN_URL}/debian-9/pkgs/${name}"
         ;;
-      "SUSE")
+      "LEAP12" | "SLES12")
         echo "${CDN_URL}/opensuse-42/pkgs/${name}"
         ;;
-      "SUSE15")
+      "LEAP15" | "SLES15")
         echo "${CDN_URL}/opensuse-15/pkgs/${name}"
         ;;
     esac
@@ -251,7 +257,7 @@ install_rpm () {
       fi
       ${SUDO} yum install "${installer_name}"
       ;;
-    "SUSE" | "SUSE15")
+    "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
       if ! has_sudo "zypper"; then
         echo "Must have sudo privileges to run zypper"
         exit 1
@@ -270,10 +276,10 @@ install_pre () {
     "RedHat" | "CentOS")
       install_epel "${ver}"
       ;;
-    "SUSE")
+    "SLES12")
       install_sci
       ;;
-    "SUSE15")
+    "LEAP12" | "LEAP15" | "SLES15")
       ;;
   esac
 }
