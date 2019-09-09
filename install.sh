@@ -1,4 +1,5 @@
 #!/bin/bash
+THIS_VERSION="1.0"
 
 # Call with:
 #   bash -c "$(curl -L https://rstd.io/r-install)"
@@ -8,6 +9,10 @@ SCRIPT_ACTION=${SCRIPT_ACTION:-install}
 
 # Set to the full version to install. Must be either available on S3 or in the working directory
 R_VERSION=${R_VERSION:-}
+# The version may optionally be provided as a second argument
+if [[ "$2" != "" ]]; then
+  R_VERSION=$2
+fi
 
 SUDO=
 if [[ $(id -u) != "0" ]]; then
@@ -20,7 +25,7 @@ CDN_URL='https://cdn.rstudio.com/r'
 # The URL for listing available R versions
 VERSIONS_URL="${CDN_URL}/versions.json"
 
-R_VERSIONS=$(curl ${VERSIONS_URL} | \
+R_VERSIONS=$(curl -s ${VERSIONS_URL} | \
   # Matches the JSON line that contains the r versions
   grep r_versions | \
   # Gets the value of the `r_version` property (e.g., "[ 3.0.0, 3.0.3, ... ]")
@@ -104,6 +109,14 @@ show_versions () {
   for v in ${R_VERSIONS}
   do
     echo "  ${v}"
+  done
+}
+
+# Same as above but for automation purposes
+do_show_versions () {
+  for v in ${R_VERSIONS}
+  do
+    echo "${v}"
   done
 }
 
@@ -397,9 +410,28 @@ do_install () {
   install "${installer_type}" "${installer_file_name}" "${os}" "${os_ver}"
 }
 
+do_show_usage() {
+  echo "r-builds quick install version ${THIS_VERSION}"
+  echo "Usage: `basename $0` [-i|-r|-v|-h|install|rversions|version|help]"
+  echo "Where:"
+  echo "'-i' or 'install' [version] (default) install the given version or list R versions available for quick install and prompt for one if none is provided"
+  echo "'-r' or 'rversions' list the R versions available for quick install, one per line"
+  echo "'-v' or 'versions' shows the version of this command"
+  echo "'-h' or 'help' show this info"
+}
+
 # Choose a command to perform
 case ${SCRIPT_ACTION} in
-  "install")
+  "-i"|"install")
     do_install
     ;;
+  "-r"|"rversions")
+    do_show_versions
+    ;;
+  "-v"|"version")
+    echo "r-builds quick install version ${THIS_VERSION}"
+    ;;
+  "-h"|"help"|*)
+    do_show_usage
+    ;;   
 esac
