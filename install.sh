@@ -52,19 +52,19 @@ detect_os () {
   then
    distro="RedHat"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:suse:sles:12: ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:suse:sles:12 ]]
   then
     distro="SLES12"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:opensuse:leap:42. ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:opensuse:leap:42 ]]
   then
     distro="LEAP12"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') == "\"cpe:/o:opensuse:leap:15.0\"" ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:opensuse:leap:15 ]]
   then
    distro="SLES15"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') == "\"cpe:/o:suse:sles:15\"" ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:suse:sles:15 ]]
   then
    distro="LEAP15"
   fi
