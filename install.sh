@@ -1,5 +1,5 @@
 #!/bin/bash
-THIS_VERSION="1.0"
+THIS_VERSION="1.0.0"
 
 # Call with:
 #   bash -c "$(curl -L https://rstd.io/r-install)"
