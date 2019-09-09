@@ -24,7 +24,17 @@ R binaries are built for the following Linux operating systems:
 - openSUSE 42.3, 15.0
 - SUSE Linux Enterprise 12, 15
 
-## Installation
+## Quick Installation
+
+To use our quick install script to install R, simply run the following
+command. To use the quick installer, you must have root or sudo privileges,
+and `curl` must be installed.
+
+```sh
+bash -c "$(curl -L https://rstd.io/r-install)"
+```
+
+## Manual Installation
 
 ### Specify R version
 
@@ -35,7 +45,6 @@ R_VERSION=3.5.3
 ```
 
 ### Download and install R
-
 #### Ubuntu/Debian Linux
 
 Download the deb package:
