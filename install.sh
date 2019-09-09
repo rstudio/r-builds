@@ -422,7 +422,7 @@ do_show_usage() {
   echo "Where:"
   echo "'-i' or 'install' [version] (default) install the given version or list R versions available for quick install and prompt for one if none is provided"
   echo "'-r' or 'rversions' list the R versions available for quick install, one per line"
-  echo "'-v' or 'versions' shows the version of this command"
+  echo "'-v' or 'version' shows the version of this command"
   echo "'-h' or 'help' show this info"
 }
 
