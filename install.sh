@@ -1,5 +1,5 @@
 #!/bin/bash
-THIS_VERSION="1.0.0"
+THIS_VERSION="1.1.0"
 
 # Call with:
 #   bash -c "$(curl -L https://rstd.io/r-install)"
@@ -12,6 +12,13 @@ R_VERSION=${R_VERSION:-}
 # The version may optionally be provided as a second argument
 if [[ "$2" != "" ]]; then
   R_VERSION=$2
+fi
+
+# Run unattended; show no questions, assume default answers.
+# May also be set by the '-y'/'yes' options on the install action.
+RUN_UNATTENDED=${RUN_UNATTENDED:-0}
+if [[ "$3" == "-y" || "$3" == "yes" ]]; then
+  RUN_UNATTENDED=1
 fi
 
 SUDO=
@@ -237,9 +244,14 @@ install_deb () {
     echo "Must have sudo privileges to run apt-get"
     exit 1
   fi
-
-  ${SUDO} apt-get install gdebi-core
-  ${SUDO} gdebi "${installer_name}"
+  yes=
+  yesapt=
+  if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
+      yes="--n"
+      yesapt="-y"
+  fi
+  ${SUDO} apt-get install ${yesapt} gdebi-core
+  ${SUDO} gdebi ${yes} "${installer_name}"
 }
 
 # Installs R for RHEL/CentOS and SUSE
@@ -249,20 +261,24 @@ install_rpm () {
   ver=$3
   echo "User install from RPM installer ${installer_name}..."
   install_pre "${os}" "${ver}"
+  yes=
+  if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
+      yes="-y"
+  fi
   case $os in
     "RedHat" | "CentOS")
       if ! has_sudo "yum"; then
         echo "Must have sudo privileges to run yum"
         exit 1
       fi
-      ${SUDO} yum install "${installer_name}"
+      ${SUDO} yum install ${yes} "${installer_name}"
       ;;
     "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
       if ! has_sudo "zypper"; then
         echo "Must have sudo privileges to run zypper"
         exit 1
       fi
-      ${SUDO} zypper --no-gpg-checks install "${installer_name}"
+      ${SUDO} zypper --no-gpg-checks install ${yes} "${installer_name}"
       ;;
   esac
 }
@@ -287,13 +303,16 @@ install_pre () {
 # Installs EPEL for RHEL/CentOS
 install_epel () {
   ver=$1
-
+  yes=
+  if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
+      yes="-y"
+  fi
   case $ver in
     "6")
-      ${SUDO} yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+      ${SUDO} yum install ${yes} https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
       ;;
     "7")
-      ${SUDO} yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+      ${SUDO} yum install ${yes} https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
       ;;
     "8")
       ;;
@@ -420,7 +439,8 @@ do_show_usage() {
   echo "r-builds quick install version ${THIS_VERSION}"
   echo "Usage: `basename $0` [-i|-r|-v|-h|install|rversions|version|help]"
   echo "Where:"
-  echo "'-i' or 'install' [version] (default) install the given version or list R versions available for quick install and prompt for one if none is provided"
+  echo "'-i' or 'install' [version] [-y|yes] (default) install the given version (skipping confirmations with -y)"
+  echo "     or list R versions available for quick install and prompt for one if none is provided"
   echo "'-r' or 'rversions' list the R versions available for quick install, one per line"
   echo "'-v' or 'version' shows the version of this command"
   echo "'-h' or 'help' show this info"
