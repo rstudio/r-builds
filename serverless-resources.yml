@@ -191,6 +191,18 @@ rBuildsBatchJobDefinitionCentos7:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-7"
+rBuildsBatchJobDefinitionCentos8:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-8"
 rBuildsBatchJobDefinitionOpensuse42:
   Type: AWS::Batch::JobDefinition
   Properties:

@@ -1,4 +1,4 @@
-PLATFORMS := ubuntu-1604 ubuntu-1804 debian-9 centos-6 centos-7 opensuse-42 opensuse-15
+PLATFORMS := ubuntu-1604 ubuntu-1804 debian-9 centos-6 centos-7 centos-8 opensuse-42 opensuse-15
 SLS_BINARY ?= ./node_modules/serverless/bin/serverless
 
 deps:

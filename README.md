@@ -20,7 +20,7 @@ bug, or ask questions on [RStudio Community](https://community.rstudio.com).
 R binaries are built for the following Linux operating systems:
 - Ubuntu 16.04, 18.04
 - Debian 9
-- CentOS / Red Hat Enterprise Linux 6, 7
+- CentOS / Red Hat Enterprise Linux 6, 7, 8
 - openSUSE 42.3, 15.0
 - SUSE Linux Enterprise 12, 15
 
@@ -68,7 +68,7 @@ sudo gdebi r-${R_VERSION}_1_amd64.deb
 #### RHEL/CentOS Linux
 
 Enable the [Extra Packages for Enterprise Linux](https://fedoraproject.org/wiki/EPEL)
-repository:
+repository (RHEL/CentOS 6 and 7 only):
 
 ```bash
 # CentOS / RHEL 6
@@ -85,6 +85,9 @@ wget https://cdn.rstudio.com/r/centos-6/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # CentOS / RHEL 7
 wget https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+
+# CentOS / RHEL 8
+wget https://cdn.rstudio.com/r/centos-8/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
@@ -208,7 +211,7 @@ environment:
   # snip
   JOB_DEFINITION_ARN_debian_9:
     Ref: rBuildsBatchJobDefinitionDebian9
-  SUPPORTED_PLATFORMS: ubuntu-1604,ubuntu-1804,debian-9,centos-6,centos-7,opensuse-42,opensuse-15
+  SUPPORTED_PLATFORMS: ubuntu-1604,ubuntu-1804,debian-9,centos-6,centos-7,centos-8,opensuse-42,opensuse-15
 ```
 
 ### Makefile
