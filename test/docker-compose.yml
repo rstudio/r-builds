@@ -46,6 +46,15 @@ services:
     volumes:
       - ./:/test
       - ../builder/integration/tmp:/packages
+  centos-8:
+    image: centos:centos8
+    command: /test/test-centos.sh
+    environment:
+      - OS_IDENTIFIER=centos-8
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ./:/test
+      - ../builder/integration/tmp:/packages
   opensuse-42:
     image: opensuse/leap:42.3
     command: /test/test-opensuse.sh
