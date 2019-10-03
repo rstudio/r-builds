@@ -24,7 +24,7 @@ export GEM_PATH=/.gems
 sed -i 's/^CXX11\ =\ .*/CXX11\ =\ g++/g' /opt/R/${R_VERSION}/lib/R/etc/Makeconf
 sed -i 's/^CXX11FLAGS\ =\ .*/CXX11FLAGS\ =\ -g\ -O2\ \$\(LTO\)/g' /opt/R/${R_VERSION}/lib/R/etc/Makeconf
 sed -i 's/^CXX11PICFLAGS\ =\ .*/CXX11PICFLAGS\ =\ -fpic/g' /opt/R/${R_VERSION}/lib/R/etc/Makeconf
-sed -i 's/^CXX11STD\ =\ .*/CXX11STD\ =\ -std=gnu++11/g' /opt/R/${R_VERSION}/lib/R/etc/Makeconf
+sed -i 's/^CXX11STD\ =\ .*/CXX11STD\ =\ -std=gnu++0x/g' /opt/R/${R_VERSION}/lib/R/etc/Makeconf
 
 fpm \
   -s dir \
