@@ -21,8 +21,9 @@ export GEM_HOME=/.gems
 export GEM_PATH=/.gems
 
 # Additional config for C++11 support in R 3.6.
-# R 3.6 no longer sets CXX11 flags without a full C++11 compiler present, but
+# R 3.6.0 no longer sets CXX11 flags without a full C++11 compiler present, but
 # the default gcc 4.4.7 still partially supports C++11 through -std=gnu++0x.
+# Use the same CXX11 flags as the defaults in R versions prior to 3.6.0.
 sed -i 's/^CXX11\ =\ .*/CXX11\ =\ g++/g' /opt/R/${R_VERSION}/lib/R/etc/Makeconf
 sed -i 's/^CXX11FLAGS\ =\ .*/CXX11FLAGS\ =\ -g\ -O2\ \$\(LTO\)/g' /opt/R/${R_VERSION}/lib/R/etc/Makeconf
 sed -i 's/^CXX11PICFLAGS\ =\ .*/CXX11PICFLAGS\ =\ -fpic/g' /opt/R/${R_VERSION}/lib/R/etc/Makeconf
