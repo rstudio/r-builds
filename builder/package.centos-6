@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [[ ! -d /tmp/output/centos-6 ]]; then
   mkdir -p /tmp/output/centos-6
 fi

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [[ ! -d /tmp/output/opensuse-42 ]]; then
   mkdir -p /tmp/output/opensuse-42
 fi
