@@ -12,6 +12,10 @@ library(R6, lib.loc = temp_lib)
 install.packages("BASIX", lib = temp_lib)
 library(BASIX, lib.loc = temp_lib)
 
+# Install a package that compiles with C++11 (old enough to be supported on CentOS 6)
+install.packages("digest", lib = temp_lib)
+library(digest, lib.loc = temp_lib)
+
 # Check iconv support
 if (!capabilities("iconv") || !all(c("ASCII", "LATIN1", "UTF-8") %in% iconvlist())) {
   stop("missing iconv support")
