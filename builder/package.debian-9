@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [[ ! -d /tmp/output/debian-9 ]]; then
   mkdir -p /tmp/output/debian-9
 fi
