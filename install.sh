@@ -87,16 +87,14 @@ detect_os_version () {
   if [[ "${os}" == "RedHat" ]]; then
     if [[ $(cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=') =~ ^(\"8.|28) ]]; then
       echo "8"
-    else
-      if [[ -f /etc/os-release ]]; then
-        cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/"//g'
-      else
-        if [[ -f /etc/redhat-release ]]; then
-          if [[ $(cat /etc/redhat-release | grep "6.") ]]; then
-            echo 6
-          fi
-        fi
+    elif [[ $(cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=') =~ ^(\"7.) ]]; then
+      echo "7"
+    elif [[ -f /etc/redhat-release ]]; then
+      if [[ $(cat /etc/redhat-release | grep "6.") ]]; then
+        echo 6
       fi
+    elif [[ -f /etc/os-release ]]; then
+        cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/"//g'
     fi
   fi
   if [[ "${os}" == "Ubuntu" ]]; then
@@ -459,5 +457,5 @@ case ${SCRIPT_ACTION} in
     ;;
   "-h"|"help"|*)
     do_show_usage
-    ;;   
+    ;;
 esac
