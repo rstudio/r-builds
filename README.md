@@ -78,6 +78,16 @@ sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noa
 sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 ```
 
+> Note that on RHEL 7, you may also need to enable the Optional repository:
+> ```bash
+> # For RHEL 7 users with certificate subscriptions:
+> sudo subscription-manager repos --enable "rhel-*-optional-rpms"
+>
+> # Or alternatively, using yum:
+> sudo yum install yum-utils
+> sudo yum-config-manager --enable "rhel-*-optional-rpms"
+> ```
+
 Download the rpm package:
 ```bash
 # CentOS / RHEL 6
