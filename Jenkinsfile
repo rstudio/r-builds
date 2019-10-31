@@ -23,19 +23,13 @@ pipeline {
       }
     }
     stage('deploy') {
-      agent {
-        dockerfile {
-          dir 'jenkins'
-          label 'docker-4x'
-          additionalBuildArgs '--build-arg DOCKER_GID=$(stat -c %g /var/run/docker.sock) --build-arg JENKINS_UID=$(id -u jenkins) --build-arg JENKINS_GID=$(id -g jenkins)'
-          args '-v /var/run/docker.sock:/var/run/docker.sock --group-add docker'
-        }
-      }
+      agent none
       when {
         branch 'master'
       }
       steps {
-        sh 'make serverless-deploy.production'
+        build(job: 'hostedapps/deploy/r-builds', wait: true,
+              parameters: [string(name: 'ENVIRONMENT', value: 'staging')])
       }
     }
   }
