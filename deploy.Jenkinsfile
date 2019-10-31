@@ -20,7 +20,7 @@ pipeline {
   stages {
     stage('deploy') {
       steps {
-        sh 'make serverless-deploy.${params.ENVIRONMENT}'
+        sh "make serverless-deploy.${params.ENVIRONMENT}"
       }
     }
   }
