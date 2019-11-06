@@ -113,8 +113,10 @@ def queue_builds(event, context):
     job_ids = []
     for version in event['versions_to_build']:
         for platform in event['supported_platforms']:
-            # skip bionic builds with a configure script bug
-            if (platform == 'ubuntu-1804' or platform == 'opensuse-15') and version in ['3.3.0', '3.3.1', '3.3.2']:
+            # In R 3.3.0, 3.3.1, and 3.3.2, the configure script check for the
+            # zlib version fails to handle versions longer than 5 characters.
+            # Skip builds affected by this bug.
+            if platform in ['ubuntu-1804', 'opensuse-15', 'centos-8'] and version in ['3.3.0', '3.3.1', '3.3.2']:
                 continue
             job_ids.append(_submit_job(version, platform))
     event['jobIds'] = job_ids
