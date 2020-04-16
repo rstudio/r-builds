@@ -9,12 +9,12 @@ fpm \
   -t deb \
   -v 1 \
   -n R-${R_VERSION} \
-  --vendor "RStudio Inc." \
+  --vendor "RStudio, PBC" \
   --deb-priority "optional" \
   --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
   --url "http://www.r-project.org/" \
   --description "GNU R statistical computation and graphics system" \
-  --maintainer "RStudio Inc https://github.com/rstudio/r-builds" \
+  --maintainer "RStudio, PBC https://github.com/rstudio/r-builds" \
   --license "GPL-2" \
   -p /tmp/output/debian-9/ \
   -d ca-certificates \
