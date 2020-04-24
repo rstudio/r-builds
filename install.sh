@@ -291,7 +291,7 @@ install_pre () {
       install_epel "${ver}"
       ;;
     "SLES12")
-      install_sci
+      install_python_backports
       ;;
     "LEAP12" | "LEAP15" | "SLES15")
       ;;
@@ -317,9 +317,10 @@ install_epel () {
   esac
 }
 
-# Installs the Science repository for SLES 12
-install_sci () {
-  ${SUDO} zypper --gpg-auto-import-keys addrepo https://download.opensuse.org/repositories/science/SLE_12/science.repo
+# Installs the Python backports repository for SLES 12
+install_python_backports () {
+  SLE_VERSION="SLE_$(grep "^VERSION=" /etc/os-release | sed -e 's/VERSION=//' -e 's/"//g' -e 's/-/_/')"
+  ${SUDO} zypper --gpg-auto-import-keys addrepo https://download.opensuse.org/repositories/devel:/languages:/python:/backports/$SLE_VERSION/devel:languages:python:backports.repo
 }
 
 do_download () {

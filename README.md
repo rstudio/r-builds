@@ -110,10 +110,11 @@ sudo yum install R-${R_VERSION}-1-1.x86_64.rpm
 
 #### SUSE Linux
 
-Enable the [Science](https://en.opensuse.org/openSUSE:Science_Repositories) repository (SLES 12 only):
+Enable the Python backports repository (SLES 12 only):
 ```bash
 # SLES 12
-sudo zypper --gpg-auto-import-keys addrepo https://download.opensuse.org/repositories/science/SLE_12/science.repo
+VERSION="SLE_$(grep "^VERSION=" /etc/os-release | sed -e 's/VERSION=//' -e 's/"//g' -e 's/-/_/')"
+sudo zypper --gpg-auto-import-keys addrepo https://download.opensuse.org/repositories/devel:/languages:/python:/backports/$VERSION/devel:languages:python:backports.repo
 ```
 
 Download the rpm package:
