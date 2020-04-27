@@ -40,7 +40,7 @@ archive_r() {
 
 fetch_r_source() {
   echo "Downloading R-${1}"
-  wget -q ${CRAN}/src/base/R-3/R-${1}.tar.gz -O /tmp/R-${1}.tar.gz
+  wget -q "${CRAN}/src/base/R-`echo ${1}| awk 'BEGIN {FS="."} {print $1}'`/R-${1}.tar.gz" -O /tmp/R-${1}.tar.gz
   echo "Extracting R-${1}"
   tar xf /tmp/R-${1}.tar.gz -C /tmp
   rm /tmp/R-${1}.tar.gz

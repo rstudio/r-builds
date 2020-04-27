@@ -5,7 +5,8 @@ import json
 import boto3
 import botocore
 
-CRAN_SRC_R_URL = 'https://cran.rstudio.com/src/base/R-3/'
+CRAN_SRC_R3_URL = 'https://cran.rstudio.com/src/base/R-3/'
+CRAN_SRC_R4_URL = 'https://cran.rstudio.com/src/base/R-4/'
 batch_client = boto3.client('batch', region_name='us-east-1')
 
 
@@ -23,9 +24,9 @@ def _persist_r_versions(data):
     obj.put(Body=json.dumps(data), ContentType='application/json')
 
 
-def _cran_r_versions():
+def _cran_r_versions(url):
     """Perform a lookup of CRAN-known R version."""
-    r = requests.get(CRAN_SRC_R_URL)
+    r = requests.get(url)
     soup = BeautifulSoup(r.text, 'html.parser')
     r_versions = []
     for link in soup.find_all('a'):
@@ -34,6 +35,14 @@ def _cran_r_versions():
             v = href.replace('.tar.gz', '').replace('R-', '')
             if '-revised' not in v:  # reject 3.2.4-revised
                 r_versions.append(v)
+    return r_versions
+
+
+def _cran_all_r_versions():
+    """Perform a lookup of CRAN-known R version."""
+    r_versions = []
+    r_versions.extend(_cran_r_versions(CRAN_SRC_R3_URL))
+    r_versions.extend(_cran_r_versions(CRAN_SRC_R4_URL))
     return {'r_versions': r_versions}
 
 
@@ -86,13 +95,13 @@ def _submit_job(version, platform):
 
 
 def _versions_to_build(force):
-    cran_versions = _cran_r_versions()['r_versions']
+    cran_versions = _cran_all_r_versions()['r_versions']
     known_versions = _known_r_versions()['r_versions']
     new_versions = _compare_versions(cran_versions, known_versions)
 
     if len(new_versions) > 0:
         print('New R Versions found: %s' % new_versions)
-        _persist_r_versions(_cran_r_versions())
+        _persist_r_versions(_cran_all_r_versions())
 
     if force in [True, 'True', 'true']:
         return cran_versions

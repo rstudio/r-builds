@@ -174,7 +174,7 @@ Create a `builder/Dockerfile.platform-version` (where `platform-version` is `ubu
 
 1. an `OS_IDENTIFIER` env with the `platform-version`.
 2. a step which ensures the R source build dependencies are installed
-3. The `awscli`, most likely installed via `pip` for uploading tarballs to S3
+3. The `awscli`, 1.17.10+ if installed via `pip`, for uploading tarballs to S3
 4. `COPY` and `ENTRYPOINT` for the `build.sh` file in `builder/`.
 
 ### docker-compose.yml
