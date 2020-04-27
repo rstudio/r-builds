@@ -18,7 +18,7 @@ bug, or ask questions on [RStudio Community](https://community.rstudio.com).
 ## Supported Platforms
 
 R binaries are built for the following Linux operating systems:
-- Ubuntu 16.04, 18.04
+- Ubuntu 16.04, 18.04, 20.04
 - Debian 9
 - CentOS / Red Hat Enterprise Linux 6, 7, 8
 - openSUSE 42.3, 15.0
@@ -54,6 +54,9 @@ wget https://cdn.rstudio.com/r/ubuntu-1604/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Ubuntu 18.04
 wget https://cdn.rstudio.com/r/ubuntu-1804/pkgs/r-${R_VERSION}_1_amd64.deb
+
+# Ubuntu 20.04
+wget https://cdn.rstudio.com/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Debian 9
 wget https://cdn.rstudio.com/r/debian-9/pkgs/r-${R_VERSION}_1_amd64.deb
