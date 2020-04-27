@@ -33,6 +33,7 @@ fpm \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
   -d libpaper-utils \
+  -d libpcre2 \
   -d libpcre3 \
   -d libpng16-16 \
   -d libreadline6 \
