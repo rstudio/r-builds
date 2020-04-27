@@ -6,7 +6,7 @@ RUN set -x \
   && sed -i "s|# deb-src|deb-src|g" /etc/apt/sources.list \
   && export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
-  && apt-get install -y libcurl4-openssl-dev libicu-dev libopenblas-base wget python3-pip ruby ruby-dev \
+  && apt-get install -y libcurl4-openssl-dev libicu-dev libopenblas-base libpcre2-dev wget python3-pip ruby ruby-dev \
   && apt-get build-dep -y r-base
 
 RUN pip3 install awscli

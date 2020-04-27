@@ -9,7 +9,7 @@ fpm \
   -t deb \
   -v 1 \
   -n R-${R_VERSION} \
-  --vendor "RStudio PBC" \
+  --vendor "RStudio, PBC" \
   --deb-priority "optional" \
   --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
   --url "http://www.r-project.org/" \
@@ -33,6 +33,7 @@ fpm \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
   -d libpaper-utils \
+  -d libpcre2-8-0 \
   -d libpcre3 \
   -d libpng16-16 \
   -d libreadline8 \
