@@ -49,6 +49,7 @@ fpm \
   -d make \
   -d openblas-devel \
   -d pcre-devel \
+  -d pcre2-devel \
   -d tar \
   -d tcl \
   -d tk \

@@ -3,6 +3,7 @@ FROM centos:centos6
 ENV OS_IDENTIFIER centos-6
 
 RUN yum -y update \
+    && yum -y install epel-release \
     && yum -y install \
     bzip2-devel \
     cairo-devel \
@@ -34,8 +35,10 @@ RUN yum -y update \
     openssl-devel \
     pango-devel \
     pcre-devel \
+    pcre2-devel \
     pkgconfig \
     python \
+    python-pip \
     readline-devel \
     rpm-build \
     stunnel \
@@ -48,10 +51,6 @@ RUN yum -y update \
     xz-devel \
     zlib-devel \
     && yum clean all
-
-# Install pip
-RUN yum install -y epel-release && \
-   yum install -y python-pip
 
 # Install AWS CLI.
 RUN pip install awscli --upgrade --user && \
