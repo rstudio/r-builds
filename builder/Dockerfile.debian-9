@@ -7,7 +7,7 @@ RUN set -x \
   && echo 'deb-src http://deb.debian.org/debian stretch main' >> /etc/apt/sources.list \
   && apt-get update \
   && apt-get install -y gcc libcurl4-openssl-dev libicu-dev \
-     libopenblas-base make python-pip ruby ruby-dev wget \
+     libopenblas-base libpcre2-dev make python-pip ruby ruby-dev wget \
   && apt-get build-dep -y r-base
 
 RUN pip install awscli

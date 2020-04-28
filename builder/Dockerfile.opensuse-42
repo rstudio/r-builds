@@ -32,6 +32,7 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     make \
     pango-devel \
     pcre-devel \
+    pcre2-devel \
     perl \
     perl-macros \
     python \
