@@ -37,8 +37,8 @@ RUN yum -y update \
     pcre-devel \
     pcre2-devel \
     pkgconfig \
-    python \
-    python-pip \
+    python34 \
+    python34-pip \
     readline-devel \
     rpm-build \
     stunnel \
@@ -53,7 +53,7 @@ RUN yum -y update \
     && yum clean all
 
 # Install AWS CLI.
-RUN pip install awscli --upgrade --user && \
+RUN pip3 install awscli --upgrade --user && \
     ln -s /root/.local/bin/aws /usr/bin/aws
 
 RUN chmod 0777 /opt
