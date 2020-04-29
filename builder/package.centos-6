@@ -4,6 +4,12 @@ if [[ ! -d /tmp/output/centos-6 ]]; then
   mkdir -p /tmp/output/centos-6
 fi
 
+# R 3.x requires PCRE1
+pcre_lib='pcre2-devel'
+if [[ "${R_VERSION}" =~ ^3 ]]; then
+  pcre_lib='pcre-devel'
+fi
+
 # create post-install script required for openblas
 cat <<EOF >> /post-install.sh
 mv /opt/R/${R_VERSION}/lib/R/lib/libRblas.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so.keep 
@@ -60,8 +66,7 @@ fpm \
   -d make \
   -d openblas-devel \
   -d pango \
-  -d pcre-devel \
-  -d pcre2-devel \
+  -d ${pcre_lib} \
   -d tcl \
   -d tk \
   -d unzip \
