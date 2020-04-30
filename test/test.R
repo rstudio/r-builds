@@ -88,3 +88,14 @@ if (length(output) == 0) {
 # BLAS/LAPACK library, and only fail when calling a BLAS or LAPACK routine.
 stopifnot(identical(crossprod(matrix(1)), matrix(1)))
 stopifnot(identical(chol(matrix(1)), matrix(1)))
+
+# Check that R 3.x depends on PCRE1, and R 4.x depends on PCRE2.
+# R 3.5 and 3.6 will link against PCRE2 if present, and take on an unnecessary dependency.
+ld_flags <- system2(R.home("bin/R"), c("CMD", "config", "--ldflags"), stdout = TRUE)
+has_pcre1 <- grepl("-lpcre\\b", ld_flags)
+has_pcre2 <- grepl("-lpcre2-8\\b", ld_flags)
+if (R.version$major == "3") {
+  stopifnot(has_pcre1 && !has_pcre2)
+} else {
+  stopifnot(has_pcre2 && !has_pcre1)
+}
