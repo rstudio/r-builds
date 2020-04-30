@@ -29,7 +29,7 @@ upload_r() {
   if [ -n "$LOCAL_STORE" ] && [ "$LOCAL_STORE" != '' ]; then
     echo "Storing artifact locally: ${LOCAL_STORE}, tarball: ${TARBALL_NAME}"
     mkdir -p ${LOCAL_STORE}/${baseName}
-    cp /tmp/${TARBALL_NAME} ${LOCAL_STORE}/${baseName}/${TARBALL_NAME}.tar.gz
+    cp /tmp/${TARBALL_NAME} ${LOCAL_STORE}/${baseName}/${TARBALL_NAME}
   fi
 }
 
