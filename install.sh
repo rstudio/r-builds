@@ -168,7 +168,7 @@ download_url () {
         echo "${CDN_URL}/ubuntu-${ver}/pkgs/${name}"
         ;;
       "Debian")
-        echo "${CDN_URL}/debian-9/pkgs/${name}"
+        echo "${CDN_URL}/debian-${ver:-9}/pkgs/${name}"
         ;;
       "LEAP12" | "SLES12")
         echo "${CDN_URL}/opensuse-42/pkgs/${name}"
