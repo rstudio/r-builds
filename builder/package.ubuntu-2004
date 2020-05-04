@@ -21,6 +21,7 @@ fpm \
   -d gcc \
   -d gfortran \
   -d libbz2-1.0 \
+  -d libblas3 \
   -d libc6 \
   -d libcairo2 \
   -d libcurl4 \
@@ -29,7 +30,6 @@ fpm \
   -d libicu66 \
   -d libjpeg8 \
   -d liblzma5 \
-  -d libopenblas-dev \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
   -d libpaper-utils \
@@ -51,4 +51,3 @@ fpm \
 
 shopt -s extglob
 export PKG_FILE=$(ls /tmp/output/ubuntu-2004/[rR]-${R_VERSION}*.@(deb|rpm) | head -1)
-
