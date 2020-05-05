@@ -143,6 +143,8 @@ rBuildsBatchJobDefinitionUbuntu1604:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-1604"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionUbuntu1804:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -155,6 +157,8 @@ rBuildsBatchJobDefinitionUbuntu1804:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-1804"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionUbuntu2004:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -167,6 +171,8 @@ rBuildsBatchJobDefinitionUbuntu2004:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-2004"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionDebian9:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -179,6 +185,8 @@ rBuildsBatchJobDefinitionDebian9:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-9"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionCentos6:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -191,6 +199,8 @@ rBuildsBatchJobDefinitionCentos6:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-6"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionCentos7:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -203,6 +213,8 @@ rBuildsBatchJobDefinitionCentos7:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-7"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionCentos8:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -215,6 +227,8 @@ rBuildsBatchJobDefinitionCentos8:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-8"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionOpensuse42:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -227,6 +241,8 @@ rBuildsBatchJobDefinitionOpensuse42:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-42"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionOpensuse15:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -239,6 +255,8 @@ rBuildsBatchJobDefinitionOpensuse15:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-15"
+    Timeout:
+      AttemptDurationSeconds: 7200
 
 # step function cloudwatch event trigger resources
 rBuildsEventRuleIamRole:
