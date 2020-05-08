@@ -19,7 +19,7 @@ bug, or ask questions on [RStudio Community](https://community.rstudio.com).
 
 R binaries are built for the following Linux operating systems:
 - Ubuntu 16.04, 18.04, 20.04
-- Debian 9
+- Debian 9, 10
 - CentOS / Red Hat Enterprise Linux 6, 7, 8
 - openSUSE 42.3, 15.0
 - SUSE Linux Enterprise 12, 15
@@ -60,6 +60,9 @@ wget https://cdn.rstudio.com/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Debian 9
 wget https://cdn.rstudio.com/r/debian-9/pkgs/r-${R_VERSION}_1_amd64.deb
+
+# Debian 10
+wget https://cdn.rstudio.com/r/debian-10/pkgs/r-${R_VERSION}_1_amd64.deb
 ```
 
 Then install the package:
@@ -225,7 +228,7 @@ environment:
   # snip
   JOB_DEFINITION_ARN_debian_9:
     Ref: rBuildsBatchJobDefinitionDebian9
-  SUPPORTED_PLATFORMS: ubuntu-1604,ubuntu-1804,debian-9,centos-6,centos-7,centos-8,opensuse-42,opensuse-15
+  SUPPORTED_PLATFORMS: ubuntu-1604,ubuntu-1804,debian-9,debian-10,centos-6,centos-7,centos-8,opensuse-42,opensuse-15
 ```
 
 ### Makefile
