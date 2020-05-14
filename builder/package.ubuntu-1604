@@ -5,9 +5,9 @@ if [[ ! -d /tmp/output/ubuntu-1604 ]]; then
 fi
 
 # R 3.x requires PCRE1
-pcre_lib='libpcre2-8-0'
+pcre_lib='libpcre2-dev'
 if [[ "${R_VERSION}" =~ ^3 ]]; then
-  pcre_lib='libpcre3'
+  pcre_lib='libpcre3-dev'
 fi
 
 fpm \
