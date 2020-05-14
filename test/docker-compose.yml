@@ -19,6 +19,24 @@ services:
     volumes:
       - ./:/test
       - ../builder/integration/tmp:/packages
+  ubuntu-2004:
+    image: ubuntu:focal
+    command: /test/test-deb.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-2004
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ./:/test
+      - ../builder/integration/tmp:/packages
+  debian-10:
+    image: debian:buster
+    command: /test/test-deb.sh
+    environment:
+      - OS_IDENTIFIER=debian-10
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ./:/test
+      - ../builder/integration/tmp:/packages
   debian-9:
     image: debian:stretch
     command: /test/test-deb.sh
