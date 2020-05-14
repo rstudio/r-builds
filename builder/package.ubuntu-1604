@@ -26,15 +26,15 @@ fpm \
   -d g++ \
   -d gcc \
   -d gfortran \
-  -d libbz2-1.0 \
+  -d libbz2-dev \
   -d libc6 \
   -d libcairo2 \
   -d libcurl3 \
   -d libglib2.0-0 \
   -d libgomp1 \
-  -d libicu55 \
+  -d libicu-dev \
   -d libjpeg8 \
-  -d liblzma5 \
+  -d liblzma-dev \
   -d libopenblas-dev \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
@@ -51,7 +51,7 @@ fpm \
   -d ucf \
   -d unzip \
   -d zip \
-  -d zlib1g \
+  -d zlib1g-dev \
   /opt/R/${R_VERSION}
 
 shopt -s extglob
