@@ -4,6 +4,12 @@ if [[ ! -d /tmp/output/debian-10 ]]; then
   mkdir -p /tmp/output/debian-10
 fi
 
+# R 3.x requires PCRE1
+pcre_lib='libpcre2-dev'
+if [[ "${R_VERSION}" =~ ^3 ]]; then
+  pcre_lib='libpcre3-dev'
+fi
+
 fpm \
   -s dir \
   -t deb \
@@ -21,20 +27,19 @@ fpm \
   -d g++ \
   -d gcc \
   -d gfortran \
-  -d libbz2-1.0 \
+  -d libbz2-dev \
   -d libc6 \
   -d libcairo2 \
   -d libcurl4-openssl-dev \
   -d libglib2.0-0 \
   -d libgomp1 \
-  -d libicu63 \
-  -d liblzma5 \
+  -d libicu-dev \
+  -d liblzma-dev \
   -d libopenblas-dev \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
   -d libpaper-utils \
-  -d libpcre2-8-0 \
-  -d libpcre3 \
+  -d ${pcre_lib} \
   -d libpng16-16 \
   -d libreadline7 \
   -d libtcl8.6 \
@@ -46,7 +51,7 @@ fpm \
   -d ucf \
   -d unzip \
   -d zip \
-  -d zlib1g \
+  -d zlib1g-dev \
   /opt/R/${R_VERSION}
 
 shopt -s extglob

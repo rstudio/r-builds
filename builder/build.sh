@@ -65,6 +65,20 @@ compile_r() {
     build_flag=''
   fi
 
+  # Avoid a PCRE2 dependency for R 3.5 and 3.6. R 3.x uses PCRE1, but R 3.5+
+  # will link against PCRE2 if present, although it is not actually used.
+  # Since there's no way to disable this in the configure script, and we need
+  # PCRE2 for R 4.x, we hide PCRE2 from the configure script by temporarily
+  # removing the pkg-config file and pcre2-config script.
+  if [[ "${1}" =~ ^3 ]] && pkg-config --exists libpcre2-8; then
+    mkdir -p /tmp/pcre2
+    pc_dir=$(pkg-config --variable pcfiledir libpcre2-8)
+    mv ${pc_dir}/libpcre2-8.pc /tmp/pcre2
+    config_bin=$(which pcre2-config)
+    mv ${config_bin} /tmp/pcre2
+    trap "{ mv /tmp/pcre2/libpcre2-8.pc ${pc_dir}; mv /tmp/pcre2/pcre2-config ${config_bin}; }" EXIT
+  fi
+
   # Default configure options. Some Dockerfiles override this with an ENV directive.
   default_configure_options="\
     --enable-R-shlib \
