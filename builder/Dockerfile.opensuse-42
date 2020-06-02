@@ -66,7 +66,7 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
 
 RUN pip install awscli
 
-RUN gem install fpm && ln -s /usr/lib64/ruby/gems/2.1.0/gems/fpm-1.11.0/bin/fpm /bin/fpm
+RUN gem install ffi:1.12.2 fpm && ln -s /usr/lib64/ruby/gems/2.1.0/gems/fpm-1.11.0/bin/fpm /bin/fpm
 
 RUN chmod 0777 /opt
 

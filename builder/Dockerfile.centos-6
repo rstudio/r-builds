@@ -206,7 +206,7 @@ RUN source /etc/profile.d/rvm.sh \
 RUN export PATH=/usr/local/rvm/rubies/ruby-2.6.3/bin/:/.gems/bin:${PATH} \
    && export GEM_HOME=/.gems \
    && export GEM_PATH=/.gems \
-   && gem install --no-document fpm \
+   && gem install ffi:1.12.2 --no-document fpm \
    && /usr/local/rvm/bin/rvm repair wrappers
 
 RUN echo 'source /etc/profile.d/rvm.sh' >> .bashrc

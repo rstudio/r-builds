@@ -53,7 +53,7 @@ RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
 RUN pip install awscli --upgrade --user && \
     ln -s /root/.local/bin/aws /usr/bin/aws
 
-RUN gem install fpm
+RUN gem install ffi:1.12.2 fpm
 
 RUN chmod 0777 /opt
 
