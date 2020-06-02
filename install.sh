@@ -338,12 +338,20 @@ do_download () {
 
     if [[ -z "${wget_rc}" ]]; then
         echo "Downloading ${url}..."
-        wget --progress=bar "${url}"
+        if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
+          wget -q "${url}"
+        else
+          wget --progress=bar "${url}"
+        fi
         rc=$?
     # Or, If curl is around, use that.
     elif [[ -z "${curl_rc}" ]]; then
         echo "Downloading ${url}..."
-        curl --output "${file_name}" --progress-bar "${url}"
+        if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
+          curl -sfL --output "${file_name}" "${url}"
+        else
+          curl -fL --output "${file_name}" --progress-bar "${url}"
+        fi
         rc=$?
     # Otherwise, we can't go on.
     else
