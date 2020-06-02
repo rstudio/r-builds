@@ -348,7 +348,7 @@ do_download () {
     elif [[ -z "${curl_rc}" ]]; then
         echo "Downloading ${url}..."
         if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
-          curl -sfL --output "${file_name}" "${url}"
+          curl -fsSL --output "${file_name}" "${url}"
         else
           curl -fL --output "${file_name}" --progress-bar "${url}"
         fi
