@@ -340,13 +340,13 @@ do_download () {
         echo "Downloading ${url}..."
         local header
         if [[ -n "${RS_USER_AGENT}" ]]; then
-          header="--header 'User-Agent: ${RS_USER_AGENT}'"
+          header="--header='User-Agent: ${RS_USER_AGENT}'"
         fi
 
         if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
-          wget -q "${header}" "${url}"
+          wget -q "${header[@]}" "${url}"
         else
-          wget --progress=bar "${header}" "${url}"
+          wget --progress=bar "${header[@]}" "${url}"
         fi
         rc=$?
     # Or, If curl is around, use that.
@@ -358,9 +358,9 @@ do_download () {
         fi
 
         if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
-          curl -fsSL "${header}" --output "${file_name}" "${url}"
+          curl -fsSL "${header[@]}" --output "${file_name}" "${url}"
         else
-          curl -fL "${header}" --output "${file_name}" --progress-bar "${url}"
+          curl -fL "${header[@]}" --output "${file_name}" --progress-bar "${url}"
         fi
         rc=$?
     # Otherwise, we can't go on.
