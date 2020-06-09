@@ -338,19 +338,28 @@ do_download () {
 
     if [[ -z "${wget_rc}" ]]; then
         echo "Downloading ${url}..."
+        local header
+        if [[ -n "${RS_USER_AGENT}" ]]; then
+          header="-d --header 'User-Agent: ${RS_USER_AGENT}'"
+        fi
+
         if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
-          wget -q "${url}"
+          wget -q "${header}" "${url}"
         else
-          wget --progress=bar "${url}"
+          wget --progress=bar "${header}" "${url}"
         fi
         rc=$?
     # Or, If curl is around, use that.
     elif [[ -z "${curl_rc}" ]]; then
         echo "Downloading ${url}..."
+        if [[ -n "${RS_USER_AGENT}" ]]; then
+          header="-H 'User-Agent: ${RS_USER_AGENT}'"
+        fi
+
         if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
-          curl -fsSL --output "${file_name}" "${url}"
+          curl -fsSL "${header}" --output "${file_name}" "${url}"
         else
-          curl -fL --output "${file_name}" --progress-bar "${url}"
+          curl -fL "${header}" --output "${file_name}" --progress-bar "${url}"
         fi
         rc=$?
     # Otherwise, we can't go on.
@@ -368,6 +377,7 @@ do_download () {
         exit ${rc}
     fi
   fi
+  exit
 }
 
 # This helps determine whether a given command exists or not.
