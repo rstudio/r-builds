@@ -340,7 +340,7 @@ do_download () {
         echo "Downloading ${url}..."
         local header
         if [[ -n "${RS_USER_AGENT}" ]]; then
-          header="-d --header 'User-Agent: ${RS_USER_AGENT}'"
+          header="--header 'User-Agent: ${RS_USER_AGENT}'"
         fi
 
         if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
