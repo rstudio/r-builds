@@ -352,6 +352,7 @@ do_download () {
     # Or, If curl is around, use that.
     elif [[ -z "${curl_rc}" ]]; then
         echo "Downloading ${url}..."
+        local header
         if [[ -n "${RS_USER_AGENT}" ]]; then
           header="-H 'User-Agent: ${RS_USER_AGENT}'"
         fi
@@ -377,7 +378,6 @@ do_download () {
         exit ${rc}
     fi
   fi
-  exit
 }
 
 # This helps determine whether a given command exists or not.
