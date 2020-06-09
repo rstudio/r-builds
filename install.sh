@@ -360,7 +360,7 @@ do_download () {
         if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
           curl -fsSL "${header[@]}" --output "${file_name}" "${url}"
         else
-          curl -fsSL "${header[@]}" --output "${file_name}" --progress-bar "${url}"
+          curl -fL "${header[@]}" --output "${file_name}" --progress-bar "${url}"
         fi
         rc=$?
     # Otherwise, we can't go on.
