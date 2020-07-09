@@ -248,6 +248,9 @@ install_deb () {
       yes="--n"
       yesapt="-y"
   fi
+  echo "Updating package indexes..."
+  ${SUDO} apt-get update
+  echo "Installing ${installer_name}..."
   ${SUDO} apt-get install ${yesapt} gdebi-core
   ${SUDO} gdebi ${yes} "${installer_name}"
 }
@@ -269,6 +272,9 @@ install_rpm () {
         echo "Must have sudo privileges to run yum"
         exit 1
       fi
+      echo "Updating package indexes..."
+      ${SUDO} yum check-update -y
+      echo "Installing ${installer_name}..."
       ${SUDO} yum install ${yes} "${installer_name}"
       ;;
     "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
@@ -276,6 +282,9 @@ install_rpm () {
         echo "Must have sudo privileges to run zypper"
         exit 1
       fi
+      echo "Updating package indexes..."
+      ${SUDO} zypper refresh
+      echo "Installing ${installer_name}..."
       ${SUDO} zypper --no-gpg-checks install ${yes} "${installer_name}"
       ;;
   esac
