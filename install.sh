@@ -249,7 +249,7 @@ install_deb () {
       yesapt="-y"
   fi
   echo "Updating package indexes..."
-  ${SUDO} apt-get update -y
+  ${SUDO} apt-get update
   echo "Installing ${installer_name}..."
   ${SUDO} apt-get install ${yesapt} gdebi-core
   ${SUDO} gdebi ${yes} "${installer_name}"
