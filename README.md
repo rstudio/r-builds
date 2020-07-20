@@ -243,6 +243,10 @@ Once you've followed the steps above, submit a pull request. On successful merge
 
 Periodically, someone with access to these resources may need to re-trigger every R version/platform combination. This quite easy with the `serverless` tool installed.
 
-```
+```bash
+# Rebuild all R versions
 serverless invoke stepf -n rBuilds -d '{"force": true}'
+
+# Rebuild specific R versions
+serverless invoke stepf -n rBuilds -d '{"force": true, "versions": ["3.6.3", "4.0.2"]}'
 ```
