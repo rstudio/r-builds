@@ -309,3 +309,17 @@ rBuildsEventRule:
           Fn::GetAtt: [ rBuildsEventRuleIamRole, Arn ]
         Arn:
           Ref: RBuildsStepFunction
+
+rBuildsDevelEventRule:
+  Type: AWS::Events::Rule
+  Properties:
+    Description: Build R-devel
+    ScheduleExpression: cron(0 4 * * ? *)
+    State: ${self:custom.${self:provider.stage}.eventRuleState}
+    Targets:
+      - Id: rbuilds
+        Input: '{"force": true, "versions": ["devel"]}'
+        RoleArn:
+          Fn::GetAtt: [ rBuildsEventRuleIamRole, Arn ]
+        Arn:
+          Ref: RBuildsStepFunction

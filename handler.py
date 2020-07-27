@@ -95,8 +95,10 @@ def _submit_job(version, platform):
         return response['jobId']
 
 
-def _versions_to_build(force):
+def _versions_to_build(force, versions):
     cran_versions = _cran_all_r_versions()['r_versions']
+    if versions:
+        cran_versions = [v for v in cran_versions if v in versions]
     known_versions = _known_r_versions()['r_versions']
     new_versions = _compare_versions(cran_versions, known_versions)
 
@@ -118,7 +120,7 @@ def _check_for_job_status(jobs, status):
 
 def queue_builds(event, context):
     """Queue some builds."""
-    event['versions_to_build'] =  _versions_to_build(event.get('force', False))
+    event['versions_to_build'] =  _versions_to_build(event.get('force', False), event.get('versions'))
     event['supported_platforms'] = _to_list(os.environ.get('SUPPORTED_PLATFORMS', 'ubuntu-1604'))
     job_ids = []
     for version in event['versions_to_build']:
