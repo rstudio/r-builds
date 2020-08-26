@@ -25,7 +25,7 @@ docker-shell-r-env:
 	@cd builder && docker-compose run --entrypoint /bin/bash ubuntu-1604
 
 ecr-login:
-	@eval $(shell aws ecr get-login --no-include-email --region $(AWS_REGION))
+	(aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com)
 
 fetch-serverless-custom-file:
 	aws s3 cp s3://rstudio-serverless/serverless/r-builds/serverless-custom.yml .
