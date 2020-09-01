@@ -271,6 +271,20 @@ rBuildsBatchJobDefinitionOpensuse15:
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-15"
     Timeout:
       AttemptDurationSeconds: 7200
+rBuildsBatchJobDefinitionOpensuse152:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-152"
+    Timeout:
+      AttemptDurationSeconds: 7200
 
 # step function cloudwatch event trigger resources
 rBuildsEventRuleIamRole:
