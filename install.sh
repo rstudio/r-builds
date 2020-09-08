@@ -100,6 +100,9 @@ detect_os_version () {
   if [[ "${os}" == "Ubuntu" ]]; then
     cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/[".]//g'
   fi
+  if [[ "${os}" == "SLES15" ]] || [[ "${os}" == "LEAP15" ]]; then
+    cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/[".]//g'
+  fi
 }
 
 # Returns the installer type
@@ -174,7 +177,11 @@ download_url () {
         echo "${CDN_URL}/opensuse-42/pkgs/${name}"
         ;;
       "LEAP15" | "SLES15")
-        echo "${CDN_URL}/opensuse-15/pkgs/${name}"
+        if [ "${ver}" -ge 152 ]; then
+          echo "${CDN_URL}/opensuse-152/pkgs/${name}"
+        else
+          echo "${CDN_URL}/opensuse-15/pkgs/${name}"
+        fi
         ;;
     esac
   fi
