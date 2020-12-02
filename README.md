@@ -74,12 +74,9 @@ sudo gdebi r-${R_VERSION}_1_amd64.deb
 #### RHEL/CentOS Linux
 
 Enable the [Extra Packages for Enterprise Linux](https://fedoraproject.org/wiki/EPEL)
-repository (RHEL/CentOS 6 and 7 only):
+repository (RHEL/CentOS 7 only):
 
 ```bash
-# CentOS / RHEL 6
-sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
-
 # CentOS / RHEL 7
 sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 ```
@@ -96,9 +93,6 @@ sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noa
 
 Download the rpm package:
 ```bash
-# CentOS / RHEL 6
-wget https://cdn.rstudio.com/r/centos-6/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-
 # CentOS / RHEL 7
 wget https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
@@ -231,7 +225,7 @@ environment:
   # snip
   JOB_DEFINITION_ARN_debian_9:
     Ref: rBuildsBatchJobDefinitionDebian9
-  SUPPORTED_PLATFORMS: ubuntu-1604,ubuntu-1804,debian-9,debian-10,centos-6,centos-7,centos-8,opensuse-42,opensuse-15
+  SUPPORTED_PLATFORMS: ubuntu-1604,ubuntu-1804,debian-9,debian-10,centos-7,centos-8,opensuse-42,opensuse-15
 ```
 
 ### Makefile

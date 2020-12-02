@@ -201,20 +201,6 @@ rBuildsBatchJobDefinitionDebian10:
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-10"
     Timeout:
       AttemptDurationSeconds: 7200
-rBuildsBatchJobDefinitionCentos6:
-  Type: AWS::Batch::JobDefinition
-  Properties:
-    Type: container
-    ContainerProperties:
-      Command:
-        - ./build.sh
-      Vcpus: 4
-      Memory: 4096
-      JobRoleArn:
-        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-6"
-    Timeout:
-      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionCentos7:
   Type: AWS::Batch::JobDefinition
   Properties:

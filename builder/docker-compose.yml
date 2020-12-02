@@ -56,17 +56,6 @@ services:
     image: r-builds:debian-10
     volumes:
       - ./integration/tmp:/tmp/output
-  centos-6:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.centos-6
-    image: r-builds:centos-6
-    volumes:
-      - ./integration/tmp:/tmp/output
   centos-7:
     command: ./build.sh
     environment:
