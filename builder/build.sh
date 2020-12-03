@@ -51,14 +51,6 @@ fetch_r_source() {
   rm /tmp/R-${1}.tar.gz
 }
 
-# On CentOS 6, we need to clean up references to the static library and header paths.
-clean_r() {
-  if [[ -f /clean.sh ]]; then
-    echo "Cleaning R build on CentOS 6"
-    source /clean.sh
-  fi
-}
-
 # compile_r() - $1 as r version
 compile_r() {
   cd /tmp/R-${1}
@@ -154,7 +146,6 @@ _version_is_greater_than() {
 set_up_environment
 fetch_r_source $R_VERSION
 compile_r $R_VERSION
-clean_r
 package_r $R_VERSION
 archive_r $R_VERSION
 upload_r $R_VERSION
