@@ -13,7 +13,7 @@ fi
 # create post-install script required for openblas
 cat <<EOF >> /post-install.sh
 mv /opt/R/${R_VERSION}/lib/R/lib/libRblas.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so.keep
-ln -s /usr/lib64/libopenblas.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so
+ln -s /usr/lib64/libopenblas_pthreads.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so
 EOF
 
 # create after-remove script to remove internal blas
@@ -53,7 +53,7 @@ fpm \
   -d libpango-1_0-0 \
   -d libtiff5 \
   -d make \
-  -d openblas-devel \
+  -d libopenblas_pthreads-devel \
   -d ${pcre_lib} \
   -d tar \
   -d tcl \

@@ -29,6 +29,8 @@ RUN yum -y update \
     pango-devel \
     pcre-devel \
     pcre2-devel \
+    python3 \
+    python3-pip \
     readline-devel \
     rpm-build \
     ruby \
@@ -45,15 +47,12 @@ RUN yum -y update \
     zlib-devel \
     && yum clean all
 
-# Install pip for python
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python get-pip.py
-
 # Install AWS CLI.
-RUN pip install awscli --upgrade --user && \
+RUN pip3 install awscli --upgrade --user && \
     ln -s /root/.local/bin/aws /usr/bin/aws
 
-RUN gem install ffi:1.12.2 fpm
+# Pin fpm for compatibility with Ruby < 2.3
+RUN gem install ffi:1.12.2 fpm:1.11.0
 
 RUN chmod 0777 /opt
 
