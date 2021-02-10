@@ -27,8 +27,11 @@ docker-shell-r-env:
 ecr-login:
 	(aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com)
 
+push-serverless-custom-file:
+	aws s3 cp serverless-custom.yml s3://rstudio-devops/r-builds/serverless-custom.yml
+
 fetch-serverless-custom-file:
-	aws s3 cp s3://rstudio-serverless/serverless/r-builds/serverless-custom.yml .
+	aws s3 cp s3://rstudio-devops/r-builds/serverless-custom.yml .
 
 rebuild-all: deps fetch-serverless-custom-file
 	$(SLS_BINARY) invoke stepf -n rBuilds -d '{"force": true}'
