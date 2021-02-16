@@ -14,7 +14,8 @@ RUN pip3 install awscli
 
 RUN chmod 0777 /opt
 
-RUN gem install fpm
+# Pin fpm to avoid git dependency in 1.12.0
+RUN gem install fpm:1.11.0
 
 # Override the default pager used by R
 ENV PAGER /usr/bin/pager

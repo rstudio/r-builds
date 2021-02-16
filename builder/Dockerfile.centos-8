@@ -52,7 +52,8 @@ RUN dnf -y upgrade \
 RUN pip3 install awscli --upgrade --user \
     && ln -s /root/.local/bin/aws /usr/bin/aws
 
-RUN gem install fpm
+# Pin fpm to avoid git dependency in 1.12.0
+RUN gem install fpm:1.11.0
 
 RUN chmod 0777 /opt
 
