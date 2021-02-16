@@ -28,7 +28,7 @@ pipeline {
         branch 'master'
       }
       steps {
-        build(job: 'hostedapps/deploy/r-builds', wait: true,
+        build(job: 'r-builds/deploy-r-builds', wait: true,
               parameters: [string(name: 'ENVIRONMENT', value: 'staging')])
       }
     }
