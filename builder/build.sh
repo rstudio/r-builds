@@ -40,7 +40,10 @@ archive_r() {
 
 fetch_r_source() {
   echo "Downloading R-${1}"
-  if [ "${1}" = devel ]; then
+  if [ -n "${R_TARBALL_URL}" ]; then
+    # Custom tarball URL for testing (e.g., R alpha and beta releases)
+    wget -q "${R_TARBALL_URL}" -O /tmp/R-${1}.tar.gz
+  elif [ "${1}" = devel ]; then
     # Download the daily tarball of R devel
     wget -q https://stat.ethz.ch/R/daily/R-devel.tar.gz -O /tmp/R-devel.tar.gz
   else
