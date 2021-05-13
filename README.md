@@ -247,3 +247,37 @@ serverless invoke stepf -n rBuilds -d '{"force": true}'
 # Rebuild specific R versions
 serverless invoke stepf -n rBuilds -d '{"force": true, "versions": ["3.6.3", "4.0.2"]}'
 ```
+
+## Testing
+
+To test the R builds locally, you can build the images:
+
+```bash
+# Build images for all platforms
+make docker-build
+
+# Or build the image for a single platform
+(cd builder && docker-compose build ubuntu-2004)
+```
+
+Then run the build script:
+
+```bash
+# Build R for all platforms
+R_VERSION=4.0.5 make docker-build-r
+
+# Build R for a single platform
+(cd builder && R_VERSION=4.0.5 docker-compose up ubuntu-2004)
+
+# Alternatively, run the build script from within a container
+docker run -it --rm --entrypoint "/bin/bash" r-builds:ubuntu-2004
+
+# Build R 4.0.5
+R_VERSION=4.0.5 ./build.sh
+
+# Build R devel
+R_VERSION=devel ./build.sh
+
+# Build a prerelease version of R (e.g., alpha or beta)
+R_VERSION=rc R_TARBALL_URL=https://cran.r-project.org/src/base-prerelease/R-latest.tar.gz ./build.sh
+```
