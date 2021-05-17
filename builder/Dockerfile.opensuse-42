@@ -35,8 +35,6 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     pcre2-devel \
     perl \
     perl-macros \
-    python \
-    python-pip \
     readline-devel \
     rpm-build \
     ruby \
@@ -44,9 +42,11 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     shadow \
     tcl-devel \
     texinfo \
+    texlive-ae \
     texlive-bibtex \
     texlive-cm-super \
     texlive-dvips \
+    texlive-fancyvrb \
     texlive-helvetic \
     texlive-inconsolata \
     texlive-latex \
@@ -64,7 +64,10 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     zlib-devel \
     && zypper clean
 
-RUN pip install awscli
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip
 
 # Pin fpm for compatibility with Ruby < 2.3
 RUN gem install ffi:1.12.2 fpm:1.11.0 && \

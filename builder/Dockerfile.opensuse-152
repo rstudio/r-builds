@@ -43,9 +43,11 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     shadow \
     tcl-devel \
     texinfo \
+    texlive-ae \
     texlive-bibtex \
     texlive-cm-super \
     texlive-dvips \
+    texlive-fancyvrb \
     texlive-helvetic \
     texlive-inconsolata \
     texlive-latex \
