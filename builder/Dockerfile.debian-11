@@ -1,0 +1,24 @@
+FROM debian:bullseye
+
+ENV OS_IDENTIFIER debian-11
+
+RUN set -x \
+  && export DEBIAN_FRONTEND=noninteractive \
+  && echo 'deb-src http://deb.debian.org/debian bullseye main' >> /etc/apt/sources.list \
+  && apt-get update \
+  && apt-get install -y gcc libcurl4-openssl-dev libicu-dev \
+     libopenblas-base libpcre2-dev make python3-pip ruby ruby-dev wget \
+  && apt-get build-dep -y r-base
+
+RUN pip3 install awscli
+
+RUN chmod 0777 /opt
+
+RUN gem install fpm
+
+# Override the default pager used by R
+ENV PAGER /usr/bin/pager
+
+COPY package.debian-11 /package.sh
+COPY build.sh .
+ENTRYPOINT ./build.sh

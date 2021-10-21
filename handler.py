@@ -136,6 +136,7 @@ def queue_builds(event, context):
                 'opensuse-153',
                 'centos-8',
                 'debian-10',
+                'debian-11',
             ] and version in ['3.3.0', '3.3.1', '3.3.2']:
                 continue
             job_ids.append(_submit_job(version, platform))
