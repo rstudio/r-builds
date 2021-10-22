@@ -70,7 +70,12 @@ compile_r() {
   # Since there's no way to disable this in the configure script, and we need
   # PCRE2 for R 4.x, we hide PCRE2 from the configure script by temporarily
   # removing the pkg-config file and pcre2-config script.
-  if [[ "${1}" =~ ^3 ]] && pkg-config --exists libpcre2-8; then
+  #
+  # The INCLUDE_PCRE2_IN_R_3 environment variable can be set to include PCRE2
+  # in R 3.x builds, for distributions where PCRE2 is always required.
+  # In Debian 11, Pango now depends on PCRE2, so R 3.x will not be compiled with
+  # Pango support if the PCRE2 pkg-config file is missing.
+  if [[ "${1}" =~ ^3 ]] && pkg-config --exists libpcre2-8 && [ -z "$INCLUDE_PCRE2_IN_R_3" ]; then
     mkdir -p /tmp/pcre2
     pc_dir=$(pkg-config --variable pcfiledir libpcre2-8)
     mv ${pc_dir}/libpcre2-8.pc /tmp/pcre2
