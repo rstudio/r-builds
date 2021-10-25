@@ -65,6 +65,22 @@ compile_r() {
     build_flag=''
   fi
 
+  # R 3.6.1 and below require additional compiler flags for GCC 10 and above
+  # (e.g., on Debian 11). Add -fcommon to CFLAGS to work around issues with new
+  # default of -fno-common for C (fixed in R 3.6.2). Add -fallow-argument-mismatch
+  # to FFLAGS to work around issues with changes to argument mismatch checking
+  # in Fortran (fixed in R 3.6.2, but not mentioned in NEWS).
+  # https://cran.r-project.org/doc/manuals/r-release/NEWS.3.html
+  # https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Using-Fortran
+  # https://gcc.gnu.org/gcc-10/porting_to.html
+  gcc_major_version=$(gcc -dumpversion | cut -d '.' -f 1)
+  if _version_is_less_than "${R_VERSION}" 3.6.2 && _version_is_greater_than "${gcc_major_version}" 9; then
+    extra_cflags='-fcommon'
+    extra_fflags='-fallow-argument-mismatch'
+    echo "Adding extra CFLAGS: ${extra_cflags}"
+    echo "Adding extra FFLAGS: ${extra_fflags}"
+  fi
+
   # Avoid a PCRE2 dependency for R 3.5 and 3.6. R 3.x uses PCRE1, but R 3.5+
   # will link against PCRE2 if present, although it is not actually used.
   # Since there's no way to disable this in the configure script, and we need
@@ -105,6 +121,8 @@ compile_r() {
   R_PRINTCMD=/usr/bin/lpr \
   R_UNZIPCMD=/usr/bin/unzip \
   R_ZIPCMD=/usr/bin/zip \
+  SHLIB_CFLAGS="${extra_cflags}" \
+  SHLIB_FFLAGS="${extra_fflags}" \
   ./configure \
     --prefix=/opt/R/${1} \
     ${CONFIGURE_OPTIONS} \
@@ -148,6 +166,10 @@ set_up_environment() {
 
 _version_is_greater_than() {
   test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"
+}
+
+_version_is_less_than() {
+  test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$2"
 }
 
 ###### RUN R COMPILE PROCEDURE ######
