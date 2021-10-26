@@ -21,7 +21,7 @@ R binaries are built for the following Linux operating systems:
 - Ubuntu 16.04, 18.04, 20.04
 - Debian 9, 10
 - CentOS / Red Hat Enterprise Linux 7, 8
-- openSUSE 42.3, 15
+- openSUSE 42.3, 15, 15.3
 - SUSE Linux Enterprise 12, 15
 
 ## Quick Installation
