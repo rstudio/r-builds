@@ -133,6 +133,7 @@ def queue_builds(event, context):
                 'ubuntu-1804',
                 'opensuse-15',
                 'opensuse-152',
+                'opensuse-153',
                 'centos-8',
                 'debian-10',
             ] and version in ['3.3.0', '3.3.1', '3.3.2']:
