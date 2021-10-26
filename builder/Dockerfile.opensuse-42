@@ -75,6 +75,15 @@ RUN gem install ffi:1.12.2 fpm:1.11.0 && \
 
 RUN chmod 0777 /opt
 
+# Work around issue with expired Let's Encrypt root certificate and OpenSSL 1.0.2,
+# which affects downloads from sourceforge.net (and possibly other sites).
+# On SLES 12, the issue can be resolved by updating ca-certificates-mozilla, but
+# openSUSE 42 (EOL) requires a manual removal of the expired DST Root CA X3 cerificate.
+# https://www.openssl.org/blog/blog/2021/09/13/LetsEncryptRootCertExpire/
+# https://www.suse.com/support/kb/doc/?id=000020401
+RUN rm /usr/share/pki/trust/DST_Root_CA_X3.pem && \
+    update-ca-certificates
+
 # Install an older xz 5.0.5 for compatibility with SLES 12
 ARG XZ_VERSION=5.0.5
 ARG XZ_DOWNLOAD_SHA1=26fec2c1e409f736e77a85e4ab314dc74987def0
