@@ -179,7 +179,7 @@ download_url () {
       "LEAP15" | "SLES15")
         if [ "${ver}" -ge 153 ]; then
           echo "${CDN_URL}/opensuse-153/pkgs/${name}"
-        elif [ "${ver} -eq 152 ]; then
+        elif [ "${ver}" -eq 152 ]; then
           echo "${CDN_URL}/opensuse-152/pkgs/${name}"
         else
           echo "${CDN_URL}/opensuse-15/pkgs/${name}"
