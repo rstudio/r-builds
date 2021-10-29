@@ -61,7 +61,7 @@ provider:
 
 functions:
   queueBuilds:
-    timeout: 30
+    timeout: 90
     handler: handler.queue_builds
   jobQueueStatus:
     handler: handler.poll_running_jobs
