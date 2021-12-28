@@ -44,12 +44,12 @@ fpm \
   -d gcc-fortran \
   -d glibc-locale \
   -d gzip \
+  -d icu.691-devel \
   -d libbz2-devel \
   -d libcairo2 \
   -d libcurl-devel \
   -d libfreetype6 \
   -d libgomp1 \
-  -d libicu-devel \
   -d libjpeg62 \
   -d libpango-1_0-0 \
   -d libreadline7 \
