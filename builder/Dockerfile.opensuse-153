@@ -17,6 +17,10 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     glib2-devel \
     glibc-locale \
     help2man \
+    # openSUSE/SLES 15.3 originally shipped with ICU 65 (libicu-devel), but later
+    # added ICU 69 (icu.691-devel) in a patch update. Prefer ICU 69 because the devel
+    # packages can't coexist, and zypper now resolves libicu-devel to icu.691-devel.
+    icu.691-devel \
     java-1_8_0-openjdk-devel \
     libX11-devel \
     libXScrnSaver-devel \
@@ -24,7 +28,6 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     libXt-devel \
     libbz2-devel \
     libcurl-devel \
-    libicu-devel \
     libjpeg-devel \
     libpng-devel \
     libtiff-devel \
