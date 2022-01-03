@@ -21,8 +21,8 @@ R binaries are built for the following Linux operating systems:
 - Ubuntu 16.04, 18.04, 20.04
 - Debian 9, 10
 - CentOS / Red Hat Enterprise Linux 7, 8
-- openSUSE 42.3, 15, 15.3
-- SUSE Linux Enterprise 12, 15
+- openSUSE 42.3, 15.1, 15.2, 15.3
+- SUSE Linux Enterprise 12, 15 SP1, 15 SP2, 15 SP3
 
 ## Quick Installation
 
@@ -124,6 +124,9 @@ wget https://cdn.rstudio.com/r/opensuse-15/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # openSUSE 15.2 / SLES 15 SP2
 wget https://cdn.rstudio.com/r/opensuse-152/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+
+# openSUSE 15.3 / SLES 15 SP3
+wget https://cdn.rstudio.com/r/opensuse-153/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
