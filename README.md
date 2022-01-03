@@ -22,7 +22,7 @@ R binaries are built for the following Linux operating systems:
 - Debian 9, 10
 - CentOS / Red Hat Enterprise Linux 7, 8
 - openSUSE 42.3, 15.1, 15.2, 15.3
-- SUSE Linux Enterprise 12, 15
+- SUSE Linux Enterprise 12, 15 SP1, 15 SP2, 15 SP3
 
 ## Quick Installation
 
