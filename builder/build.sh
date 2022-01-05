@@ -75,10 +75,11 @@ compile_r() {
   # https://gcc.gnu.org/gcc-10/porting_to.html
   gcc_major_version=$(gcc -dumpversion | cut -d '.' -f 1)
   if _version_is_less_than "${R_VERSION}" 3.6.2 && _version_is_greater_than "${gcc_major_version}" 9; then
-    extra_cflags='-fcommon'
-    extra_fflags='-fallow-argument-mismatch'
-    echo "Adding extra CFLAGS: ${extra_cflags}"
-    echo "Adding extra FFLAGS: ${extra_fflags}"
+    # Default CFLAGS/FFLAGS for all R 3.x versions is '-g -O2' when using GCC
+    export CFLAGS='-g -O2 -fcommon'
+    export FFLAGS='-g -O2 -fallow-argument-mismatch'
+    echo "Setting CFLAGS: ${CFLAGS}"
+    echo "Setting FFLAGS: ${FFLAGS}"
   fi
 
   # Avoid a PCRE2 dependency for R 3.5 and 3.6. R 3.x uses PCRE1, but R 3.5+
@@ -121,8 +122,6 @@ compile_r() {
   R_PRINTCMD=/usr/bin/lpr \
   R_UNZIPCMD=/usr/bin/unzip \
   R_ZIPCMD=/usr/bin/zip \
-  SHLIB_CFLAGS="${extra_cflags}" \
-  SHLIB_FFLAGS="${extra_fflags}" \
   ./configure \
     --prefix=/opt/R/${1} \
     ${CONFIGURE_OPTIONS} \
