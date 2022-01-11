@@ -75,6 +75,10 @@ detect_os () {
   then
    distro="LEAP15"
   fi
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:2.3:o:amazon:amazon_linux:2 ]]
+  then
+   distro="Amazon"
+  fi
   if [[ $(cat /etc/os-release | grep -e "^ID\=*" | cut -f 2 -d '=') == "debian" ]]; then
     distro="Debian"
   fi
@@ -103,13 +107,17 @@ detect_os_version () {
   if [[ "${os}" == "SLES15" ]] || [[ "${os}" == "LEAP15" ]]; then
     cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/[".]//g'
   fi
+  # reuse rhel7 binaries for amazon
+  if [[ "${os}" == "Amazon" ]]; then
+    echo "7"
+  fi
 }
 
 # Returns the installer type
 detect_installer_type () {
   os=$1
   case $os in
-    "RedHat" | "CentOS" | "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
+    "RedHat" | "CentOS" | "LEAP12" | "LEAP15" | "SLES12" | "SLES15" | "Amazon")
       echo "rpm"
       ;;
     "Ubuntu" | "Debian")
@@ -139,7 +147,7 @@ download_name () {
   os=$1
   version=$2
   case $os in
-    "RedHat" | "CentOS")
+    "RedHat" | "CentOS" | "Amazon")
       echo "R-${version}-1-1.x86_64.rpm"
       ;;
     "Ubuntu" | "Debian")
@@ -164,7 +172,7 @@ download_url () {
   else
 
     case $os in
-      "RedHat" | "CentOS")
+      "RedHat" | "CentOS" | "Amazon")
         echo "${CDN_URL}/centos-${ver}/pkgs/${name}"
         ;;
       "Ubuntu")
@@ -276,7 +284,7 @@ install_rpm () {
       yes="-y"
   fi
   case $os in
-    "RedHat" | "CentOS")
+    "RedHat" | "CentOS" | "Amazon")
       if ! has_sudo "yum"; then
         echo "Must have sudo privileges to run yum"
         exit 1
@@ -308,12 +316,24 @@ install_pre () {
     "RedHat" | "CentOS")
       install_epel "${ver}"
       ;;
+    "Amazon")
+      install_epel_amzn
+      ;;
     "SLES12")
       install_python_backports
       ;;
     "LEAP12" | "LEAP15" | "SLES15")
       ;;
   esac
+}
+
+# Installs EPEL for Amazon Linux 2
+install_epel_amzn () {
+  yes=
+  if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
+      yes="-y"
+  fi
+  ${SUDO} amazon-linux-extras install epel ${yes}
 }
 
 # Installs EPEL for RHEL/CentOS
