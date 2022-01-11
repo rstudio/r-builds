@@ -297,7 +297,7 @@ install_rpm () {
       yes="-y"
   fi
   case $os in
-    "RedHat" | "CentOS" | "Amazon")
+    "RedHat" | "CentOS" | "Amazon" | "Alma" | "Rocky")
       if ! has_sudo "yum"; then
         echo "Must have sudo privileges to run yum"
         exit 1
