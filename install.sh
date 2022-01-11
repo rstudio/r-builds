@@ -79,9 +79,18 @@ detect_os () {
   then
    distro="Amazon"
   fi
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:almalinux:almalinux:8::baseos ]]
+  then
+   distro="Alma"
+  fi
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:rocky:rocky:8.5:GA ]]
+  then
+   distro="Rocky"
+  fi
   if [[ $(cat /etc/os-release | grep -e "^ID\=*" | cut -f 2 -d '=') == "debian" ]]; then
     distro="Debian"
   fi
+  
   echo "${distro}"
 }
 
@@ -111,13 +120,17 @@ detect_os_version () {
   if [[ "${os}" == "Amazon" ]]; then
     echo "7"
   fi
+  # reuse rhel8 binaries for alma and rocky
+  if [[ "${os}" =~ ^(Alma|Rocky) ]]; then
+    echo "8"
+  fi
 }
 
 # Returns the installer type
 detect_installer_type () {
   os=$1
   case $os in
-    "RedHat" | "CentOS" | "LEAP12" | "LEAP15" | "SLES12" | "SLES15" | "Amazon")
+    "RedHat" | "CentOS" | "LEAP12" | "LEAP15" | "SLES12" | "SLES15" | "Amazon" | "Alma" | "Rocky")
       echo "rpm"
       ;;
     "Ubuntu" | "Debian")
@@ -147,7 +160,7 @@ download_name () {
   os=$1
   version=$2
   case $os in
-    "RedHat" | "CentOS" | "Amazon")
+    "RedHat" | "CentOS" | "Amazon" | "Alma" | "Rocky")
       echo "R-${version}-1-1.x86_64.rpm"
       ;;
     "Ubuntu" | "Debian")
@@ -172,7 +185,7 @@ download_url () {
   else
 
     case $os in
-      "RedHat" | "CentOS" | "Amazon")
+      "RedHat" | "CentOS" | "Amazon" | "Alma" | "Rocky")
         echo "${CDN_URL}/centos-${ver}/pkgs/${name}"
         ;;
       "Ubuntu")
@@ -313,7 +326,7 @@ install_pre () {
   ver=$2
 
   case $os in
-    "RedHat" | "CentOS")
+    "RedHat" | "CentOS" | "Alma" | "Rocky")
       install_epel "${ver}"
       ;;
     "Amazon")
@@ -336,7 +349,7 @@ install_epel_amzn () {
   ${SUDO} amazon-linux-extras install epel ${yes}
 }
 
-# Installs EPEL for RHEL/CentOS
+# Installs EPEL for RHEL/CentOS/Alma/Rocky
 install_epel () {
   ver=$1
   yes=
