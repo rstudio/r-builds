@@ -1,0 +1,24 @@
+FROM ubuntu:jammy
+
+ENV OS_IDENTIFIER ubuntu-2204
+
+RUN set -x \
+  && sed -i "s|# deb-src|deb-src|g" /etc/apt/sources.list \
+  && export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update \
+  && apt-get install -y libblas-dev libcurl4-openssl-dev libicu-dev liblapack-dev libpcre2-dev wget python3-pip ruby ruby-dev \
+  && apt-get build-dep -y r-base
+
+RUN pip3 install awscli
+
+# Pin fpm to avoid git dependency in 1.12.0
+RUN gem install fpm:1.11.0
+
+RUN chmod 0777 /opt
+
+# Override the default pager used by R
+ENV PAGER /usr/bin/pager
+
+COPY package.ubuntu-2004 /package.sh
+COPY build.sh .
+ENTRYPOINT ./build.sh
