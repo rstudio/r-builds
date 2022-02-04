@@ -129,6 +129,7 @@ def queue_builds(event, context):
             # zlib version fails to handle versions longer than 5 characters.
             # Skip builds affected by this bug.
             if platform in [
+                'ubuntu-2204',
                 'ubuntu-2004',
                 'ubuntu-1804',
                 'opensuse-15',
