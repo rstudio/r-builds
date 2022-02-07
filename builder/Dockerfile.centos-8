@@ -1,4 +1,4 @@
-FROM centos:centos8
+FROM rockylinux:8
 
 ENV OS_IDENTIFIER centos-8
 

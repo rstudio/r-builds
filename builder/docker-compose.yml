@@ -78,17 +78,17 @@ services:
     image: r-builds:centos-7
     volumes:
       - ./integration/tmp:/tmp/output
-  # centos-8:
-  #   command: ./build.sh
-  #   environment:
-  #     - R_VERSION=${R_VERSION}
-  #     - LOCAL_STORE=/tmp/output
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.centos-8
-  #   image: r-builds:centos-8
-  #   volumes:
-  #     - ./integration/tmp:/tmp/output
+  centos-8:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.centos-8
+    image: r-builds:centos-8
+    volumes:
+      - ./integration/tmp:/tmp/output
   opensuse-42:
     command: ./build.sh
     environment:
