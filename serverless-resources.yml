@@ -131,20 +131,6 @@ rBuildsBatchJobQueue:
     State: ENABLED
     Priority: 1
 
-rBuildsBatchJobDefinitionUbuntu1604:
-  Type: AWS::Batch::JobDefinition
-  Properties:
-    Type: container
-    ContainerProperties:
-      Command:
-        - ./build.sh
-      Vcpus: 4
-      Memory: 4096
-      JobRoleArn:
-        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-1604"
-    Timeout:
-      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionUbuntu1804:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -255,20 +241,6 @@ rBuildsBatchJobDefinitionOpensuse42:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-42"
-    Timeout:
-      AttemptDurationSeconds: 7200
-rBuildsBatchJobDefinitionOpensuse15:
-  Type: AWS::Batch::JobDefinition
-  Properties:
-    Type: container
-    ContainerProperties:
-      Command:
-        - ./build.sh
-      Vcpus: 4
-      Memory: 4096
-      JobRoleArn:
-        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-15"
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionOpensuse152:

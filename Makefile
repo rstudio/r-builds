@@ -1,4 +1,4 @@
-PLATFORMS := ubuntu-1604 ubuntu-1804 ubuntu-2004 ubuntu-2204 debian-9 debian-10 centos-7 centos-8 opensuse-42 opensuse-15 opensuse-152 opensuse-153
+PLATFORMS := ubuntu-1804 ubuntu-2004 ubuntu-2204 debian-9 debian-10 centos-7 centos-8 opensuse-42 opensuse-152 opensuse-153
 SLS_BINARY ?= ./node_modules/serverless/bin/serverless
 
 deps:
@@ -22,7 +22,7 @@ docker-build-r: docker-build
 	@cd builder && docker-compose up
 
 docker-shell-r-env:
-	@cd builder && docker-compose run --entrypoint /bin/bash ubuntu-1604
+	@cd builder && docker-compose run --entrypoint /bin/bash ubuntu-2004
 
 ecr-login:
 	(aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com)
