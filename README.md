@@ -18,11 +18,12 @@ bug, or ask questions on [RStudio Community](https://community.rstudio.com).
 ## Supported Platforms
 
 R binaries are built for the following Linux operating systems:
-- Ubuntu 16.04, 18.04, 20.04
+- Ubuntu 18.04, 20.04, 22.04
 - Debian 9, 10
-- CentOS / Red Hat Enterprise Linux 7, 8
-- openSUSE 42.3, 15.1, 15.2, 15.3
-- SUSE Linux Enterprise 12, 15 SP1, 15 SP2, 15 SP3
+- CentOS 7
+- Red Hat Enterprise Linux 7, 8
+- openSUSE 42.3, 15.2, 15.3
+- SUSE Linux Enterprise 12, 15 SP2, 15 SP3
 
 ## Quick Installation
 
@@ -49,14 +50,14 @@ R_VERSION=3.5.3
 
 Download the deb package:
 ```bash
-# Ubuntu 16.04
-wget https://cdn.rstudio.com/r/ubuntu-1604/pkgs/r-${R_VERSION}_1_amd64.deb
-
 # Ubuntu 18.04
 wget https://cdn.rstudio.com/r/ubuntu-1804/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Ubuntu 20.04
 wget https://cdn.rstudio.com/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
+
+# Ubuntu 22.04
+wget https://cdn.rstudio.com/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Debian 9
 wget https://cdn.rstudio.com/r/debian-9/pkgs/r-${R_VERSION}_1_amd64.deb
@@ -96,7 +97,7 @@ Download the rpm package:
 # CentOS / RHEL 7
 wget https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
-# CentOS / RHEL 8
+# RHEL 8
 wget https://cdn.rstudio.com/r/centos-8/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
@@ -118,9 +119,6 @@ Download the rpm package:
 ```bash
 # openSUSE 42.3 / SLES 12
 wget https://cdn.rstudio.com/r/opensuse-42/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-
-# openSUSE 15.1 / SLES 15 SP1
-wget https://cdn.rstudio.com/r/opensuse-15/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # openSUSE 15.2 / SLES 15 SP2
 wget https://cdn.rstudio.com/r/opensuse-152/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
@@ -173,7 +171,7 @@ new platform or inspect an existing platform.
 
 ### Dockerfile
 
-Create a `builder/Dockerfile.platform-version` (where `platform-version` is `ubuntu-1604` or `centos-7`, etc.) This file must contain four major tasks:
+Create a `builder/Dockerfile.platform-version` (where `platform-version` is `ubuntu-2204` or `centos-7`, etc.) This file must contain four major tasks:
 
 1. an `OS_IDENTIFIER` env with the `platform-version`.
 2. a step which ensures the R source build dependencies are installed
@@ -228,7 +226,7 @@ environment:
   # snip
   JOB_DEFINITION_ARN_debian_9:
     Ref: rBuildsBatchJobDefinitionDebian9
-  SUPPORTED_PLATFORMS: ubuntu-1604,ubuntu-1804,debian-9,debian-10,centos-7,centos-8,opensuse-42,opensuse-15
+  SUPPORTED_PLATFORMS: ubuntu-1804,debian-9,debian-10,centos-7,centos-8,opensuse-42
 ```
 
 ### Makefile

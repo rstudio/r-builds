@@ -121,7 +121,7 @@ def _check_for_job_status(jobs, status):
 def queue_builds(event, context):
     """Queue some builds."""
     event['versions_to_build'] =  _versions_to_build(event.get('force', False), event.get('versions'))
-    event['supported_platforms'] = _to_list(os.environ.get('SUPPORTED_PLATFORMS', 'ubuntu-1604'))
+    event['supported_platforms'] = _to_list(os.environ.get('SUPPORTED_PLATFORMS', 'ubuntu-2004'))
     job_ids = []
     for version in event['versions_to_build']:
         for platform in event['supported_platforms']:
@@ -132,7 +132,6 @@ def queue_builds(event, context):
                 'ubuntu-2204',
                 'ubuntu-2004',
                 'ubuntu-1804',
-                'opensuse-15',
                 'opensuse-152',
                 'opensuse-153',
                 'centos-8',
