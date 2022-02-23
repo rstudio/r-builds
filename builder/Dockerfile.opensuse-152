@@ -17,7 +17,7 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     glib2-devel \
     glibc-locale \
     help2man \
-    java-1_8_0-openjdk-devel \
+    java-11-openjdk-devel \
     libX11-devel \
     libXScrnSaver-devel \
     libXmu-devel \
@@ -73,6 +73,9 @@ RUN gem install fpm:1.11.0 && \
     ln -s /usr/bin/fpm.ruby2.5 /usr/local/bin/fpm
 
 RUN chmod 0777 /opt
+
+# Make sure that patching the OS does not break Java
+ENV JAVA_HOME=/usr/lib64/jvm/java-11-openjdk
 
 # Configure flags for SUSE that don't use the defaults in build.sh
 ENV CONFIGURE_OPTIONS="\

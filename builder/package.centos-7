@@ -59,6 +59,7 @@ fpm \
   -d xz-devel \
   -d zip \
   -d zlib-devel \
+  -d java-11-openjdk-devel \ 
   /opt/R/${R_VERSION}
 
 shopt -s extglob

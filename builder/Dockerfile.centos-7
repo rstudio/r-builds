@@ -11,8 +11,7 @@ RUN yum -y update \
     gcc-c++ \
     gcc-gfortran \
     gcc-objc \
-    java-1.8.0-openjdk-devel \
-    java-1.8.0-openjdk-headless \
+    java-11-openjdk-devel \
     libICE-devel \
     libSM-devel \
     libX11-devel \
@@ -66,6 +65,9 @@ ENV CONFIGURE_OPTIONS="\
     --with-tcl-config=/usr/lib64/tclConfig.sh \
     --with-tk-config=/usr/lib64/tkConfig.sh \
     --enable-prebuilt-html"
+
+# Make sure that patching the OS does not break Java
+ENV JAVA_HOME=/usr/lib/jvm/jre-11-openjdk
 
 # RHEL 7 doesn't have the inconsolata font, so override the defaults.
 ENV R_RD4PDF="times,hyper"

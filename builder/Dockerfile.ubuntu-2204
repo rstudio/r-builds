@@ -15,6 +15,9 @@ RUN gem install fpm
 
 RUN chmod 0777 /opt
 
+# Make sure that patching the OS does not break Java
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
+
 # Override the default pager used by R
 ENV PAGER /usr/bin/pager
 

@@ -53,6 +53,7 @@ fpm \
   -d unzip \
   -d zip \
   -d zlib1g-dev \
+  -d openjdk-11-jdk \
   /opt/R/${R_VERSION}
 
 shopt -s extglob

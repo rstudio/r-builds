@@ -75,6 +75,9 @@ RUN gem install ffi:1.12.2 fpm:1.11.0 && \
 
 RUN chmod 0777 /opt
 
+# Make sure that patching the OS does not break Java
+ENV JAVA_HOME=/usr/lib64/jvm/java-1.8.0-openjdk
+
 # Work around issue with expired Let's Encrypt root certificate and OpenSSL 1.0.2,
 # which affects downloads from sourceforge.net (and possibly other sites).
 # On SLES 12, the issue can be resolved by updating ca-certificates-mozilla, but
