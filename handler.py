@@ -132,7 +132,6 @@ def queue_builds(event, context):
                 'ubuntu-2204',
                 'ubuntu-2004',
                 'ubuntu-1804',
-                'opensuse-152',
                 'opensuse-153',
                 'centos-8',
                 'debian-10',

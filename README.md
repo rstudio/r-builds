@@ -18,12 +18,18 @@ bug, or ask questions on [RStudio Community](https://community.rstudio.com).
 ## Supported Platforms
 
 R binaries are built for the following Linux operating systems:
+
 - Ubuntu 18.04, 20.04, 22.04
-- Debian 9, 10
+- Debian 9, 10, 11
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8
-- openSUSE 42.3, 15.2, 15.3
-- SUSE Linux Enterprise 12, 15 SP2, 15 SP3
+- openSUSE 42.3, 15.3
+- SUSE Linux Enterprise 12, 15 SP3
+
+Operating systems are supported until their vendor end-of-support dates, which
+can be found on the [RStudio Platform Support](https://www.rstudio.com/about/platform-support/)
+page. When an operating system has reached its end of support, builds for it
+will be discontinued, but existing binaries will continue to be available.
 
 ## Quick Installation
 
@@ -122,9 +128,6 @@ Download the rpm package:
 ```bash
 # openSUSE 42.3 / SLES 12
 wget https://cdn.rstudio.com/r/opensuse-42/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-
-# openSUSE 15.2 / SLES 15 SP2
-wget https://cdn.rstudio.com/r/opensuse-152/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # openSUSE 15.3 / SLES 15 SP3
 wget https://cdn.rstudio.com/r/opensuse-153/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
