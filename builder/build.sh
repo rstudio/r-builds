@@ -97,7 +97,7 @@ compile_r() {
   #
   # The INCLUDE_PCRE2_IN_R_3 environment variable can be set to include PCRE2
   # in R 3.x builds, for distributions where PCRE2 is always required.
-  # In Debian 11, Pango now depends on PCRE2, so R 3.x will not be compiled with
+  # In Debian 11/Ubuntu 22, Pango now depends on PCRE2, so R 3.x will not be compiled with
   # Pango support if the PCRE2 pkg-config file is missing.
   if [[ "${1}" =~ ^3 ]] && pkg-config --exists libpcre2-8 && [ -z "$INCLUDE_PCRE2_IN_R_3" ]; then
     mkdir -p /tmp/pcre2

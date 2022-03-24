@@ -18,6 +18,9 @@ RUN chmod 0777 /opt
 # Override the default pager used by R
 ENV PAGER /usr/bin/pager
 
+# R 3.x requires PCRE2 for Pango support on Ubuntu 22
+ENV INCLUDE_PCRE2_IN_R_3 yes
+
 COPY package.ubuntu-2204 /package.sh
 COPY build.sh .
 ENTRYPOINT ./build.sh

@@ -4,10 +4,10 @@ if [[ ! -d /tmp/output/ubuntu-2204 ]]; then
   mkdir -p /tmp/output/ubuntu-2204
 fi
 
-# R 3.x requires PCRE1
-pcre_lib='libpcre2-dev'
+# R 3.x requires PCRE1. On Ubuntu 22, R 3.x also requires PCRE2 for Pango support.
+pcre_lib_flags='-d libpcre2-dev'
 if [[ "${R_VERSION}" =~ ^3 ]]; then
-  pcre_lib='libpcre3-dev'
+  pcre_lib_flags='-d libpcre2-dev -d libpcre3-dev'
 fi
 
 fpm \
@@ -40,7 +40,7 @@ fpm \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
   -d libpaper-utils \
-  -d ${pcre_lib} \
+  ${pcre_lib_flags} \
   -d libpng16-16 \
   -d libreadline8 \
   -d libtcl8.6 \
