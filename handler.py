@@ -43,6 +43,7 @@ def _cran_all_r_versions():
     r_versions = []
     r_versions.extend(_cran_r_versions(CRAN_SRC_R3_URL))
     r_versions.extend(_cran_r_versions(CRAN_SRC_R4_URL))
+    r_versions.append('next')
     r_versions.append('devel')
     return {'r_versions': r_versions}
 
