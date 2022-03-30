@@ -53,8 +53,11 @@ fetch_r_source() {
   fi
   echo "Extracting R-${1}"
   tar xf /tmp/R-${1}.tar.gz -C /tmp
-  dirname=`tar tzvf /tmp/R-next.tar.gz | head -1 | awk '{ print $NF }' | cut -d/ -f1`
-  mv /tmp/${dirname} /tmp/R-${1}
+  # 'next' may contain R-patched/, R-alpha/, etc. make it R-next/
+  if [ "${1}" = "next" ]; then
+      dirname=`tar tzvf /tmp/R-next.tar.gz | head -1 | awk '{ print $NF }' | cut -d/ -f1`
+      mv /tmp/${dirname} /tmp/R-next
+  fi
   rm /tmp/R-${1}.tar.gz
 }
 
