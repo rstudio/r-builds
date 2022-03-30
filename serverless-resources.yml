@@ -318,7 +318,7 @@ rBuildsDevelEventRule:
     State: ${self:custom.${self:provider.stage}.eventRuleState}
     Targets:
       - Id: rbuilds
-        Input: '{"force": true, "versions": ["devel"]}'
+        Input: '{"force": true, "versions": ["next", "devel"]}'
         RoleArn:
           Fn::GetAtt: [ rBuildsEventRuleIamRole, Arn ]
         Arn:
