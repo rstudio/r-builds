@@ -45,7 +45,7 @@ fetch_r_source() {
     wget -q "${R_TARBALL_URL}" -O /tmp/R-${1}.tar.gz
   elif [ "${1}" = devel ]; then
     # Download the daily tarball of R devel
-    wget -q https://stat.ethz.ch/R/daily/R-devel.tar.gz -O /tmp/R-devel.tar.gz
+    wget -q https://cran.r-project.org/src/base-prerelease/R-devel.tar.gz -O /tmp/R-devel.tar.gz
   elif [ "${1}" = "next" ]; then
     wget -q https://cran.r-project.org/src/base-prerelease/R-latest.tar.gz -O /tmp/R-next.tar.gz
   else
