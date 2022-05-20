@@ -23,8 +23,8 @@ R binaries are built for the following Linux operating systems:
 - Debian 9, 10, 11
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8
-- openSUSE 42.3, 15.3
-- SUSE Linux Enterprise 12, 15 SP3
+- openSUSE 15.3
+- SUSE Linux Enterprise 15 SP3
 
 Operating systems are supported until their vendor end-of-support dates, which
 can be found on the [RStudio Platform Support](https://www.rstudio.com/about/platform-support/)
@@ -117,18 +117,8 @@ sudo yum install R-${R_VERSION}-1-1.x86_64.rpm
 
 #### SUSE Linux
 
-Enable the Python backports repository (SLES 12 only):
-```bash
-# SLES 12
-VERSION="SLE_$(grep "^VERSION=" /etc/os-release | sed -e 's/VERSION=//' -e 's/"//g' -e 's/-/_/')"
-sudo zypper --gpg-auto-import-keys addrepo https://download.opensuse.org/repositories/devel:/languages:/python:/backports/$VERSION/devel:languages:python:backports.repo
-```
-
 Download the rpm package:
 ```bash
-# openSUSE 42.3 / SLES 12
-wget https://cdn.rstudio.com/r/opensuse-42/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-
 # openSUSE 15.3 / SLES 15 SP3
 wget https://cdn.rstudio.com/r/opensuse-153/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
@@ -232,7 +222,7 @@ environment:
   # snip
   JOB_DEFINITION_ARN_debian_9:
     Ref: rBuildsBatchJobDefinitionDebian9
-  SUPPORTED_PLATFORMS: ubuntu-1804,debian-9,debian-10,centos-7,centos-8,opensuse-42
+  SUPPORTED_PLATFORMS: ubuntu-1804,debian-9,debian-10,centos-7,centos-8
 ```
 
 ### Makefile
