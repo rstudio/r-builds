@@ -82,7 +82,7 @@ rBuildsEcsLaunchTemplate:
       BlockDeviceMappings:
         - DeviceName: /dev/xvdcz
           Ebs:
-            VolumeType: gp2
+            VolumeType: gp3
             VolumeSize: 64
 
 rBuildsBatchComputeEnvironment:
