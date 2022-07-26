@@ -101,7 +101,7 @@ rBuildsBatchComputeEnvironment:
       SecurityGroupIds: ${self:custom.securityGroupIds}
       Subnets: ${self:custom.subnets}
       Type: SPOT
-      BidPercentage: 60
+      BidPercentage: 85
       InstanceRole:
         "Fn::GetAtt": [ rBuildsIamInstanceProfile, Arn ]
       InstanceTypes:
