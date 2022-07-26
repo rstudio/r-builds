@@ -105,16 +105,15 @@ rBuildsBatchComputeEnvironment:
       InstanceRole:
         "Fn::GetAtt": [ rBuildsIamInstanceProfile, Arn ]
       InstanceTypes:
-        - m4.large
-        - m4.xlarge
-        - m4.2xlarge
-        - m4.4xlarge
-        - m4.10xlarge
-        - m4.16xlarge
-        - r4.large
-        - r4.xlarge
-        - r4.2xlarge
-        - r4.4xlarge
+        - m6i
+        - m5
+        - m5a
+        - r6i
+        - r5
+        - r5a
+        - c6i
+        - c5
+        - c5a
       Ec2KeyPair: ${self:custom.ec2KeyPair}
       Tags: ${self:provider.stackTags}
       MinvCpus: 0
