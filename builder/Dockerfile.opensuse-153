@@ -32,6 +32,7 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     libpng-devel \
     libtiff-devel \
     make \
+    openblas-devel \
     pango-devel \
     pcre-devel \
     pcre2-devel \
@@ -85,6 +86,12 @@ ENV CONFIGURE_OPTIONS="\
     --enable-memory-profiling \
     --with-tcl-config=/usr/lib64/tclConfig.sh \
     --with-tk-config=/usr/lib64/tkConfig.sh"
+
+# Add Support for OpenBLAS
+ENV BLAS_LIBS="-L/usr/lib64 -lopenblas"
+
+# Make sure that patching the OS does not break Java
+ENV JAVA_HOME=/usr/lib64/jvm/java-1.8.0-openjdk
 
 COPY package.opensuse-153 /package.sh
 COPY build.sh .

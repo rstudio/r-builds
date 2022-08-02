@@ -3,6 +3,7 @@ FROM centos:centos7
 ENV OS_IDENTIFIER centos-7
 
 RUN yum -y update \
+    && yum -y install epel-release \
     && yum -y install \
     autoconf \
     automake \
@@ -26,6 +27,7 @@ RUN yum -y update \
     libtool \
     make \
     ncurses-devel \
+    openblas-devel \
     pango-devel \
     pcre-devel \
     pcre2-devel \
@@ -56,6 +58,9 @@ RUN gem install ffi:1.12.2 fpm:1.11.0
 
 RUN chmod 0777 /opt
 
+# OpenBLAS definition
+ENV BLAS_LIBS="-L/usr/lib64 -lopenblasp"
+
 # Configure flags for CentOS 7 that don't use the defaults in build.sh
 ENV CONFIGURE_OPTIONS="\
     --enable-R-shlib \
@@ -66,6 +71,9 @@ ENV CONFIGURE_OPTIONS="\
     --with-tcl-config=/usr/lib64/tclConfig.sh \
     --with-tk-config=/usr/lib64/tkConfig.sh \
     --enable-prebuilt-html"
+
+# Make sure that patching the OS does not break Java
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
 
 # RHEL 7 doesn't have the inconsolata font, so override the defaults.
 ENV R_RD4PDF="times,hyper"

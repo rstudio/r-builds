@@ -48,6 +48,7 @@ fpm \
   -d libx11-6 \
   -d libxt6 \
   -d make \
+  -d openjdk-11-jdk \
   -d ucf \
   -d unzip \
   -d zip \
