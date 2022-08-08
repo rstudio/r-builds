@@ -1,0 +1,60 @@
+if [[ ! -d /tmp/output/rhel-9 ]]; then
+  mkdir -p /tmp/output/rhel-9
+fi
+
+# R 3.x requires PCRE1
+pcre_lib='pcre2-devel'
+if [[ "${R_VERSION}" =~ ^3 ]]; then
+  pcre_lib='pcre-devel'
+fi
+
+# Create post-install script required for OpenBLAS
+cat <<EOF >> /post-install.sh
+mv /opt/R/${R_VERSION}/lib/R/lib/libRblas.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so.keep
+ln -s /usr/lib64/libopenblasp.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so
+EOF
+
+# Create after-remove script to remove internal BLAS
+cat <<EOF >> /after-remove.sh
+if [ -d /opt/R/${R_VERSION} ]; then
+  rm -r /opt/R/${R_VERSION}
+fi
+EOF
+
+fpm \
+  -s dir \
+  -t rpm \
+  -v 1 \
+  -n "R-${R_VERSION}" \
+  --vendor "RStudio, PBC" \
+  --url "https://www.r-project.org" \
+  --description "GNU R statistical computation and graphics system" \
+  --maintainer "RStudio, PBC <https://github.com/rstudio/r-builds>" \
+  --license "GPLv2+" \
+  --after-install /post-install.sh \
+  --after-remove /after-remove.sh \
+  -p /tmp/output/rhel-9/ \
+  -d bzip2-devel \
+  -d gcc \
+  -d gcc-c++ \
+  -d gcc-gfortran \
+  -d libcurl-devel \
+  -d libicu-devel \
+  -d libSM \
+  -d libtiff \
+  -d libXmu \
+  -d libXt \
+  -d make \
+  -d openblas-devel \
+  -d pango \
+  -d ${pcre_lib} \
+  -d tcl \
+  -d tk \
+  -d unzip \
+  -d which \
+  -d xz-devel \
+  -d zip \
+  -d zlib-devel \
+  "/opt/R/${R_VERSION}"
+
+export PKG_FILE=$(ls /tmp/output/rhel-9/R-${R_VERSION}*.rpm | head -1)

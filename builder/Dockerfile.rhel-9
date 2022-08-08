@@ -1,0 +1,90 @@
+FROM rockylinux:9
+
+ENV OS_IDENTIFIER rhel-9
+
+RUN dnf -y upgrade \
+    && dnf -y install dnf-plugins-core \
+    && dnf config-manager --set-enabled crb \
+    && dnf install -y epel-release \
+    && dnf -y install \
+    autoconf \
+    automake \
+    bzip2-devel \
+    cairo-devel \
+    gcc-c++ \
+    gcc-gfortran \
+    java-11-openjdk-devel \
+    libICE-devel \
+    libSM-devel \
+    libX11-devel \
+    libXmu-devel \
+    libXt-devel \
+    libcurl-devel \
+    libicu-devel \
+    libjpeg-devel \
+    libpng-devel \
+    libtiff-devel \
+    libtool \
+    make \
+    ncurses-devel \
+    pango-devel \
+    pcre-devel \
+    pcre2-devel \
+    readline-devel \
+    rpm-build \
+    ruby \
+    ruby-devel \
+    tcl-devel \
+    tex \
+    texinfo-tex \
+    texlive-collection-latexrecommended \
+    tk-devel \
+    unzip \
+    valgrind-devel \
+    which \
+    wget \
+    xz-devel \
+    zlib-devel \
+    && dnf clean all
+
+# Install AWS CLI
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip
+
+RUN gem install fpm
+
+RUN chmod 0777 /opt
+
+# Configure flags for RHEL 9 that don't use the defaults in build.sh
+ENV CONFIGURE_OPTIONS="\
+    --enable-R-shlib \
+    --with-tcltk \
+    --enable-memory-profiling \
+    --with-x \
+    --with-system-valgrind-headers \
+    --with-tcl-config=/usr/lib64/tclConfig.sh \
+    --with-tk-config=/usr/lib64/tkConfig.sh \
+    --enable-prebuilt-html"
+
+# RHEL 9 doesn't have the inconsolata font, so override the defaults.
+# This may be removed if RHEL ever adds the texlive-inconsolata package from Fedora.
+# Or check `dnf provides '*/inconsolata.sty'` for a package that provides it.
+# https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Making-the-manuals
+ENV R_RD4PDF="times,hyper"
+
+# Make sure that patching Java does not break R.
+# R's default JAVA_HOME path includes the exact Java version on CentOS/RHEL, which
+# requires users to run `R CMD javareconf` even on minor/patch upgrades. Use the
+# major version symlink to avoid this.
+# https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Java-support
+# https://solutions.rstudio.com/r/using-rjava/
+ENV JAVA_HOME=/usr/lib/jvm/jre-11-openjdk
+
+# R 3.x requires PCRE2 for Pango support on RHEL 9
+ENV INCLUDE_PCRE2_IN_R_3 yes
+
+COPY package.rhel-9 /package.sh
+COPY build.sh .
+ENTRYPOINT ./build.sh

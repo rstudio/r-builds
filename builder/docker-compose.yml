@@ -76,6 +76,17 @@ services:
     image: r-builds:centos-8
     volumes:
       - ./integration/tmp:/tmp/output
+  rhel-9:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.rhel-9
+    image: r-builds:rhel-9
+    volumes:
+      - ./integration/tmp:/tmp/output
   opensuse-153:
     command: ./build.sh
     environment:
