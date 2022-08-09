@@ -41,8 +41,6 @@ provider:
       Ref: rBuildsBatchJobDefinitionUbuntu2004
     JOB_DEFINITION_ARN_ubuntu_2204:
       Ref: rBuildsBatchJobDefinitionUbuntu2204
-    JOB_DEFINITION_ARN_debian_9:
-      Ref: rBuildsBatchJobDefinitionDebian9
     JOB_DEFINITION_ARN_debian_10:
       Ref: rBuildsBatchJobDefinitionDebian10
     JOB_DEFINITION_ARN_debian_11:
@@ -53,7 +51,7 @@ provider:
       Ref: rBuildsBatchJobDefinitionCentos8
     JOB_DEFINITION_ARN_opensuse_153:
       Ref: rBuildsBatchJobDefinitionOpensuse153
-    SUPPORTED_PLATFORMS: ubuntu-1804,ubuntu-2004,ubuntu-2204,debian-9,debian-10,debian-11,centos-7,centos-8,opensuse-153
+    SUPPORTED_PLATFORMS: ubuntu-1804,ubuntu-2004,ubuntu-2204,debian-10,debian-11,centos-7,centos-8,opensuse-153
 
 functions:
   queueBuilds:

@@ -34,17 +34,6 @@ services:
     image: r-builds:ubuntu-2204
     volumes:
       - ./integration/tmp:/tmp/output
-  debian-9:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.debian-9
-    image: r-builds:debian-9
-    volumes:
-      - ./integration/tmp:/tmp/output
   debian-10:
     command: ./build.sh
     environment:
