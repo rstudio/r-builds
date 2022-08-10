@@ -39,6 +39,26 @@ rebuild-all: deps fetch-serverless-custom-file
 serverless-deploy.%: deps fetch-serverless-custom-file
 	$(SLS_BINARY) deploy --stage $*
 
+define GEN_TARGETS
+docker-build-$(platform):
+	@cd builder && docker-compose build $(platform)
+
+build-r-$(platform):
+	@cd builder && R_VERSION=$(R_VERSION) docker-compose up $(platform)
+
+test-r-$(platform):
+	@cd test && R_VERSION=$(R_VERSION) docker-compose up $(platform)
+
+bash-$(platform):
+	docker run -it --rm --entrypoint /bin/bash -v $(CURDIR):/r-builds r-builds:$(platform)
+
+.PHONY: docker-build-$(platform) build-r-$(platform) test-r-$(platform) bash-$(platform)
+endef
+
+$(foreach platform,$(PLATFORMS), \
+    $(eval $(GEN_TARGETS)) \
+)
+
 # Helper for launching a bash session on a docker image of your choice. Defaults
 # to "ubuntu:xenial".
 TARGET_IMAGE?=ubuntu:xenial
