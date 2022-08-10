@@ -277,6 +277,7 @@ install_deb () {
   if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
       yes="--n"
       yesapt="-y"
+      export DEBIAN_FRONTEND=noninteractive
   fi
   echo "Updating package indexes..."
   ${SUDO} apt-get update
