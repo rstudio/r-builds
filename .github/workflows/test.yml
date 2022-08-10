@@ -1,0 +1,74 @@
+name: R builds
+
+on:
+  push:
+    paths:
+      - 'builder/**'
+      - 'test/**'
+      - 'Makefile'
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: |
+          Comma-separated list of platforms. Specify "all" to use all platforms (the default).
+        required: false
+        default: 'all'
+        type: string
+      r_versions:
+        description: |
+          Comma-separated list of R versions. Specify "last-N" to use the
+          last N minor R versions, or "all" to use all minor R versions since R 3.1.
+          Defaults to "last-5".
+        required: false
+        default: 'last-5'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      platforms: ${{ steps.setup-matrix.outputs.platforms }}
+      r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up matrix of platforms and R versions
+      id: setup-matrix
+      run: |
+        platforms=$(python test/get_platforms.py ${{ github.event.inputs.platforms }})
+        echo "::set-output name=platforms::$platforms"
+        r_versions=$(python test/get_r_versions.py ${{ github.event.inputs.r_versions }})
+        echo "::set-output name=r_versions::$r_versions"
+
+  test:
+    needs: setup-matrix
+    strategy:
+      matrix:
+        platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
+    env:
+      R_VERSIONS: ${{ join(fromJson(needs.setup-matrix.outputs.r_versions), ' ') }}
+    runs-on: ubuntu-latest
+    name: ${{ matrix.platform }} (R ${{ join(fromJson(needs.setup-matrix.outputs.r_versions), ', ') }})
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker
+          install: true
+
+      - name: Build R
+        run: |
+          for version in ${{ env.R_VERSIONS }}; do
+            R_VERSION=$version make build-r-${{ matrix.platform }}
+          done
+
+      - name: Test R
+        run: |
+          for version in ${{ env.R_VERSIONS }}; do
+            R_VERSION=$version make test-r-${{ matrix.platform }}
+          done
