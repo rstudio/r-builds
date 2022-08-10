@@ -110,7 +110,7 @@ detect_os_version () {
         cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/"//g'
     fi
   fi
-  if [[ "${os}" == "Ubuntu" ]]; then
+  if [[ "${os}" == "Ubuntu" ]] || [[ "${os}" == "Debian" ]]; then
     cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/[".]//g'
   fi
   if [[ "${os}" == "SLES15" ]] || [[ "${os}" == "LEAP15" ]]; then
