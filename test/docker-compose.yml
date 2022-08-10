@@ -71,3 +71,11 @@ services:
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
+  opensuse-154:
+    image: opensuse/leap:15.4
+    command: /r-builds/test/test-zypper.sh
+    environment:
+      - OS_IDENTIFIER=opensuse-154
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds

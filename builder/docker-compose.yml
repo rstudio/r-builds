@@ -98,3 +98,14 @@ services:
     image: r-builds:opensuse-153
     volumes:
       - ./integration/tmp:/tmp/output
+  opensuse-154:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.opensuse-154
+    image: r-builds:opensuse-154
+    volumes:
+      - ./integration/tmp:/tmp/output
