@@ -1,5 +1,3 @@
-version: '2.0'
-
 services:
   ubuntu-1804:
     image: ubuntu:bionic
