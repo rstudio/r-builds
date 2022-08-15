@@ -137,6 +137,9 @@ compile_r() {
   make
   make install
 
+  # Run javareconf to activate java bindings
+  /opt/R/${1}/bin/R CMD javareconf  
+
   # Add OS identifier to the default HTTP user agent.
   # Set this in the system Rprofile so it works when R is run with --vanilla.
   cat <<EOF >> /opt/R/${1}/lib/R/library/base/R/Rprofile

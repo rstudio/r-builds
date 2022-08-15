@@ -10,19 +10,6 @@ if [[ "${R_VERSION}" =~ ^3 ]]; then
   pcre_lib='pcre-devel'
 fi
 
-# create post-install script required for openblas
-cat <<EOF >> /post-install.sh
-mv /opt/R/${R_VERSION}/lib/R/lib/libRblas.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so.keep
-ln -s /usr/lib64/libopenblas.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so
-EOF
-
-# create after-remove script to remove internal blas
-cat <<EOF >> /before-remove.sh
-if [ -d /opt/R/${R_VERSION} ]; then
-  rm -r /opt/R/${R_VERSION}
-fi
-EOF
-
 fpm \
   -s dir \
   -t rpm \
@@ -45,6 +32,7 @@ fpm \
   -d glibc-locale \
   -d gzip \
   -d icu.691-devel \
+  -d java-11-openjdk-devel \
   -d libbz2-devel \
   -d libcairo2 \
   -d libcurl-devel \

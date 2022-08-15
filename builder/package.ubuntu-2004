@@ -35,7 +35,7 @@ fpm \
   -d libgomp1 \
   -d libicu-dev \
   -d libjpeg8 \
-  -d liblapack-dev \
+  -d libopenblas-dev \
   -d liblzma-dev \
   -d libpango-1.0-0 \
   -d libpangocairo-1.0-0 \
@@ -49,6 +49,7 @@ fpm \
   -d libx11-6 \
   -d libxt6 \
   -d make \
+  -d openjdk-11-jdk \
   -d ucf \
   -d unzip \
   -d zip \

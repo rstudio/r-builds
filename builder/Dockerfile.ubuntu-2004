@@ -6,7 +6,7 @@ RUN set -x \
   && sed -i "s|# deb-src|deb-src|g" /etc/apt/sources.list \
   && export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
-  && apt-get install -y libblas-dev libcurl4-openssl-dev libicu-dev liblapack-dev libpcre2-dev wget python3-pip ruby ruby-dev \
+  && apt-get install -y libblas-dev libcurl4-openssl-dev libicu-dev libopenblas-dev libpcre2-dev wget openjdk-11-jdk python3-pip ruby ruby-dev \
   && apt-get build-dep -y r-base
 
 RUN pip3 install awscli
@@ -15,6 +15,13 @@ RUN pip3 install awscli
 RUN gem install fpm:1.11.0
 
 RUN chmod 0777 /opt
+
+# OpenBLAS 
+ENV BLAS_LIBS="-L /usr/lib/x86_64-linux-gnu/openblas/ -lblas"
+ENV LAPACK_LIBS="-L /usr/lib/x86_64-linux-gnu/openblas/ -llapack"
+
+# Make sure that patching the OS does not break Java
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 
 # Override the default pager used by R
 ENV PAGER /usr/bin/pager
