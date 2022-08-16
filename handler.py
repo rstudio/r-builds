@@ -43,6 +43,7 @@ def _cran_all_r_versions():
     r_versions = []
     r_versions.extend(_cran_r_versions(CRAN_SRC_R3_URL))
     r_versions.extend(_cran_r_versions(CRAN_SRC_R4_URL))
+    r_versions.append('next')
     r_versions.append('devel')
     return {'r_versions': r_versions}
 
@@ -132,10 +133,10 @@ def queue_builds(event, context):
                 'ubuntu-2204',
                 'ubuntu-2004',
                 'ubuntu-1804',
-                'opensuse-152',
                 'opensuse-153',
                 'centos-8',
                 'debian-10',
+                'debian-11',
             ] and version in ['3.3.0', '3.3.1', '3.3.2']:
                 continue
             job_ids.append(_submit_job(version, platform))

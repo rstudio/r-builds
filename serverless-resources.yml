@@ -82,7 +82,7 @@ rBuildsEcsLaunchTemplate:
       BlockDeviceMappings:
         - DeviceName: /dev/xvdcz
           Ebs:
-            VolumeType: gp2
+            VolumeType: gp3
             VolumeSize: 64
 
 rBuildsBatchComputeEnvironment:
@@ -101,20 +101,19 @@ rBuildsBatchComputeEnvironment:
       SecurityGroupIds: ${self:custom.securityGroupIds}
       Subnets: ${self:custom.subnets}
       Type: SPOT
-      BidPercentage: 60
+      BidPercentage: 85
       InstanceRole:
         "Fn::GetAtt": [ rBuildsIamInstanceProfile, Arn ]
       InstanceTypes:
-        - m4.large
-        - m4.xlarge
-        - m4.2xlarge
-        - m4.4xlarge
-        - m4.10xlarge
-        - m4.16xlarge
-        - r4.large
-        - r4.xlarge
-        - r4.2xlarge
-        - r4.4xlarge
+        - m6i
+        - m5
+        - m5a
+        - r6i
+        - r5
+        - r5a
+        - c6i
+        - c5
+        - c5a
       Ec2KeyPair: ${self:custom.ec2KeyPair}
       Tags: ${self:provider.stackTags}
       MinvCpus: 0
@@ -173,20 +172,6 @@ rBuildsBatchJobDefinitionUbuntu2204:
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-2204"
     Timeout:
       AttemptDurationSeconds: 7200
-rBuildsBatchJobDefinitionDebian9:
-  Type: AWS::Batch::JobDefinition
-  Properties:
-    Type: container
-    ContainerProperties:
-      Command:
-        - ./build.sh
-      Vcpus: 4
-      Memory: 4096
-      JobRoleArn:
-        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-9"
-    Timeout:
-      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionDebian10:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -199,6 +184,20 @@ rBuildsBatchJobDefinitionDebian10:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-10"
+    Timeout:
+      AttemptDurationSeconds: 7200
+rBuildsBatchJobDefinitionDebian11:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-11"
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionCentos7:
@@ -227,34 +226,6 @@ rBuildsBatchJobDefinitionCentos8:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-8"
-    Timeout:
-      AttemptDurationSeconds: 7200
-rBuildsBatchJobDefinitionOpensuse42:
-  Type: AWS::Batch::JobDefinition
-  Properties:
-    Type: container
-    ContainerProperties:
-      Command:
-        - ./build.sh
-      Vcpus: 4
-      Memory: 4096
-      JobRoleArn:
-        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-42"
-    Timeout:
-      AttemptDurationSeconds: 7200
-rBuildsBatchJobDefinitionOpensuse152:
-  Type: AWS::Batch::JobDefinition
-  Properties:
-    Type: container
-    ContainerProperties:
-      Command:
-        - ./build.sh
-      Vcpus: 4
-      Memory: 4096
-      JobRoleArn:
-        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-152"
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionOpensuse153:
@@ -318,7 +289,7 @@ rBuildsDevelEventRule:
     State: ${self:custom.${self:provider.stage}.eventRuleState}
     Targets:
       - Id: rbuilds
-        Input: '{"force": true, "versions": ["devel"]}'
+        Input: '{"force": true, "versions": ["next", "devel"]}'
         RoleArn:
           Fn::GetAtt: [ rBuildsEventRuleIamRole, Arn ]
         Arn:

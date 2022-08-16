@@ -45,12 +45,19 @@ fetch_r_source() {
     wget -q "${R_TARBALL_URL}" -O /tmp/R-${1}.tar.gz
   elif [ "${1}" = devel ]; then
     # Download the daily tarball of R devel
-    wget -q https://stat.ethz.ch/R/daily/R-devel.tar.gz -O /tmp/R-devel.tar.gz
+    wget -q https://cran.r-project.org/src/base-prerelease/R-devel.tar.gz -O /tmp/R-devel.tar.gz
+  elif [ "${1}" = "next" ]; then
+    wget -q https://cran.r-project.org/src/base-prerelease/R-latest.tar.gz -O /tmp/R-next.tar.gz
   else
     wget -q "${CRAN}/src/base/R-`echo ${1}| awk 'BEGIN {FS="."} {print $1}'`/R-${1}.tar.gz" -O /tmp/R-${1}.tar.gz
   fi
   echo "Extracting R-${1}"
   tar xf /tmp/R-${1}.tar.gz -C /tmp
+  # 'next' may contain R-patched/, R-alpha/, etc. make it R-next/
+  if [ "${1}" = "next" ]; then
+      dirname=`tar tzvf /tmp/R-next.tar.gz | head -1 | awk '{ print $NF }' | cut -d/ -f1`
+      mv /tmp/${dirname} /tmp/R-next
+  fi
   rm /tmp/R-${1}.tar.gz
 }
 
@@ -65,12 +72,34 @@ compile_r() {
     build_flag=''
   fi
 
+  # R 3.6.1 and below require additional compiler flags for GCC 10 and above
+  # (e.g., on Debian 11). Add -fcommon to CFLAGS to work around issues with new
+  # default of -fno-common for C (fixed in R 3.6.2). Add -fallow-argument-mismatch
+  # to FFLAGS to work around issues with changes to argument mismatch checking
+  # in Fortran (fixed in R 3.6.2, but not mentioned in NEWS).
+  # https://cran.r-project.org/doc/manuals/r-release/NEWS.3.html
+  # https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Using-Fortran
+  # https://gcc.gnu.org/gcc-10/porting_to.html
+  gcc_major_version=$(gcc -dumpversion | cut -d '.' -f 1)
+  if _version_is_less_than "${R_VERSION}" 3.6.2 && _version_is_greater_than "${gcc_major_version}" 9; then
+    # Default CFLAGS/FFLAGS for all R 3.x versions is '-g -O2' when using GCC
+    export CFLAGS='-g -O2 -fcommon'
+    export FFLAGS='-g -O2 -fallow-argument-mismatch'
+    echo "Setting CFLAGS: ${CFLAGS}"
+    echo "Setting FFLAGS: ${FFLAGS}"
+  fi
+
   # Avoid a PCRE2 dependency for R 3.5 and 3.6. R 3.x uses PCRE1, but R 3.5+
   # will link against PCRE2 if present, although it is not actually used.
   # Since there's no way to disable this in the configure script, and we need
   # PCRE2 for R 4.x, we hide PCRE2 from the configure script by temporarily
   # removing the pkg-config file and pcre2-config script.
-  if [[ "${1}" =~ ^3 ]] && pkg-config --exists libpcre2-8; then
+  #
+  # The INCLUDE_PCRE2_IN_R_3 environment variable can be set to include PCRE2
+  # in R 3.x builds, for distributions where PCRE2 is always required.
+  # In Debian 11/Ubuntu 22, Pango now depends on PCRE2, so R 3.x will not be compiled with
+  # Pango support if the PCRE2 pkg-config file is missing.
+  if [[ "${1}" =~ ^3 ]] && pkg-config --exists libpcre2-8 && [ -z "$INCLUDE_PCRE2_IN_R_3" ]; then
     mkdir -p /tmp/pcre2
     pc_dir=$(pkg-config --variable pcfiledir libpcre2-8)
     mv ${pc_dir}/libpcre2-8.pc /tmp/pcre2
@@ -143,6 +172,10 @@ set_up_environment() {
 
 _version_is_greater_than() {
   test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"
+}
+
+_version_is_less_than() {
+  test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$2"
 }
 
 ###### RUN R COMPILE PROCEDURE ######

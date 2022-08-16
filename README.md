@@ -18,12 +18,18 @@ bug, or ask questions on [RStudio Community](https://community.rstudio.com).
 ## Supported Platforms
 
 R binaries are built for the following Linux operating systems:
+
 - Ubuntu 18.04, 20.04, 22.04
-- Debian 9, 10
+- Debian 10, 11
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8
-- openSUSE 42.3, 15.2, 15.3
-- SUSE Linux Enterprise 12, 15 SP2, 15 SP3
+- openSUSE 15.3
+- SUSE Linux Enterprise 15 SP3
+
+Operating systems are supported until their vendor end-of-support dates, which
+can be found on the [RStudio Platform Support](https://www.rstudio.com/about/platform-support/)
+page. When an operating system has reached its end of support, builds for it
+will be discontinued, but existing binaries will continue to be available.
 
 ## Quick Installation
 
@@ -42,7 +48,7 @@ bash -c "$(curl -L https://rstd.io/r-install)"
 Define the version of R that you want to install. Available versions
 of R can be found here: https://cdn.rstudio.com/r/versions.json
 ```bash
-R_VERSION=3.5.3
+R_VERSION=4.1.3
 ```
 
 ### Download and install R
@@ -59,11 +65,11 @@ wget https://cdn.rstudio.com/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
 # Ubuntu 22.04
 wget https://cdn.rstudio.com/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
 
-# Debian 9
-wget https://cdn.rstudio.com/r/debian-9/pkgs/r-${R_VERSION}_1_amd64.deb
-
 # Debian 10
 wget https://cdn.rstudio.com/r/debian-10/pkgs/r-${R_VERSION}_1_amd64.deb
+
+# Debian 11
+wget https://cdn.rstudio.com/r/debian-11/pkgs/r-${R_VERSION}_1_amd64.deb
 ```
 
 Then install the package:
@@ -108,21 +114,8 @@ sudo yum install R-${R_VERSION}-1-1.x86_64.rpm
 
 #### SUSE Linux
 
-Enable the Python backports repository (SLES 12 only):
-```bash
-# SLES 12
-VERSION="SLE_$(grep "^VERSION=" /etc/os-release | sed -e 's/VERSION=//' -e 's/"//g' -e 's/-/_/')"
-sudo zypper --gpg-auto-import-keys addrepo https://download.opensuse.org/repositories/devel:/languages:/python:/backports/$VERSION/devel:languages:python:backports.repo
-```
-
 Download the rpm package:
 ```bash
-# openSUSE 42.3 / SLES 12
-wget https://cdn.rstudio.com/r/opensuse-42/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-
-# openSUSE 15.2 / SLES 15 SP2
-wget https://cdn.rstudio.com/r/opensuse-152/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-
 # openSUSE 15.3 / SLES 15 SP3
 wget https://cdn.rstudio.com/r/opensuse-153/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
@@ -189,8 +182,8 @@ environment:
   - LOCAL_STORE=/tmp/output # ensures that output tarballs are persisted locally
 build:
   context: .
-  dockerfile: Dockerfile.debian-9
-image: r-builds:debian-9
+  dockerfile: Dockerfile.debian-11
+image: r-builds:debian-11
 volumes:
   - ./integration/tmp:/tmp/output  # path to output tarballs
 ```
@@ -200,7 +193,7 @@ volumes:
 IN `serverless-resources.yml` you'll need to add a job definition that points to the ECR image.
 
 ```
-rBuildsBatchJobDefinitionDebian9:
+rBuildsBatchJobDefinitionDebian11:
   Type: AWS::Batch::JobDefinition
   Properties:
     Type: container
@@ -211,7 +204,7 @@ rBuildsBatchJobDefinitionDebian9:
       Memory: 4096
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: #{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-9
+      Image: #{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-11
 ```
 
 ### Environment variables in the serverless.yml functions.
@@ -224,9 +217,9 @@ The serverless functions which trigger R builds need to be informed of new platf
 ```
 environment:
   # snip
-  JOB_DEFINITION_ARN_debian_9:
-    Ref: rBuildsBatchJobDefinitionDebian9
-  SUPPORTED_PLATFORMS: ubuntu-1804,debian-9,debian-10,centos-7,centos-8,opensuse-42
+  JOB_DEFINITION_ARN_debian_11:
+    Ref: rBuildsBatchJobDefinitionDebian11
+  SUPPORTED_PLATFORMS: ubuntu-1804,debian-10,centos-7,centos-8
 ```
 
 ### Makefile

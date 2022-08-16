@@ -34,17 +34,6 @@ services:
     image: r-builds:ubuntu-2204
     volumes:
       - ./integration/tmp:/tmp/output
-  debian-9:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.debian-9
-    image: r-builds:debian-9
-    volumes:
-      - ./integration/tmp:/tmp/output
   debian-10:
     command: ./build.sh
     environment:
@@ -54,6 +43,17 @@ services:
       context: .
       dockerfile: Dockerfile.debian-10
     image: r-builds:debian-10
+    volumes:
+      - ./integration/tmp:/tmp/output
+  debian-11:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.debian-11
+    image: r-builds:debian-11
     volumes:
       - ./integration/tmp:/tmp/output
   centos-7:
@@ -76,28 +76,6 @@ services:
       context: .
       dockerfile: Dockerfile.centos-8
     image: r-builds:centos-8
-    volumes:
-      - ./integration/tmp:/tmp/output
-  opensuse-42:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.opensuse-42
-    image: r-builds:opensuse-42
-    volumes:
-      - ./integration/tmp:/tmp/output
-  opensuse-152:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.opensuse-152
-    image: r-builds:opensuse-152
     volumes:
       - ./integration/tmp:/tmp/output
   opensuse-153:
