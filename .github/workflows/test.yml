@@ -6,6 +6,7 @@ on:
       - 'builder/**'
       - 'test/**'
       - 'Makefile'
+      - '.github/workflows/test.yml'
   workflow_dispatch:
     inputs:
       platforms:
