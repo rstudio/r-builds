@@ -1,0 +1,67 @@
+version: '2.0'
+
+services:
+  ubuntu-1804:
+    image: ubuntu:bionic
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-1804
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  ubuntu-2004:
+    image: ubuntu:focal
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-2004
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  ubuntu-2204:
+    image: ubuntu:jammy
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-2204
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  debian-11:
+    image: debian:bullseye
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=debian-11
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  debian-10:
+    image: debian:buster
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=debian-10
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  centos-7:
+    image: centos:centos7
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=centos-7
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  centos-8:
+    image: rockylinux:8
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=centos-8
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  opensuse-153:
+    image: opensuse/leap:15.3
+    command: /r-builds/test/test-zypper.sh
+    environment:
+      - OS_IDENTIFIER=opensuse-153
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds

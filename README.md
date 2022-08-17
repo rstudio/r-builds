@@ -244,33 +244,34 @@ serverless invoke stepf -n rBuilds -d '{"force": true, "versions": ["3.6.3", "4.
 
 ## Testing
 
-To test the R builds locally, you can build the images:
+To test the R builds locally, you can use the `build-r-$PLATFORM` and `test-r-$PLATFORM`
+targets to build R and run the tests. The tests use the quick install script to install R,
+using a locally built R if present, or otherwise a build from the CDN.
 
 ```bash
-# Build images for all platforms
-make docker-build
+# Build R 4.1.3 for Ubuntu 22
+R_VERSION=4.1.3 make build-r-ubuntu-2204
 
-# Or build the image for a single platform
-(cd builder && docker-compose build ubuntu-2004)
+# Test R 4.1.3 for Ubuntu 22
+R_VERSION=4.1.3 make test-r-ubuntu-2204
 ```
 
-Then run the build script:
+Alternatively, you can build an image using the `docker-build-$PLATFORM`
+target, launch a bash session within a container using the `bash-$PLATFORM` target,
+and interactively run the build script:
 
 ```bash
-# Build R for all platforms
-R_VERSION=4.0.5 make docker-build-r
+# Build the image for Ubuntu 22
+make docker-build-ubuntu-2204
 
-# Build R for a single platform
-(cd builder && R_VERSION=4.0.5 docker-compose up ubuntu-2004)
+# Launch a bash session for Ubuntu 22
+make bash-ubuntu-2204
 
-# Alternatively, run the build script from within a container
-docker run -it --rm --entrypoint "/bin/bash" r-builds:ubuntu-2004
+# Build R 4.1.3
+R_VERSION=4.1.3 ./build.sh
 
-# Build R 4.0.5
-R_VERSION=4.0.5 ./build.sh
-
-# Build R devel
-R_VERSION=devel ./build.sh
+# Build R devel with parallel execution to speed up the build
+MAKEFLAGS=-j4 R_VERSION=devel ./build.sh
 
 # Build a prerelease version of R (e.g., alpha or beta)
 R_VERSION=rc R_TARBALL_URL=https://cran.r-project.org/src/base-prerelease/R-latest.tar.gz ./build.sh
