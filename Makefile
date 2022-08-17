@@ -59,6 +59,9 @@ $(foreach platform,$(PLATFORMS), \
     $(eval $(GEN_TARGETS)) \
 )
 
+print-platforms:
+	@echo $(PLATFORMS)
+
 # Helper for launching a bash session on a docker image of your choice. Defaults
 # to "ubuntu:xenial".
 TARGET_IMAGE?=ubuntu:xenial
@@ -68,4 +71,4 @@ bash:
 		-w /r-builds \
 		${TARGET_IMAGE} /bin/bash
 
-.PHONY: deps docker-build docker-push docker-down docker-build-package docker-shell-package-env ecr-login fetch-serverless-custom-file serverless-deploy
+.PHONY: deps docker-build docker-push docker-down docker-build-package docker-shell-package-env ecr-login fetch-serverless-custom-file print-platforms serverless-deploy

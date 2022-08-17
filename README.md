@@ -226,6 +226,21 @@ environment:
 
 In order for the makefile to push these new platforms to ECR, add them to the PLATFORMS variable near the top of the Makefile
 
+### test/docker-compose.yml
+
+A new service in the `test/docker-compose.yml` file named according to the `platform-version` and containing the proper entries:
+
+```yaml
+  ubuntu-2204:
+    image: ubuntu:jammy
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-2204
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+```
+
 ### Submit a Pull Request
 
 Once you've followed the steps above, submit a pull request. On successful merge, builds for this platform will begin to be available from the CDN.
@@ -243,6 +258,16 @@ serverless invoke stepf -n rBuilds -d '{"force": true, "versions": ["3.6.3", "4.
 ```
 
 ## Testing
+
+Tests are automatically run on each push that changes a file in `builder/`, `test/`, or the `Makefile`.
+These tests validate that R was correctly configured, built, and packaged. By default, the tests run
+for the last 5 minor R versions on each platform.
+
+To run the tests manually, you can navigate to the [GitHub Actions workflow page](https://github.com/rstudio/r-builds/actions/workflows/test.yml)
+and use "Run workflow" to run the tests from a custom branch, list of platforms, and list of R versions.
+
+To skip the tests, add `[skip ci]` to your commit message. See [Skipping workflow runs](https://docs.github.com/en/actions/managing-workflow-runs/skipping-workflow-runs)
+for more information.
 
 To test the R builds locally, you can use the `build-r-$PLATFORM` and `test-r-$PLATFORM`
 targets to build R and run the tests. The tests use the quick install script to install R,
