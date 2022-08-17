@@ -93,6 +93,7 @@ jobs:
   test:
     needs: [setup-matrix, docker-images]
     strategy:
+      fail-fast: false
       matrix:
         platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
         r_version: ${{ fromJson(needs.setup-matrix.outputs.r_versions) }}
