@@ -23,8 +23,8 @@ R binaries are built for the following Linux operating systems:
 - Debian 10, 11
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8, 9
-- openSUSE 15.3
-- SUSE Linux Enterprise 15 SP3
+- openSUSE 15.3, 15.4
+- SUSE Linux Enterprise 15 SP3, 15 SP4
 
 Operating systems are supported until their vendor end-of-support dates, which
 can be found on the [RStudio Platform Support](https://www.rstudio.com/about/platform-support/)
@@ -139,6 +139,9 @@ Download the rpm package:
 ```bash
 # openSUSE 15.3 / SLES 15 SP3
 wget https://cdn.rstudio.com/r/opensuse-153/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+
+# openSUSE 15.4 / SLES 15 SP4
+wget https://cdn.rstudio.com/r/opensuse-154/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
