@@ -49,9 +49,11 @@ provider:
       Ref: rBuildsBatchJobDefinitionCentos7
     JOB_DEFINITION_ARN_centos_8:
       Ref: rBuildsBatchJobDefinitionCentos8
+    JOB_DEFINITION_ARN_rhel_9:
+      Ref: rBuildsBatchJobDefinitionRhel9
     JOB_DEFINITION_ARN_opensuse_153:
       Ref: rBuildsBatchJobDefinitionOpensuse153
-    SUPPORTED_PLATFORMS: ubuntu-1804,ubuntu-2004,ubuntu-2204,debian-10,debian-11,centos-7,centos-8,opensuse-153
+    SUPPORTED_PLATFORMS: ubuntu-1804,ubuntu-2004,ubuntu-2204,debian-10,debian-11,centos-7,centos-8,rhel-9,opensuse-153
 
 functions:
   queueBuilds:

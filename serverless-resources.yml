@@ -228,6 +228,20 @@ rBuildsBatchJobDefinitionCentos8:
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-8"
     Timeout:
       AttemptDurationSeconds: 7200
+rBuildsBatchJobDefinitionRhel9:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:rhel-9"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionOpensuse153:
   Type: AWS::Batch::JobDefinition
   Properties:

@@ -22,7 +22,7 @@ R binaries are built for the following Linux operating systems:
 - Ubuntu 18.04, 20.04, 22.04
 - Debian 10, 11
 - CentOS 7
-- Red Hat Enterprise Linux 7, 8
+- Red Hat Enterprise Linux 7, 8, 9
 - openSUSE 15.3
 - SUSE Linux Enterprise 15 SP3
 
@@ -81,21 +81,39 @@ sudo gdebi r-${R_VERSION}_1_amd64.deb
 #### RHEL/CentOS Linux
 
 Enable the [Extra Packages for Enterprise Linux](https://fedoraproject.org/wiki/EPEL)
-repository (RHEL/CentOS 7 only):
+repository (RHEL/CentOS 7 and RHEL 9 only):
 
 ```bash
 # CentOS / RHEL 7
 sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+
+# Rocky Linux 9 / AlmaLinux 9
+sudo dnf install dnf-plugins-core
+sudo dnf config-manager --set-enabled crb
+sudo dnf install epel-release
+
+# RHEL 9
+sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 ```
 
-> Note that on RHEL 7, you may also need to enable the Optional repository:
+> On RHEL 7, you may also need to enable the Optional repository:
 > ```bash
-> # For RHEL 7 users with certificate subscriptions:
 > sudo subscription-manager repos --enable "rhel-*-optional-rpms"
 >
-> # Or alternatively, using yum:
+> # If running RHEL 7 in a public cloud, such as Amazon EC2, enable the
+> # Optional repository from Red Hat Update Infrastructure (RHUI) instead
 > sudo yum install yum-utils
 > sudo yum-config-manager --enable "rhel-*-optional-rpms"
+> ```
+
+> On RHEL 9, you may also need to enable the CodeReady Linux Builder repository:
+> ```bash
+> sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
+> 
+> # If running RHEL 9 in a public cloud, such as Amazon EC2, enable the CodeReady
+> # Linux Builder repository from Red Hat Update Infrastructure (RHUI) instead
+> sudo dnf install dnf-plugins-core
+> sudo dnf config-manager --enable codeready-builder-for-rhel-9-*-rpms
 > ```
 
 Download the rpm package:
@@ -103,8 +121,11 @@ Download the rpm package:
 # CentOS / RHEL 7
 wget https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
-# RHEL 8
+# RHEL 8 / Rocky Linux 8 / AlmaLinux 8
 wget https://cdn.rstudio.com/r/centos-8/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+
+# RHEL 9 / Rocky Linux 9 / AlmaLinux 9
+wget https://cdn.rstudio.com/r/rhel-9/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:

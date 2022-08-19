@@ -128,16 +128,9 @@ def queue_builds(event, context):
         for platform in event['supported_platforms']:
             # In R 3.3.0, 3.3.1, and 3.3.2, the configure script check for the
             # zlib version fails to handle versions longer than 5 characters.
-            # Skip builds affected by this bug.
-            if platform in [
-                'ubuntu-2204',
-                'ubuntu-2004',
-                'ubuntu-1804',
-                'opensuse-153',
-                'centos-8',
-                'debian-10',
-                'debian-11',
-            ] and version in ['3.3.0', '3.3.1', '3.3.2']:
+            # Skip builds affected by this bug. Most newer distros will be affected.
+            # https://github.com/rstudio/r-builds/issues/76
+            if version in ['3.3.0', '3.3.1', '3.3.2'] and platform not in ['centos-7']:
                 continue
             job_ids.append(_submit_job(version, platform))
     event['jobIds'] = job_ids

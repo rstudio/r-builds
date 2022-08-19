@@ -79,11 +79,11 @@ detect_os () {
   then
    distro="Amazon"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:almalinux:almalinux:8::baseos ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:almalinux:almalinux: ]]
   then
    distro="Alma"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:rocky:rocky:8.5:GA ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:rocky:rocky: ]]
   then
    distro="Rocky"
   fi
@@ -97,17 +97,13 @@ detect_os () {
 # Returns the OS version
 detect_os_version () {
   os=$1
-  if [[ "${os}" == "RedHat" ]]; then
-    if [[ $(cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=') =~ ^(\"8.|28) ]]; then
-      echo "8"
-    elif [[ $(cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=') =~ ^(\"7.) ]]; then
-      echo "7"
+  if [[ "${os}" =~ ^(RedHat|Alma|Rocky)$ ]]; then
+    # Get the major version. /etc/redhat-release is used if /etc/os-release isn't available,
+    # e.g., on CentOS/RHEL 6.
+    if [[ -f /etc/os-release ]]; then
+      cat /etc/os-release | grep VERSION_ID= | sed -E 's/VERSION_ID="([0-9.]*)"/\1/' | cut -d '.' -f 1
     elif [[ -f /etc/redhat-release ]]; then
-      if [[ $(cat /etc/redhat-release | grep "6.") ]]; then
-        echo 6
-      fi
-    elif [[ -f /etc/os-release ]]; then
-        cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/"//g'
+      cat /etc/redhat-release | sed -E 's/[^0-9]+([0-9.]+)[^0-9]*/\1/' | cut -d '.' -f 1
     fi
   fi
   if [[ "${os}" == "Ubuntu" ]] || [[ "${os}" == "Debian" ]]; then
@@ -119,10 +115,6 @@ detect_os_version () {
   # reuse rhel7 binaries for amazon
   if [[ "${os}" == "Amazon" ]]; then
     echo "7"
-  fi
-  # reuse rhel8 binaries for alma and rocky
-  if [[ "${os}" =~ ^(Alma|Rocky) ]]; then
-    echo "8"
   fi
 }
 
@@ -186,7 +178,11 @@ download_url () {
 
     case $os in
       "RedHat" | "CentOS" | "Amazon" | "Alma" | "Rocky")
-        echo "${CDN_URL}/centos-${ver}/pkgs/${name}"
+        if [ "${ver}" -ge 9 ]; then
+          echo "${CDN_URL}/rhel-${ver}/pkgs/${name}"
+        else
+          echo "${CDN_URL}/centos-${ver}/pkgs/${name}"
+        fi
         ;;
       "Ubuntu")
         echo "${CDN_URL}/ubuntu-${ver}/pkgs/${name}"
@@ -328,7 +324,7 @@ install_pre () {
 
   case $os in
     "RedHat" | "CentOS" | "Alma" | "Rocky")
-      install_epel "${ver}"
+      install_epel "${os}" "${ver}"
       ;;
     "Amazon")
       install_epel_amzn
@@ -352,7 +348,8 @@ install_epel_amzn () {
 
 # Installs EPEL for RHEL/CentOS/Alma/Rocky
 install_epel () {
-  ver=$1
+  os=$1
+  ver=$2
   yes=
   if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
       yes="-y"
@@ -365,6 +362,16 @@ install_epel () {
       ${SUDO} yum install ${yes} https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
       ;;
     "8")
+      ;;
+    "9")
+      if [[ "${os}" == "RedHat" ]]; then
+        ${SUDO} subscription-manager repos --enable "codeready-builder-for-rhel-9-$(arch)-rpms"
+        ${SUDO} dnf install ${yes} https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+      else
+        ${SUDO} dnf install ${yes} dnf-plugins-core
+        ${SUDO} dnf config-manager --set-enabled crb
+        ${SUDO} dnf install ${yes} epel-release
+      fi
       ;;
   esac
 }

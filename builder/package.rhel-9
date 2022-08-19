@@ -1,0 +1,76 @@
+if [[ ! -d /tmp/output/rhel-9 ]]; then
+  mkdir -p /tmp/output/rhel-9
+fi
+
+# R 3.x requires PCRE1
+pcre_lib='pcre2-devel'
+if [[ "${R_VERSION}" =~ ^3 ]]; then
+  pcre_lib='pcre-devel'
+fi
+
+# Create post-install script required for OpenBLAS.
+#
+# On RHEL and SUSE, we link R against the internal shared BLAS to make the
+# R binaries more portable and allow users to switch BLAS implementations without
+# having to recompile R. We default to OpenBLAS, but users may prefer other implementations.
+# 
+# Binary packages built against the shared BLAS are also more portable and may be used
+# with the default R distributed by RHEL/SUSE, or other R installations using
+# shared BLAS and configured with a different BLAS (such as Microsoft R Open with MKL).
+# This is especially important for RSPM's binary packages.
+#
+# On Ubuntu/Debian, we link R against the external BLAS instead (--with-blas/--with-lapack),
+# as those distributions use the alternatives system to swap BLAS libraries at runtime.
+# The default R distributions on Ubuntu/Debian use the external BLAS, so we do as well
+# for portability.
+#
+# https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Shared-BLAS
+cat <<EOF >> /post-install.sh
+mv /opt/R/${R_VERSION}/lib/R/lib/libRblas.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so.keep
+ln -s /usr/lib64/libopenblasp.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so
+EOF
+
+# Create after-remove script to remove internal BLAS, which won't be cleaned up automatically.
+cat <<EOF >> /after-remove.sh
+if [ -d /opt/R/${R_VERSION} ]; then
+  rm -r /opt/R/${R_VERSION}
+fi
+EOF
+
+fpm \
+  -s dir \
+  -t rpm \
+  -v 1 \
+  -n "R-${R_VERSION}" \
+  --vendor "RStudio, PBC" \
+  --url "https://www.r-project.org" \
+  --description "GNU R statistical computation and graphics system" \
+  --maintainer "RStudio, PBC <https://github.com/rstudio/r-builds>" \
+  --license "GPLv2+" \
+  --after-install /post-install.sh \
+  --after-remove /after-remove.sh \
+  -p /tmp/output/rhel-9/ \
+  -d bzip2-devel \
+  -d gcc \
+  -d gcc-c++ \
+  -d gcc-gfortran \
+  -d libcurl-devel \
+  -d libicu-devel \
+  -d libSM \
+  -d libtiff \
+  -d libXmu \
+  -d libXt \
+  -d make \
+  -d openblas-devel \
+  -d pango \
+  -d ${pcre_lib} \
+  -d tcl \
+  -d tk \
+  -d unzip \
+  -d which \
+  -d xz-devel \
+  -d zip \
+  -d zlib-devel \
+  "/opt/R/${R_VERSION}"
+
+export PKG_FILE=$(ls /tmp/output/rhel-9/R-${R_VERSION}*.rpm | head -1)
