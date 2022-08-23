@@ -157,7 +157,7 @@ EOF
 }
 
 # check for packager script
-## If it exists this build is ready for packaging with fpm, so run the script
+## If it exists this build is ready for packaging with nFPM, so run the script
 ## else do nothing
 package_r() {
   if [[ -f /package.sh ]]; then

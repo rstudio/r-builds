@@ -34,8 +34,6 @@ RUN dnf -y upgrade \
     python3-pip \
     readline-devel \
     rpm-build \
-    ruby \
-    ruby-devel \
     tcl-devel \
     tex \
     texinfo-tex \
@@ -52,8 +50,9 @@ RUN dnf -y upgrade \
 RUN pip3 install awscli --upgrade --user \
     && ln -s /root/.local/bin/aws /usr/bin/aws
 
-# Pin fpm to avoid git dependency in 1.12.0
-RUN gem install fpm:1.11.0
+RUN curl -LO https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_amd64.rpm && \
+    dnf install -y nfpm_amd64.rpm && \
+    rm nfpm_amd64.rpm
 
 RUN chmod 0777 /opt
 
