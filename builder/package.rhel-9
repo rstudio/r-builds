@@ -1,5 +1,7 @@
-if [[ ! -d /tmp/output/rhel-9 ]]; then
-  mkdir -p /tmp/output/rhel-9
+#!/bin/bash
+
+if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
+  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
 fi
 
 # R 3.x requires PCRE1
@@ -37,40 +39,50 @@ if [ -d /opt/R/${R_VERSION} ]; then
 fi
 EOF
 
-fpm \
-  -s dir \
-  -t rpm \
-  -v 1 \
-  -n "R-${R_VERSION}" \
-  --vendor "RStudio, PBC" \
-  --url "https://www.r-project.org" \
-  --description "GNU R statistical computation and graphics system" \
-  --maintainer "RStudio, PBC <https://github.com/rstudio/r-builds>" \
-  --license "GPLv2+" \
-  --after-install /post-install.sh \
-  --after-remove /after-remove.sh \
-  -p /tmp/output/rhel-9/ \
-  -d bzip2-devel \
-  -d gcc \
-  -d gcc-c++ \
-  -d gcc-gfortran \
-  -d libcurl-devel \
-  -d libicu-devel \
-  -d libSM \
-  -d libtiff \
-  -d libXmu \
-  -d libXt \
-  -d make \
-  -d openblas-devel \
-  -d pango \
-  -d ${pcre_lib} \
-  -d tcl \
-  -d tk \
-  -d unzip \
-  -d which \
-  -d xz-devel \
-  -d zip \
-  -d zlib-devel \
-  "/opt/R/${R_VERSION}"
+cat <<EOF > /tmp/nfpm.yml
+name: R-${R_VERSION}
+version: 1
+version_schema: none
+release: 1
+maintainer: RStudio, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system
+vendor: RStudio, PBC
+homepage: https://www.r-project.org
+license: GPLv2+
+depends:
+- bzip2-devel
+- gcc
+- gcc-c++
+- gcc-gfortran
+- libcurl-devel
+- libicu-devel
+- libSM
+- libtiff
+- libXmu
+- libXt
+- make
+- openblas-devel
+- pango
+- ${pcre_lib}
+- tcl
+- tk
+- unzip
+- which
+- xz-devel
+- zip
+- zlib-devel
+contents:
+- src: /opt/R/${R_VERSION}
+  dst: /opt/R/${R_VERSION}
+scripts:
+  postinstall: /post-install.sh
+  postremove: /after-remove.sh
+EOF
 
-export PKG_FILE=$(ls /tmp/output/rhel-9/R-${R_VERSION}*.rpm | head -1)
+nfpm package \
+  -f /tmp/nfpm.yml \
+  -p rpm \
+  -t "/tmp/output/${OS_IDENTIFIER}"
+
+export PKG_FILE=$(ls /tmp/output/${OS_IDENTIFIER}/R-${R_VERSION}*.rpm | head -1)
