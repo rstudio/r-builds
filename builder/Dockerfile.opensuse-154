@@ -40,8 +40,6 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     perl-macros \
     readline-devel \
     rpm-build \
-    ruby \
-    ruby-devel \
     shadow \
     tcl-devel \
     texinfo \
@@ -74,8 +72,9 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     ./aws/install && \
     rm -rf aws awscliv2.zip
 
-RUN gem install fpm && \
-    ln -s /usr/bin/fpm.ruby2.5 /usr/local/bin/fpm
+RUN curl -LO https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_amd64.rpm && \
+    zypper --non-interactive --no-gpg-checks install nfpm_amd64.rpm && \
+    rm nfpm_amd64.rpm
 
 RUN chmod 0777 /opt
 

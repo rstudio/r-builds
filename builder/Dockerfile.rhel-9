@@ -32,8 +32,6 @@ RUN dnf -y upgrade \
     pcre2-devel \
     readline-devel \
     rpm-build \
-    ruby \
-    ruby-devel \
     tcl-devel \
     tex \
     texinfo-tex \
@@ -53,7 +51,9 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     ./aws/install && \
     rm -rf aws awscliv2.zip
 
-RUN gem install fpm
+RUN curl -LO https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_amd64.rpm && \
+    dnf install -y nfpm_amd64.rpm && \
+    rm nfpm_amd64.rpm
 
 RUN chmod 0777 /opt
 

@@ -6,15 +6,17 @@ RUN set -x \
   && export DEBIAN_FRONTEND=noninteractive \
   && echo 'deb-src http://deb.debian.org/debian bullseye main' >> /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y gcc libcurl4-openssl-dev libicu-dev \
-     libopenblas-base libpcre2-dev make python3-pip ruby ruby-dev wget \
+  && apt-get install -y curl gcc libcurl4-openssl-dev libicu-dev \
+     libopenblas-base libpcre2-dev make python3-pip wget \
   && apt-get build-dep -y r-base
 
 RUN pip3 install awscli
 
 RUN chmod 0777 /opt
 
-RUN gem install fpm
+RUN curl -LO https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_amd64.deb && \
+    apt install -y ./nfpm_amd64.deb && \
+    rm nfpm_amd64.deb
 
 # Override the default pager used by R
 ENV PAGER /usr/bin/pager
