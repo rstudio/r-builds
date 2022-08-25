@@ -83,7 +83,7 @@ rBuildsEcsLaunchTemplate:
         - DeviceName: /dev/xvdcz
           Ebs:
             VolumeType: gp3
-            VolumeSize: 64
+            VolumeSize: 96
 
 rBuildsBatchComputeEnvironment:
   Type: AWS::Batch::ComputeEnvironment
