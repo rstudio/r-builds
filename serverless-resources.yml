@@ -96,6 +96,7 @@ rBuildsBatchComputeEnvironment:
       LaunchTemplate:
         LaunchTemplateId:
           Ref: rBuildsEcsLaunchTemplate
+        Version: '$Latest'
       SpotIamFleetRole:
         "Fn::GetAtt": [ rBuildsSpotFleetIamRole, Arn ]
       SecurityGroupIds: ${self:custom.securityGroupIds}
