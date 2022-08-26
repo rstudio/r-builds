@@ -80,7 +80,7 @@ rBuildsEcsLaunchTemplate:
     LaunchTemplateName: r-builds-${self:provider.stage}-batch-managed-ecs-larger-volume
     LaunchTemplateData:
       BlockDeviceMappings:
-        - DeviceName: /dev/xvdcz
+        - DeviceName: /dev/xvda
           Ebs:
             VolumeType: gp3
             VolumeSize: 96
