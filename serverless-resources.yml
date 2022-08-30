@@ -84,6 +84,11 @@ rBuildsEcsLaunchTemplate:
           Ebs:
             VolumeType: gp3
             VolumeSize: 96
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          # Mitigate DockerTimeoutError errors from the default timeout of 4m
+          echo "ECS_CONTAINER_CREATE_TIMEOUT=10m" >> /etc/ecs/ecs.config
 
 rBuildsBatchComputeEnvironment:
   Type: AWS::Batch::ComputeEnvironment
