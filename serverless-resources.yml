@@ -114,9 +114,6 @@ rBuildsBatchComputeEnvironment:
         - m6i
         - m5
         - m5a
-        - r6i
-        - r5
-        - r5a
         - c6i
         - c5
         - c5a
