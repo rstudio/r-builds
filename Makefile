@@ -44,10 +44,10 @@ docker-build-$(platform):
 	@cd builder && docker-compose build $(platform)
 
 build-r-$(platform):
-	@cd builder && R_VERSION=$(R_VERSION) docker-compose up $(platform)
+	@cd builder && R_VERSION=$(R_VERSION) docker-compose run --rm $(platform)
 
 test-r-$(platform):
-	@cd test && R_VERSION=$(R_VERSION) docker-compose up $(platform)
+	@cd test && R_VERSION=$(R_VERSION) docker-compose run --rm $(platform)
 
 bash-$(platform):
 	docker run -it --rm --entrypoint /bin/bash -v $(CURDIR):/r-builds r-builds:$(platform)
