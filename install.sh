@@ -32,20 +32,17 @@ CDN_URL='https://cdn.rstudio.com/r'
 # The URL for listing available R versions
 VERSIONS_URL="${CDN_URL}/versions.json"
 
-R_VERSIONS=$(curl -s ${VERSIONS_URL} | \
+R_VERSIONS=$(curl -s ${VERSIONS_URL} |
   # Matches the JSON line that contains the r versions
-  grep r_versions | \
+  grep r_versions |
   # Gets the value of the `r_version` property (e.g., "[ 3.0.0, 3.0.3, ... ]")
-  cut -f2 -d ":" | \
+  cut -f2 -d ":" |
   # Removes the opening and closing brackets of the array
-  cut -f2 -d "[" | cut -f1 -d "]" | \
+  cut -f2 -d "[" | cut -f1 -d "]" |
   # Removes the quotes and commas from the values
-  sed -e 's/\"//g' | sed -e 's/\,//g' | \
-  # Appends a placeholder to the end of the string. Without an extra element at the
-  # end, the last version will be missing after we reverse the order.
-  { IFS= read -r vers; printf '%s placeholder' "$vers"; } | \
-  # Reverses the order of the list
-  ( while read -d ' ' f;do g="$f${g+ }$g" ;done;echo "$g" ))
+  sed -e 's/\"//g' | sed -e 's/\,//g' |
+  # Convert to newlines and sort in descending order, with devel/next at the bottom
+  tr ' ' '\n' | sort --numeric-sort --reverse)
 
 # Returns the OS
 detect_os () {
