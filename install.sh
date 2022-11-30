@@ -27,7 +27,7 @@ if [[ $(id -u) != "0" ]]; then
 fi
 
 # The root of the S3 URL for downloads
-CDN_URL='https://cdn.rstudio.com/r'
+CDN_URL='https://cdn.posit.co/r'
 
 # The URL for listing available R versions
 VERSIONS_URL="${CDN_URL}/versions.json"

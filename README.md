@@ -1,19 +1,19 @@
 # r-builds
 
 This repository orchestrates tools to produce R binaries. The binaries are available as a
-community resource, **they are not professionally supported by RStudio**. 
+community resource, **they are not professionally supported by Posit**. 
 The R language is open source, please see the official documentation at https://www.r-project.org/.
 
 These binaries are not a replacement to existing binary distributions for R.
 The binaries were built with the following considerations:
 - They use a minimal set of [build and runtime dependencies](builder).
-- They are designed to be used side-by-side, e.g., on [RStudio Server Pro](https://docs.rstudio.com/ide/server-pro/r-versions.html#using-multiple-versions-of-r-concurrently).
+- They are designed to be used side-by-side, e.g., on [Posit Workbench](https://docs.posit.co/ide/server-pro/r_versions/using_multiple_versions_of_r.html).
 - They give users a consistent option for accessing R across different Linux distributions.
 
 These binaries have been extensively tested, and are used in production everyday
-on [RStudio Cloud](https://rstudio.cloud) and
+on [Posit Cloud](https://posit.cloud) and
 [shinyapps.io](https://shinyapps.io). Please open an issue to report a specific
-bug, or ask questions on [RStudio Community](https://community.rstudio.com).
+bug, or ask questions on [Posit Community](https://community.rstudio.com).
 
 ## Supported Platforms
 
@@ -27,7 +27,7 @@ R binaries are built for the following Linux operating systems:
 - SUSE Linux Enterprise 15 SP3, 15 SP4
 
 Operating systems are supported until their vendor end-of-support dates, which
-can be found on the [RStudio Platform Support](https://www.rstudio.com/about/platform-support/)
+can be found on the [Posit Platform Support](https://posit.co/about/platform-support/)
 page. When an operating system has reached its end of support, builds for it
 will be discontinued, but existing binaries will continue to be available.
 
@@ -46,7 +46,7 @@ bash -c "$(curl -L https://rstd.io/r-install)"
 ### Specify R version
 
 Define the version of R that you want to install. Available versions
-of R can be found here: https://cdn.rstudio.com/r/versions.json
+of R can be found here: https://cdn.posit.co/r/versions.json
 ```bash
 R_VERSION=4.1.3
 ```
@@ -57,19 +57,19 @@ R_VERSION=4.1.3
 Download the deb package:
 ```bash
 # Ubuntu 18.04
-wget https://cdn.rstudio.com/r/ubuntu-1804/pkgs/r-${R_VERSION}_1_amd64.deb
+wget https://cdn.posit.co/r/ubuntu-1804/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Ubuntu 20.04
-wget https://cdn.rstudio.com/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
+wget https://cdn.posit.co/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Ubuntu 22.04
-wget https://cdn.rstudio.com/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
+wget https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Debian 10
-wget https://cdn.rstudio.com/r/debian-10/pkgs/r-${R_VERSION}_1_amd64.deb
+wget https://cdn.posit.co/r/debian-10/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Debian 11
-wget https://cdn.rstudio.com/r/debian-11/pkgs/r-${R_VERSION}_1_amd64.deb
+wget https://cdn.posit.co/r/debian-11/pkgs/r-${R_VERSION}_1_amd64.deb
 ```
 
 Then install the package:
@@ -119,13 +119,13 @@ sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noa
 Download the rpm package:
 ```bash
 # CentOS / RHEL 7
-wget https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+wget https://cdn.posit.co/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # RHEL 8 / Rocky Linux 8 / AlmaLinux 8
-wget https://cdn.rstudio.com/r/centos-8/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+wget https://cdn.posit.co/r/centos-8/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # RHEL 9 / Rocky Linux 9 / AlmaLinux 9
-wget https://cdn.rstudio.com/r/rhel-9/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+wget https://cdn.posit.co/r/rhel-9/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
@@ -138,10 +138,10 @@ sudo yum install R-${R_VERSION}-1-1.x86_64.rpm
 Download the rpm package:
 ```bash
 # openSUSE 15.3 / SLES 15 SP3
-wget https://cdn.rstudio.com/r/opensuse-153/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+wget https://cdn.posit.co/r/opensuse-153/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # openSUSE 15.4 / SLES 15 SP4
-wget https://cdn.rstudio.com/r/opensuse-154/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+wget https://cdn.posit.co/r/opensuse-154/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
