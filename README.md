@@ -57,19 +57,19 @@ R_VERSION=4.1.3
 Download the deb package:
 ```bash
 # Ubuntu 18.04
-wget https://cdn.posit.co/r/ubuntu-1804/pkgs/r-${R_VERSION}_1_amd64.deb
+curl -O https://cdn.posit.co/r/ubuntu-1804/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Ubuntu 20.04
-wget https://cdn.posit.co/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
+curl -O https://cdn.posit.co/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Ubuntu 22.04
-wget https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
+curl -O https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Debian 10
-wget https://cdn.posit.co/r/debian-10/pkgs/r-${R_VERSION}_1_amd64.deb
+curl -O https://cdn.posit.co/r/debian-10/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Debian 11
-wget https://cdn.posit.co/r/debian-11/pkgs/r-${R_VERSION}_1_amd64.deb
+curl -O https://cdn.posit.co/r/debian-11/pkgs/r-${R_VERSION}_1_amd64.deb
 ```
 
 Then install the package:
@@ -119,13 +119,13 @@ sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noa
 Download the rpm package:
 ```bash
 # CentOS / RHEL 7
-wget https://cdn.posit.co/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # RHEL 8 / Rocky Linux 8 / AlmaLinux 8
-wget https://cdn.posit.co/r/centos-8/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/centos-8/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # RHEL 9 / Rocky Linux 9 / AlmaLinux 9
-wget https://cdn.posit.co/r/rhel-9/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/rhel-9/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
@@ -138,10 +138,10 @@ sudo yum install R-${R_VERSION}-1-1.x86_64.rpm
 Download the rpm package:
 ```bash
 # openSUSE 15.3 / SLES 15 SP3
-wget https://cdn.posit.co/r/opensuse-153/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/opensuse-153/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # openSUSE 15.4 / SLES 15 SP4
-wget https://cdn.posit.co/r/opensuse-154/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/opensuse-154/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
