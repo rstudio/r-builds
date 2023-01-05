@@ -67,7 +67,7 @@ compile_r() {
 
   # tools/config.guess in R versions older than 3.2.2 guess 'unknown' instead of 'pc'
   # test the version and properly set the flag.
-  build_flag='--build=x86_64-pc-linux-gnu'
+  build_flag="--build=$(uname -p)-pc-linux-gnu"
   if _version_is_greater_than ${R_VERSION} 3.2.2; then
     build_flag=''
   fi

@@ -8,7 +8,7 @@ RUN apt-get update -qq && apt-get install -y python-pip
 RUN pip install awscli
 
 # install docker cli
-RUN wget -q -O /tmp/docker-cli.deb https://download.docker.com/linux/debian/dists/stretch/pool/stable/amd64/docker-ce-cli_18.09.2~3-0~debian-stretch_amd64.deb \
+RUN wget -q -O /tmp/docker-cli.deb https://download.docker.com/linux/debian/dists/stretch/pool/stable/$(dpkg --print-architecture)/docker-ce-cli_18.09.2~3-0~debian-stretch_$(dpkg --print-architecture).deb \
   && dpkg -i /tmp/docker-cli.deb
 
 RUN npm install -g serverless
