@@ -5,6 +5,7 @@ export CRAN=${CRAN-"https://cran.rstudio.com"}
 export S3_BUCKET_PREFIX=${S3_BUCKET_PREFIX-""}
 export OS_IDENTIFIER=${OS_IDENTIFIER-"unknown"}
 export TARBALL_NAME="R-${R_VERSION}-${OS_IDENTIFIER}.tar.gz"
+export R_INSTALL_PATH=${R_INSTALL_PATH:-"/opt/R/${R_VERSION}"}
 
 # Some Dockerfiles may copy a `/env.sh` to set up environment variables
 # that require command substitution. If this file exists, source it.
@@ -33,9 +34,11 @@ upload_r() {
   fi
 }
 
-# archive_r() - $1 as r version
+# archive_r()
 archive_r() {
-  tar czf /tmp/${TARBALL_NAME} --directory=/opt/R ${1} --owner=0 --group=0
+  dir=$(dirname "$R_INSTALL_PATH")
+  base=$(basename "$R_INSTALL_PATH")
+  tar czf "/tmp/${TARBALL_NAME}" --directory="$dir" "$base" --owner=0 --group=0
 }
 
 fetch_r_source() {
@@ -130,7 +133,7 @@ compile_r() {
   R_UNZIPCMD=/usr/bin/unzip \
   R_ZIPCMD=/usr/bin/zip \
   ./configure \
-    --prefix=/opt/R/${1} \
+    --prefix="${R_INSTALL_PATH}" \
     ${CONFIGURE_OPTIONS} \
     ${build_flag}
   make clean
@@ -139,7 +142,7 @@ compile_r() {
 
   # Add OS identifier to the default HTTP user agent.
   # Set this in the system Rprofile so it works when R is run with --vanilla.
-  cat <<EOF >> /opt/R/${1}/lib/R/library/base/R/Rprofile
+  cat <<EOF >> "${R_INSTALL_PATH}"/lib/R/library/base/R/Rprofile
 ## Set the default HTTP user agent
 local({
   os_identifier <- if (file.exists("/etc/os-release")) {
@@ -167,7 +170,7 @@ package_r() {
 }
 
 set_up_environment() {
-  mkdir -p /opt/R
+  mkdir -p "$R_INSTALL_PATH"
 }
 
 _version_is_greater_than() {
@@ -183,5 +186,5 @@ set_up_environment
 fetch_r_source $R_VERSION
 compile_r $R_VERSION
 package_r $R_VERSION
-archive_r $R_VERSION
+archive_r
 upload_r $R_VERSION

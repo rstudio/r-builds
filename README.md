@@ -184,6 +184,51 @@ This repository orchestrates builds using a variety of tools. The
 instructions below outline the components in the stack and describe how to add a
 new platform or inspect an existing platform.
 
+## Building from source
+
+To build the R binaries from source, you will need to have [Git](https://git-scm.com/),
+[Docker](https://docs.docker.com/get-docker/), and `make` installed.
+
+First, clone the Git repository locally and navigate to it.
+
+```bash
+git clone https://github.com/rstudio/R-builds
+cd R-builds
+```
+
+Then, run the `build-r-$PLATFORM` Make target with the `R_VERSION` environment variable
+set to your desired R version, where `$PLATFORM` is one of the supported platform
+identifiers, such as `ubuntu-2204` or `rhel-9`.
+
+```bash
+export PLATFORM=ubuntu-2204
+export R_VERSION=4.1.3
+
+make build-r-$PLATFORM
+```
+
+The built DEB or RPM package will be available in the `builder/integration/tmp/$PLATFORM`
+directory.
+
+```bash
+$ ls builder/integration/tmp/$PLATFORM
+r-4.1.3_1_amd64.deb
+```
+
+### Custom installation path
+
+R is installed to `/opt/R/${R_VERSION}` by default. If you want to customize the
+installation path, set the optional `R_INSTALL_PATH` environment variable to a
+custom location such as `/opt/custom/R-4.1.3`.
+
+```bash
+export PLATFORM=rhel-9
+export R_VERSION=4.1.3
+export R_INSTALL_PATH=/opt/custom/R-4.1.3
+
+make build-r-$PLATFORM
+```
+
 ## Adding a new platform.
 
 ### Dockerfile

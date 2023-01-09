@@ -12,14 +12,14 @@ fi
 
 # create post-install script required for openblas
 cat <<EOF >> /post-install.sh
-mv /opt/R/${R_VERSION}/lib/R/lib/libRblas.so /opt/R/${R_VERSION}/lib/R/lib/libRblas.so.keep
-ln -s /usr/lib64/libopenblasp.so.0 /opt/R/${R_VERSION}/lib/R/lib/libRblas.so
+mv ${R_INSTALL_PATH}/lib/R/lib/libRblas.so ${R_INSTALL_PATH}/lib/R/lib/libRblas.so.keep
+ln -s /usr/lib64/libopenblasp.so.0 ${R_INSTALL_PATH}/lib/R/lib/libRblas.so
 EOF
 
 # create after-remove script to remove internal blas
 cat <<EOF >> /after-remove.sh
-if [ -d /opt/R/${R_VERSION} ]; then
-  rm -r /opt/R/${R_VERSION}
+if [ -d ${R_INSTALL_PATH} ]; then
+  rm -r ${R_INSTALL_PATH}
 fi
 EOF
 
@@ -57,8 +57,8 @@ depends:
 - zip
 - zlib-devel
 contents:
-- src: /opt/R/${R_VERSION}
-  dst: /opt/R/${R_VERSION}
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
 scripts:
   postinstall: /post-install.sh
   postremove: /after-remove.sh
