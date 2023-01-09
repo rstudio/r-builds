@@ -79,7 +79,7 @@ ENV R_RD4PDF="times,hyper"
 # requires users to run `R CMD javareconf` even on minor/patch upgrades. Use the
 # major version symlink to avoid this.
 # https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Java-support
-# https://solutions.rstudio.com/r/using-rjava/
+# https://solutions.posit.co/envs-pkgs/using-rjava/
 ENV JAVA_HOME=/usr/lib/jvm/jre-11-openjdk
 
 # R 3.x requires PCRE2 for Pango support on RHEL 9

@@ -3,7 +3,7 @@ import json
 import re
 import urllib.request
 
-VERSIONS_URL = 'https://cdn.rstudio.com/r/versions.json'
+VERSIONS_URL = 'https://cdn.posit.co/r/versions.json'
 
 # Minimum R version for "all"
 MIN_ALL_VERSION = '3.1.0'

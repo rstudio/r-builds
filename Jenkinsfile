@@ -16,7 +16,7 @@ pipeline {
     stage('push images') {
       agent { label 'docker-4x' }
       when {
-        branch 'master'
+        branch 'main'
       }
       steps {
         sh 'make docker-push'
@@ -25,7 +25,7 @@ pipeline {
     stage('deploy') {
       agent none
       when {
-        branch 'master'
+        branch 'main'
       }
       steps {
         build(job: 'r-builds/deploy-r-builds', wait: true,
