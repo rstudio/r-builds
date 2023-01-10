@@ -497,7 +497,7 @@ do_install () {
   prompt_version
   [ -z $SELECTED_VERSION ] && { echo "Invalid version"; exit 1; }
 
-  arch=$(uname -p)
+  arch=$(uname -m)
 
   # Get the name of the installer to use
   installer_file_name=$(download_name "${os}" "${SELECTED_VERSION}" "${arch}")
