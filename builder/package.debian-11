@@ -16,6 +16,7 @@ name: r-${R_VERSION}
 version: 1
 version_schema: none
 section: gnu-r
+arch: $(dpkg --print-architecture)
 priority: optional
 maintainer: RStudio, PBC <https://github.com/rstudio/r-builds>
 description: |
