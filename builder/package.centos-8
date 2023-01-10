@@ -31,10 +31,10 @@ version: 1
 version_schema: none
 arch: $(cat /tmp/arch)
 release: 1
-maintainer: RStudio, PBC <https://github.com/rstudio/r-builds>
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
 description: |
   GNU R statistical computation and graphics system
-vendor: RStudio, PBC
+vendor: Posit Software, PBC
 homepage: https://www.r-project.org
 license: GPLv2+
 depends:

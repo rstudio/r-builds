@@ -40,9 +40,9 @@ jobs:
       id: setup-matrix
       run: |
         platforms=$(python test/get_platforms.py ${{ github.event.inputs.platforms }})
-        echo "::set-output name=platforms::$platforms"
+        echo "platforms=$platforms" >> $GITHUB_OUTPUT
         r_versions=$(python test/get_r_versions.py ${{ github.event.inputs.r_versions }})
-        echo "::set-output name=r_versions::$r_versions"
+        echo "r_versions=$r_versions" >> $GITHUB_OUTPUT
 
   docker-images:
     needs: setup-matrix
@@ -60,12 +60,12 @@ jobs:
           install: true
 
       # Enable Docker layer caching without having to push to a registry.
-      # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#local-cache
+      # https://docs.docker.com/build/ci/github-actions/examples/#local-cache
       # This may eventually be migrated to the GitHub Actions cache backend,
       # which is still considered experimental.
       # https://github.com/moby/buildkit#github-actions-cache-experimental
       - name: Cache Docker layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
           key: ${{ matrix.platform }}-buildx-${{ github.sha }}
@@ -108,7 +108,7 @@ jobs:
           install: true
 
       - name: Restore cached Docker layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
           key: ${{ matrix.platform }}-buildx-${{ github.sha }}

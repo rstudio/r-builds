@@ -94,7 +94,7 @@ ENV CONFIGURE_OPTIONS="\
 # but the JDK path is chosen by default. We change this to the JRE path to
 # support users who only want to install the JRE (non-devel) package.
 # https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Java-support
-# https://solutions.rstudio.com/r/using-rjava/
+# https://solutions.posit.co/envs-pkgs/using-rjava/
 ENV JAVA_HOME=/usr/lib64/jvm/jre-11-openjdk
 
 COPY package.opensuse-154 /package.sh
