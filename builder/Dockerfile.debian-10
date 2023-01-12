@@ -14,9 +14,9 @@ RUN pip3 install awscli
 
 RUN chmod 0777 /opt
 
-RUN curl -LO https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_amd64.deb && \
-    apt install -y ./nfpm_amd64.deb && \
-    rm nfpm_amd64.deb
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(dpkg --print-architecture).deb" && \
+    apt install -y "./nfpm_$(dpkg --print-architecture).deb" && \
+    rm "nfpm_$(dpkg --print-architecture).deb"
 
 # Override the default pager used by R
 ENV PAGER /usr/bin/pager

@@ -49,9 +49,11 @@ RUN yum -y update \
 RUN pip3 install awscli --upgrade --user && \
     ln -s /root/.local/bin/aws /usr/bin/aws
 
-RUN curl -LO https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_amd64.rpm && \
-    yum install -y nfpm_amd64.rpm && \
-    rm nfpm_amd64.rpm
+RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(cat /tmp/arch).rpm" && \
+    yum install -y "nfpm_$(cat /tmp/arch).rpm" && \
+    rm "nfpm_$(cat /tmp/arch).rpm"
 
 RUN chmod 0777 /opt
 

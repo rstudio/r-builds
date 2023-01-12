@@ -16,6 +16,7 @@ version: 1
 version_schema: none
 section: universe/math
 priority: optional
+arch: $(dpkg --print-architecture)
 maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
 description: |
   GNU R statistical computation and graphics system

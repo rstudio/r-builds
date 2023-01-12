@@ -70,9 +70,11 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
 
 RUN pip install awscli
 
-RUN curl -LO https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_amd64.rpm && \
-    zypper --non-interactive --no-gpg-checks install nfpm_amd64.rpm && \
-    rm nfpm_amd64.rpm
+RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(cat /tmp/arch).rpm" && \
+    zypper --non-interactive --no-gpg-checks install "nfpm_$(cat /tmp/arch).rpm" && \
+    rm "nfpm_$(cat /tmp/arch).rpm"
 
 RUN chmod 0777 /opt
 

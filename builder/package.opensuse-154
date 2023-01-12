@@ -39,10 +39,13 @@ if [ -d /opt/R/${R_VERSION} ]; then
 fi
 EOF
 
+if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+
 cat <<EOF > /tmp/nfpm.yml
 name: R-${R_VERSION}
 version: 1
 version_schema: none
+arch: $(cat /tmp/arch)
 release: 1
 maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
 description: |

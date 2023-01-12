@@ -144,19 +144,30 @@ do_show_versions () {
   done
 }
 
-# Returns the installer name for a given version and OS
+# Returns the installer name for a given version, OS, arch
 download_name () {
   os=$1
   version=$2
+  arch=$3
+  case $arch in
+    "x86_64" | "amd64")
+      rpm_arch="x86_64"
+      deb_arch="amd64"
+      ;;
+    "aarch64")
+      rpm_arch="aarch64"
+      deb_arch="arm64"
+      ;;
+  esac
   case $os in
     "RedHat" | "CentOS" | "Amazon" | "Alma" | "Rocky")
-      echo "R-${version}-1-1.x86_64.rpm"
+      echo "R-${version}-1-1.${rpm_arch}.rpm"
       ;;
     "Ubuntu" | "Debian")
-      echo "r-${version}_1_amd64.deb"
+      echo "r-${version}_1_${deb_arch}.deb"
       ;;
     "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
-      echo "R-${version}-1-1.x86_64.rpm"
+      echo "R-${version}-1-1.${rpm_arch}.rpm"
       ;;
   esac
 }
@@ -486,8 +497,10 @@ do_install () {
   prompt_version
   [ -z $SELECTED_VERSION ] && { echo "Invalid version"; exit 1; }
 
+  arch=$(uname -m)
+
   # Get the name of the installer to use
-  installer_file_name=$(download_name "${os}" "${SELECTED_VERSION}")
+  installer_file_name=$(download_name "${os}" "${SELECTED_VERSION}" "${arch}")
 
   # Get the URL to download from. If the installer already exists in the current
   # directory, this will return a blank string.
