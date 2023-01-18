@@ -101,3 +101,8 @@ if (getRversion() >= "3.5.0" && getRversion() < "4.0.0") {
 } else if (getRversion() >= "4.0.0") {
   stopifnot(has_pcre2 && !has_pcre1)
 }
+
+# Check that the custom HTTP user agent was configured
+if (!grepl(sprintf("^R/%s", getRversion()), getOption("HTTPUserAgent"))) {
+  stop("unexpected HTTPUserAgent")
+}

@@ -58,8 +58,8 @@ ${pcre_libs}
 - zip
 - zlib1g-dev
 contents:
-- src: /opt/R/${R_VERSION}
-  dst: /opt/R/${R_VERSION}
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
 EOF
 
 nfpm package \
