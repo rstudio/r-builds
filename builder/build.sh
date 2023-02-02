@@ -120,6 +120,13 @@ compile_r() {
     --with-blas \
     --with-lapack"
 
+  if _version_is_greater_than ${R_VERSION} 4.2.10; then
+      if [[ "${OS_IDENTIFIER}" = "ubuntu-1804" ]]; then
+          default_configure_options="$default_configure_options \
+            CC=gcc-8 CXX=g++-8 FC=gfortran-8"
+      fi
+  fi
+
   CONFIGURE_OPTIONS=${CONFIGURE_OPTIONS:-$default_configure_options}
 
   # set some common environment variables for the configure step

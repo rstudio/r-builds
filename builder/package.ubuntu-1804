@@ -27,9 +27,9 @@ deb:
   fields:
     Bugs: https://github.com/rstudio/r-builds/issues
 depends:
-- g++
-- gcc
-- gfortran
+- g++-8
+- gcc-8
+- gfortran-8
 - libbz2-dev
 - libc6
 - libcairo2
