@@ -124,6 +124,9 @@ compile_r() {
       if [[ "${OS_IDENTIFIER}" = "ubuntu-1804" ]]; then
           default_configure_options="$default_configure_options \
             CC=gcc-8 CXX=g++-8 FC=gfortran-8"
+          gcc_package=gcc-8
+          gxx_package=g++-8
+          gfortran_package=gfortran-8
       fi
   fi
 
@@ -172,6 +175,7 @@ EOF
 package_r() {
   if [[ -f /package.sh ]]; then
     export R_VERSION=${1}
+    export gcc_package gxx_package gfortran_package
     source /package.sh
   fi
 }
