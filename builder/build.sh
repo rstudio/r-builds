@@ -132,6 +132,18 @@ compile_r() {
 
   CONFIGURE_OPTIONS=${CONFIGURE_OPTIONS:-$default_configure_options}
 
+  # For OpenSUSE CONFIGURE_OPTIONS are custom, set in the Dockerfile
+  if _version_is_greater_than ${R_VERSION} 4.2.10; then
+      if [[ "${OS_IDENTIFIER}" = "opensuse-153" || \
+            "${OS_IDENTIFIER}" = "opensuse-154" ]]; then
+          CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS \
+            CC=gcc-8 CXX=g++-8 FC=gfortran-8"
+          gcc_package=gcc8
+          gxx_package=gcc8-c++
+          gfortran_package=gcc8-fortran
+      fi
+  fi
+
   # set some common environment variables for the configure step
   AWK=/usr/bin/awk \
   LIBnn=lib \

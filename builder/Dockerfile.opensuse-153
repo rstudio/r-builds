@@ -15,6 +15,9 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     gcc \
     gcc-c++ \
     gcc-fortran \
+    gcc8 \
+    gcc8-c++ \
+    gcc8-fortran \
     glib2-devel \
     glibc-locale \
     help2man \
