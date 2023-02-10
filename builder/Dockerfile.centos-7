@@ -68,6 +68,10 @@ ENV CONFIGURE_OPTIONS="\
     --with-tk-config=/usr/lib64/tkConfig.sh \
     --enable-prebuilt-html"
 
+# In R 4.3.0 recommended packages are compiled with C17, but
+# Centos 7 does not have a C17 compiler, so we use C11 on Centos 7.
+# C17 is basically the same as C17 with some bug fixes, so it is
+# fine for our purposes.
 ENV CC17="gcc -std=gnu11"
 
 # RHEL 7 doesn't have the inconsolata font, so override the defaults.

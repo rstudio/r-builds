@@ -193,6 +193,8 @@ package_r() {
 
 set_up_environment() {
     mkdir -p "$R_INSTALL_PATH"
+    # from R 4.3.0 we need at least libcurl 7.32.0, so we install that
+    # and link to it statically
     if _version_is_greater_than ${R_VERSION} 4.2.10; then
         if [[ "${OS_IDENTIFIER}" = "centos-7" ]]; then
             install_libcurl
