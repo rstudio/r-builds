@@ -68,6 +68,8 @@ ENV CONFIGURE_OPTIONS="\
     --with-tk-config=/usr/lib64/tkConfig.sh \
     --enable-prebuilt-html"
 
+ENV CC17="gcc -std=gnu11"
+
 # RHEL 7 doesn't have the inconsolata font, so override the defaults.
 ENV R_RD4PDF="times,hyper"
 
