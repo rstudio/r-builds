@@ -75,6 +75,14 @@ install_libcurl() {
     make install
 }
 
+patch_r() {
+  cd /tmp/R-${1}
+
+  if [ -f "/patches/R-${1}.patch" ]; then
+      patch -p1 < "/patches/R-${1}.patch"
+  fi
+}
+
 # compile_r() - $1 as r version
 compile_r() {
   cd /tmp/R-${1}
@@ -142,6 +150,18 @@ compile_r() {
   fi
 
   CONFIGURE_OPTIONS=${CONFIGURE_OPTIONS:-$default_configure_options}
+
+  # For OpenSUSE CONFIGURE_OPTIONS are custom, set in the Dockerfile
+  if _version_is_greater_than ${R_VERSION} 4.2.10; then
+      if [[ "${OS_IDENTIFIER}" = "opensuse-153" || \
+            "${OS_IDENTIFIER}" = "opensuse-154" ]]; then
+          CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS \
+            CC=gcc-8 CXX=g++-8 FC=gfortran-8"
+          gcc_package=gcc8
+          gxx_package=gcc8-c++
+          gfortran_package=gcc8-fortran
+      fi
+  fi
 
   # set some common environment variables for the configure step
   AWK=/usr/bin/awk \
@@ -213,6 +233,7 @@ _version_is_less_than() {
 ###### RUN R COMPILE PROCEDURE ######
 set_up_environment
 fetch_r_source $R_VERSION
+patch_r $R_VERSION
 compile_r $R_VERSION
 package_r $R_VERSION
 archive_r
