@@ -92,4 +92,5 @@ ENV CONFIGURE_OPTIONS="\
 
 COPY package.opensuse-153 /package.sh
 COPY build.sh .
+COPY patches /patches
 ENTRYPOINT ./build.sh
