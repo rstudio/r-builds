@@ -45,6 +45,17 @@ RUN yum -y update \
     zlib-devel \
     && yum clean all
 
+# Compile newer libcurl, for R 4.3.0 and newer. We don't install it,
+# so system libcurl is used for the rest of the R versions.
+RUN cd /tmp && \
+    curl -LO https://curl.se/download/curl-7.32.0.tar.gz && \
+    tar xzf curl-*.tar.gz && \
+    rm curl-*.tar.gz && \
+    yum install -y zlib-devel openssl-devel make groff && \
+    cd curl-7.32.0 && \
+    ./configure --disable-shared --with-pic && \
+    make
+
 # Install AWS CLI.
 RUN pip3 install awscli --upgrade --user && \
     ln -s /root/.local/bin/aws /usr/bin/aws

@@ -65,13 +65,7 @@ fetch_r_source() {
 }
 
 install_libcurl() {
-    cd /tmp
-    curl -LO https://curl.se/download/curl-7.32.0.tar.gz
-    tar xzf curl-*.tar.gz
-    yum install -y zlib-devel openssl-devel make groff
-    cd curl-7.32.0
-    ./configure --disable-shared --with-pic
-    make
+    cd /tmp/curl-*
     make install
 }
 
