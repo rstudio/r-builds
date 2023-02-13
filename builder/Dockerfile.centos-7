@@ -48,12 +48,12 @@ RUN yum -y update \
 # Compile newer libcurl, for R 4.3.0 and newer. We don't install it,
 # so system libcurl is used for the rest of the R versions.
 RUN cd /tmp && \
-    curl -LO https://curl.se/download/curl-7.32.0.tar.gz && \
+    curl -LO https://curl.se/download/curl-7.87.0.tar.gz && \
     tar xzf curl-*.tar.gz && \
-    rm curl-*.tar.gz && \
+    rm -f curl-*.tar.gz && \
     yum install -y zlib-devel openssl-devel make groff && \
-    cd curl-7.32.0 && \
-    ./configure --disable-shared --with-pic && \
+    cd curl-* && \
+    ./configure --disable-shared --with-pic --with-openssl && \
     make
 
 # Install AWS CLI.
