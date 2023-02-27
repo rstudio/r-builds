@@ -108,8 +108,8 @@ def _submit_job(version, platform):
         'containerOverrides': _container_overrides(job_details.version)
     }
     if os.environ.get('DRYRUN'):
-        print('DRYRUN: would have queued {}'.format(job_details.job_name))
-        return 'dryrun-no-job-{}'.format(job_details.job_name)
+        print('DRYRUN: would have queued {}'.format(job_details.job_name()))
+        return 'dryrun-no-job-{}'.format(job_details.job_name())
     else:
         response = batch_client.submit_job(**args)
         print("Started job with details:{},id:{}".format(job_details, response['jobId']))
