@@ -323,3 +323,9 @@ rBuildsDevelEventRule:
           Fn::GetAtt: [ rBuildsEventRuleIamRole, Arn ]
         Arn:
           Ref: RBuildsStepFunction
+
+rBuildsTopic:
+  Type: AWS::SNS::Topic
+  Properties:
+    DisplayName: R Builds
+    TopicName: ${self:custom.${self:provider.stage}.snsTopicName}

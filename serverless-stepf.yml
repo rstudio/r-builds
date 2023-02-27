@@ -1,5 +1,4 @@
 rBuilds:
-  Comment: "R Builds"
   id: RBuildsStepFunction
   name: r-builds-${self:provider.stage}
   definition:
@@ -25,7 +24,11 @@ rBuilds:
             Next: Wait
           - Variable: "$.unfinishedJobCount"
             NumericEquals: 0
-            Next: SuccessOrFail
+            Next: Finished
+      Finished:
+        Type: Task
+        Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-finished
+        Next: SuccessOrFail
       SuccessOrFail:
         Type: Choice
         Choices:
