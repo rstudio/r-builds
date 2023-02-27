@@ -31,8 +31,15 @@ provider:
        Resource:
         - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}
         - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}/*
+    -  Effect: Allow
+       Action:
+         - "sns:Publish"
+       Resource:
+         Ref: rBuildsTopic
   environment:
     S3_BUCKET: ${self:custom.${self:provider.stage}.s3Bucket}
+    SNS_TOPIC_ARN:
+      Ref: rBuildsTopic
     JOB_QUEUE_ARN:
       Ref: rBuildsBatchJobQueue
     JOB_DEFINITION_ARN_ubuntu_1804:
@@ -63,6 +70,8 @@ functions:
     handler: handler.queue_builds
   jobQueueStatus:
     handler: handler.poll_running_jobs
+  finished:
+    handler: handler.finished
 
 
 stepFunctions:
