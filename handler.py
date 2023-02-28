@@ -183,11 +183,16 @@ def finished(event, _context):
 
     for job in succeeded_jobs:
         details = JobDetails.from_job_name(job['jobName'])
+        # exclude next/devel version from list (for now).
+        if details.version in ['next', 'devel']:
+            continue
         message['versions'].append(vars(details))
 
-    response = sns_client.publish(
-        TargetArn=os.environ['SNS_TOPIC_ARN'],
-        Message=json.dumps(message),
-    )
-    print(f'Published to topic, response:{response}')
+    # don't publish if we've excluded all successful builds
+    if message['versions']:
+        response = sns_client.publish(
+            TargetArn=os.environ['SNS_TOPIC_ARN'],
+            Message=json.dumps(message),
+        )
+        print(f'Published to topic, response:{response}')
     return event
