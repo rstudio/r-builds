@@ -66,7 +66,8 @@ def _cran_all_r_versions():
     r_versions.extend(_cran_r_versions(CRAN_SRC_R4_URL))
     r_versions.append('next')
     r_versions.append('devel')
-    return {'r_versions': r_versions}
+    platforms = _to_list(os.environ.get('SUPPORTED_PLATFORMS', []))
+    return {'r_versions': r_versions, 'platforms': platforms}
 
 
 def _known_r_versions():
@@ -76,8 +77,8 @@ def _known_r_versions():
         obj = s3.Object(os.environ['S3_BUCKET'], 'r/versions.json')
         str = obj.get()['Body'].read().decode('utf-8')
     except botocore.exceptions.ClientError:
-        print('Key not found, using empty list')
-        str = '{"r_versions":[]}'
+        print('Key not found, using empty lists')
+        str = '{"r_versions":[],"platforms":[]}'
     return json.loads(str)
 
 
@@ -117,15 +118,25 @@ def _submit_job(version, platform):
 
 
 def _versions_to_build(force, versions):
-    cran_versions = _cran_all_r_versions()['r_versions']
+    cran_all_r_versions = _cran_all_r_versions()
+    known_r_versions = _known_r_versions()
+
+    cran_versions = cran_all_r_versions['r_versions']
     if versions:
         cran_versions = [v for v in cran_versions if v in versions]
-    known_versions = _known_r_versions()['r_versions']
+    known_versions = known_r_versions['r_versions']
     new_versions = _compare_versions(cran_versions, known_versions)
 
-    if len(new_versions) > 0:
-        print('New R Versions found: %s' % new_versions)
-        _persist_r_versions(_cran_all_r_versions())
+    platforms = cran_all_r_versions['platforms']
+    known_platforms = known_r_versions['platforms']
+    new_platforms = _compare_versions(platforms, known_platforms)
+
+    if len(new_versions) > 0 or len(new_platforms) > 0:
+        if len(new_versions) > 0:
+            print('New R Versions found: %s' % new_versions)
+        if len(new_platforms) > 0:
+            print('New platforms found: %s' % new_platforms)
+        _persist_r_versions(cran_all_r_versions)
 
     if force in [True, 'True', 'true']:
         return cran_versions
