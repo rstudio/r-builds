@@ -15,10 +15,10 @@ def main():
         'versions',
         type=str,
         nargs='?',
-        default='last-5',
+        default='last-5,devel',
         help="""Comma-separated list of R versions. Specify "last-N" to use the
             last N minor R versions, or "all" to use all minor R versions since R 3.1.
-            Defaults to "last-5".
+            Defaults to "last-5,devel".
             """
     )
     args = parser.parse_args()
@@ -28,14 +28,17 @@ def main():
 
 def _get_versions(which='all'):
     supported_versions = sorted(_get_supported_versions(), reverse=True)
-    
+    versions = []
+    for version in which.split(','):
+        versions.extend(_expand_version(version, supported_versions))
+    return versions
+
+def _expand_version(which, supported_versions):
     last_n_versions = None
     if which.startswith('last-'):
         last_n_versions = int(which.replace('last-', ''))
     elif which != 'all':
-        versions = which.split(',')
-        versions = [v for v in versions if v in supported_versions]
-        return versions
+        return [which] if which in supported_versions else []
 
     versions = {}
     for ver in supported_versions:
