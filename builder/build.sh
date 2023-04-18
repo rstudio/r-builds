@@ -131,6 +131,16 @@ compile_r() {
 
   CONFIGURE_OPTIONS=${CONFIGURE_OPTIONS:-$default_configure_options}
 
+  # For RHEL 9, link to external FlexiBLAS starting from R 4.3.0 to align with EPEL 9
+  if _version_is_greater_than "${R_VERSION}" 4.2.10; then
+    if [[ "${OS_IDENTIFIER}" = "rhel-9" ]]; then
+      CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS \
+        --with-blas=flexiblas --with-lapack=flexiblas"
+    fi
+  fi
+
+  echo "Using CONFIGURE_OPTIONS: ${CONFIGURE_OPTIONS}"
+
   # set some common environment variables for the configure step
   AWK=/usr/bin/awk \
   LIBnn=lib \
