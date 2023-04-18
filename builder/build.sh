@@ -64,6 +64,7 @@ fetch_r_source() {
   rm /tmp/R-${1}.tar.gz
 }
 
+# Apply a patch for this R version if present. Typically for R-devel.
 patch_r() {
   cd /tmp/R-${1}
 

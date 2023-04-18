@@ -102,5 +102,4 @@ ENV JAVA_HOME=/usr/lib64/jvm/jre-11-openjdk
 
 COPY package.opensuse-154 /package.sh
 COPY build.sh .
-COPY patches /patches
 ENTRYPOINT ./build.sh
