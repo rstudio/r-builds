@@ -129,29 +129,7 @@ compile_r() {
     --with-blas \
     --with-lapack"
 
-  if _version_is_greater_than ${R_VERSION} 4.2.10; then
-      if [[ "${OS_IDENTIFIER}" = "ubuntu-1804" ]]; then
-          default_configure_options="$default_configure_options \
-            CC=gcc-8 CXX=g++-8 FC=gfortran-8"
-          gcc_package=gcc-8
-          gxx_package=g++-8
-          gfortran_package=gfortran-8
-      fi
-  fi
-
   CONFIGURE_OPTIONS=${CONFIGURE_OPTIONS:-$default_configure_options}
-
-  # For OpenSUSE CONFIGURE_OPTIONS are custom, set in the Dockerfile
-  if _version_is_greater_than ${R_VERSION} 4.2.10; then
-      if [[ "${OS_IDENTIFIER}" = "opensuse-153" || \
-            "${OS_IDENTIFIER}" = "opensuse-154" ]]; then
-          CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS \
-            CC=gcc-8 CXX=g++-8 FC=gfortran-8"
-          gcc_package=gcc8
-          gxx_package=gcc8-c++
-          gfortran_package=gcc8-fortran
-      fi
-  fi
 
   # set some common environment variables for the configure step
   AWK=/usr/bin/awk \
@@ -196,7 +174,6 @@ EOF
 package_r() {
   if [[ -f /package.sh ]]; then
     export R_VERSION=${1}
-    export gcc_package gxx_package gfortran_package
     source /package.sh
   fi
 }
