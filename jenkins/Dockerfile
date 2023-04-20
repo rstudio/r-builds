@@ -1,14 +1,17 @@
-FROM node:14
+FROM node:18
 
 ARG JENKINS_UID=386
 ARG JENKINS_GID=386
 ARG DOCKER_GID=999
 
-RUN apt-get update -qq && apt-get install -y python-pip
-RUN pip install awscli
+# Install AWS CLI
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip
 
 # install docker cli
-RUN wget -q -O /tmp/docker-cli.deb https://download.docker.com/linux/debian/dists/stretch/pool/stable/$(dpkg --print-architecture)/docker-ce-cli_18.09.2~3-0~debian-stretch_$(dpkg --print-architecture).deb \
+RUN wget -q -O /tmp/docker-cli.deb https://download.docker.com/linux/debian/dists/bullseye/pool/stable/$(dpkg --print-architecture)/docker-ce-cli_20.10.9~3-0~debian-bullseye_$(dpkg --print-architecture).deb \
   && dpkg -i /tmp/docker-cli.deb
 
 RUN npm install -g serverless
