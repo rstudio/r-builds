@@ -10,7 +10,20 @@ if [[ "${R_VERSION}" =~ ^3 ]]; then
   pcre_lib='pcre-devel'
 fi
 
-# create post-install script required for openblas
+# Create post-install script required for OpenBLAS.
+#
+# On RHEL and SUSE, we link R against the internal shared BLAS to make the
+# R binaries more portable and allow users to switch BLAS implementations without
+# having to recompile R. We default to OpenBLAS, but users may prefer other implementations.
+# 
+# Binary packages built against the shared BLAS are also more portable and may be used
+# with the default R distributed by RHEL/SUSE, or other R installations using
+# shared BLAS and configured with a different BLAS (such as Microsoft R Open with MKL).
+# This is especially important for Posit Package Manager's binary packages.
+#
+# However, as of R 4.2.3, EPEL 8's R no longer uses shared BLAS and now links to an
+# external OpenBLAS (OpenMP). This means EPEL R no longer has a swappable BLAS and
+# is no longer compatible with these R builds.
 cat <<EOF >> /post-install.sh
 mv ${R_INSTALL_PATH}/lib/R/lib/libRblas.so ${R_INSTALL_PATH}/lib/R/lib/libRblas.so.keep
 ln -s /usr/lib64/libopenblasp.so.0 ${R_INSTALL_PATH}/lib/R/lib/libRblas.so
