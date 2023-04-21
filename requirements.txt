@@ -1,7 +1,6 @@
 beautifulsoup4==4.6.3
 boto3==1.9.55
 botocore==1.12.55
-bs4==0.0.1
 certifi==2018.10.15
 chardet==3.0.4
 docutils==0.14
