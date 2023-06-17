@@ -48,7 +48,7 @@ ${pcre_libs}
 - libpng16-16
 - libreadline8
 - libtcl8.6
-- libtiff5
+- libtiff6
 - libtk8.6
 - libx11-6
 - libxt6
