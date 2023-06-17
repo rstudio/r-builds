@@ -1,16 +1,16 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 ENV OS_IDENTIFIER debian-12
 
 RUN set -x \
   && export DEBIAN_FRONTEND=noninteractive \
-  && echo 'deb-src http://deb.debian.org/debian bullseye main' >> /etc/apt/sources.list \
+  && echo 'deb-src http://deb.debian.org/debian bookworm main' >> /etc/apt/sources.list \
   && apt-get update \
   && apt-get install -y curl gcc libcurl4-openssl-dev libicu-dev \
-     libopenblas-base libpcre2-dev make python3-pip wget \
+     libopenblas0 libpcre2-dev make pipx wget \
   && apt-get build-dep -y r-base
 
-RUN pip3 install awscli
+RUN pipx install awscli && pipx ensurepath
 
 RUN chmod 0777 /opt
 
