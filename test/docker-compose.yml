@@ -23,6 +23,14 @@ services:
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
+  debian-12:
+    image: debian:bookworm
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=debian-12
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
   debian-11:
     image: debian:bullseye
     command: /r-builds/test/test-apt.sh
