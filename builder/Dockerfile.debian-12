@@ -7,10 +7,14 @@ RUN set -x \
   && echo 'deb-src http://deb.debian.org/debian bookworm main' >> /etc/apt/sources.list \
   && apt-get update \
   && apt-get install -y curl gcc libcurl4-openssl-dev libicu-dev \
-     libopenblas0 libpcre2-dev make pipx wget \
+     libopenblas0 libpcre2-dev make unzip wget \
   && apt-get build-dep -y r-base
 
-RUN pipx install awscli && pipx ensurepath
+# Install AWS CLI
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip
 
 RUN chmod 0777 /opt
 
