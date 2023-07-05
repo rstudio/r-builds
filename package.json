@@ -2,11 +2,10 @@
   "name": "r-builds",
   "description": "",
   "version": "0.1.0",
-  "dependencies": {},
   "devDependencies": {
-    "serverless": "^3.21.0",
-    "serverless-python-requirements": "^5.4.0",
+    "serverless": "^3.33.0",
     "serverless-pseudo-parameters": "^2.2.0",
-    "serverless-step-functions": "^3.12.1"
+    "serverless-python-requirements": "^6.0.0",
+    "serverless-step-functions": "^3.13.1"
   }
 }
