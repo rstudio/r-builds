@@ -11,7 +11,10 @@ package:
     - integration/**
     - builder/**
     - docs/**
+    # Generated files by other tools
     - node_modules/**
+    - .npm/**
+    - .cache/**
 
 provider:
   name: aws
