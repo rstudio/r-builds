@@ -39,6 +39,11 @@ rebuild-all: deps fetch-serverless-custom-file
 serverless-deploy.%: deps fetch-serverless-custom-file
 	$(SLS_BINARY) deploy --stage $* --verbose
 
+# Package the service only, for debugging.
+# Requires deps and fetch-serverless-custom-file to be run first.
+serverless-package:
+	$(SLS_BINARY) package --verbose
+
 define GEN_TARGETS
 docker-build-$(platform):
 	@cd builder && docker-compose build $(platform)
