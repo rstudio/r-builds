@@ -30,8 +30,18 @@ ecr-login:
 push-serverless-custom-file:
 	aws s3 cp serverless-custom.yml s3://rstudio-devops/r-builds/serverless-custom.yml
 
+# Temporarily patch serverless-custom.yml to not Dockerize pip and disable
+# serverless-python-requirements caching. The caching does not work in Jenkins
+# by default because the cache directory is resolved to a relative ".cache"
+# directory, rather than an absolute directory, which breaks the plugin.
+# The cache directory must either be an absolute path (optionally specified
+# via cacheLocation: /path/to/cache), or caching must be disabled for the plugin
+# to work. We disable caching completely to avoid all sorts of future issues.
+# The cache directory is based on $HOME, which is set to "." when running
+# Docker images in Jenkins for some reason.
 fetch-serverless-custom-file:
 	aws s3 cp s3://rstudio-devops/r-builds/serverless-custom.yml .
+	sed -i 's|dockerizePip: true|dockerizePip: false\n  useStaticCache: false\n  useDownloadCache: false|' serverless-custom.yml
 
 rebuild-all: deps fetch-serverless-custom-file
 	$(SLS_BINARY) invoke stepf -n rBuilds -d '{"force": true}'
