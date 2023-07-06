@@ -37,7 +37,7 @@ rebuild-all: deps fetch-serverless-custom-file
 	$(SLS_BINARY) invoke stepf -n rBuilds -d '{"force": true}'
 
 serverless-deploy.%: deps fetch-serverless-custom-file
-	$(SLS_BINARY) deploy --stage $*
+	$(SLS_BINARY) deploy --stage $* --verbose
 
 define GEN_TARGETS
 docker-build-$(platform):
