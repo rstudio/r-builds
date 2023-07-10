@@ -5,6 +5,9 @@
 
 FROM ubuntu:jammy
 
+ARG JENKINS_UID=386
+ARG JENKINS_GID=386
+
 # Keep the Python version in line with the runtime in serverless.yml
 ARG PYTHON_VERSION=3.8.15
 
@@ -32,3 +35,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
   && apt install -y nodejs
 
 RUN npm install -g serverless
+
+# Create the jenkins user with the same id:gid as the jenkins node
+RUN groupadd -g $JENKINS_GID jenkins \
+  && useradd -m -d /var/lib/jenkins -u $JENKINS_UID -g jenkins jenkins
+
+USER jenkins

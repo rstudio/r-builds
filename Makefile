@@ -2,6 +2,9 @@ PLATFORMS := ubuntu-1804 ubuntu-2004 ubuntu-2204 debian-10 debian-11 debian-12 c
 SLS_BINARY ?= ./node_modules/serverless/bin/serverless.js
 
 deps:
+	id
+	whoami
+	echo "HOME: $$HOME"
 	npm install
 
 docker-build:
