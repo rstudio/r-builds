@@ -1,12 +1,4 @@
 services:
-  ubuntu-1804:
-    image: ubuntu:bionic
-    command: /r-builds/test/test-apt.sh
-    environment:
-      - OS_IDENTIFIER=ubuntu-1804
-      - R_VERSION=${R_VERSION}
-    volumes:
-      - ../:/r-builds
   ubuntu-2004:
     image: ubuntu:focal
     command: /r-builds/test/test-apt.sh
@@ -68,14 +60,6 @@ services:
     command: /r-builds/test/test-yum.sh
     environment:
       - OS_IDENTIFIER=rhel-9
-      - R_VERSION=${R_VERSION}
-    volumes:
-      - ../:/r-builds
-  opensuse-153:
-    image: opensuse/leap:15.3
-    command: /r-builds/test/test-zypper.sh
-    environment:
-      - OS_IDENTIFIER=opensuse-153
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
