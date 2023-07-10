@@ -5,13 +5,6 @@ pipeline {
       label 'docker'
     }
   }
-  environment {
-    // Set HOME to the workspace for the serverless-python-requirements plugin.
-    // The plugin uses HOME for its default cache location, which needs to be
-    // mounted in the separate Python build container. This needs to be an absolute
-    // path that also exists on the host since we're mounting the Docker socket.
-    HOME = "${env.WORKSPACE}"
-  }
   options {
     ansiColor('xterm')
   }
