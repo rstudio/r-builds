@@ -41,7 +41,7 @@ push-serverless-custom-file:
 # Docker images in Jenkins for some reason.
 fetch-serverless-custom-file:
 	aws s3 cp s3://rstudio-devops/r-builds/serverless-custom.yml .
-	sed -i 's|dockerizePip: true|dockerizePip: false\n  useStaticCache: false\n  useDownloadCache: false|' serverless-custom.yml
+	sed -i 's|dockerizePip: true|dockerizePip: false|' serverless-custom.yml
 
 rebuild-all: deps fetch-serverless-custom-file
 	$(SLS_BINARY) invoke stepf -n rBuilds -d '{"force": true}'
