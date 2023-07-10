@@ -5,10 +5,6 @@ pipeline {
       label 'docker'
     }
   }
-  environment {
-    // Set HOME to the workspace for the serverless-python-requirements plugin.
-    HOME = "${env.WORKSPACE}"
-  }
   options {
     ansiColor('xterm')
   }
