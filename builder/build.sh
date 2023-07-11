@@ -75,12 +75,13 @@ patch_r() {
 
 # compile_r() - $1 as r version
 compile_r() {
-  cd /tmp/R-${1}
+  r_version=${1}
+  cd "/tmp/R-${r_version}"
 
   # tools/config.guess in R versions older than 3.2.2 guess 'unknown' instead of 'pc'
   # test the version and properly set the flag.
   build_flag="--build=$(uname -m)-pc-linux-gnu"
-  if _version_is_greater_than ${R_VERSION} 3.2.2; then
+  if _version_is_greater_than "${r_version}" 3.2.2; then
     build_flag=''
   fi
 
@@ -93,7 +94,7 @@ compile_r() {
   # https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Using-Fortran
   # https://gcc.gnu.org/gcc-10/porting_to.html
   gcc_major_version=$(gcc -dumpversion | cut -d '.' -f 1)
-  if _version_is_less_than "${R_VERSION}" 3.6.2 && _version_is_greater_than "${gcc_major_version}" 9; then
+  if _version_is_less_than "${r_version}" 3.6.2 && _version_is_greater_than "${gcc_major_version}" 9; then
     # Default CFLAGS/FFLAGS for all R 3.x versions is '-g -O2' when using GCC
     export CFLAGS='-g -O2 -fcommon'
     export FFLAGS='-g -O2 -fallow-argument-mismatch'
@@ -111,13 +112,22 @@ compile_r() {
   # in R 3.x builds, for distributions where PCRE2 is always required.
   # In Debian 11/Ubuntu 22/RHEL 9, Pango now depends on PCRE2, so R 3.x will not be compiled with
   # Pango support if the PCRE2 pkg-config file is missing.
-  if [[ "${1}" =~ ^3 ]] && pkg-config --exists libpcre2-8 && [ -z "$INCLUDE_PCRE2_IN_R_3" ]; then
+  if [[ "${r_version}" =~ ^3 ]] && pkg-config --exists libpcre2-8 && [ -z "$INCLUDE_PCRE2_IN_R_3" ]; then
     mkdir -p /tmp/pcre2
     pc_dir=$(pkg-config --variable pcfiledir libpcre2-8)
     mv ${pc_dir}/libpcre2-8.pc /tmp/pcre2
     config_bin=$(which pcre2-config)
     mv ${config_bin} /tmp/pcre2
     trap "{ mv /tmp/pcre2/libpcre2-8.pc ${pc_dir}; mv /tmp/pcre2/pcre2-config ${config_bin}; }" EXIT
+  fi
+
+  # Allow libcurl 8.x to be used in R 4.2 and below. Despite a change in major
+  # version number, libcurl 8 changes neither API nor ABI. This applies the same
+  # change to configure made in R 4.3.0, replacing exit(1) with exit(0) when
+  # LIBCURL_VERSION_MAJOR > 7.
+  # https://github.com/wch/r-source/commit/da6638896413bcbb5970b2335b92582853f94e3c
+  if _version_is_less_than "${r_version}" 4.3.0; then
+    sed -i -z 's/#if LIBCURL_VERSION_MAJOR > 7\n  exit(1)/#if LIBCURL_VERSION_MAJOR > 7\n  exit(0)/' configure
   fi
 
   # Default configure options. Some Dockerfiles override this with an ENV directive.
