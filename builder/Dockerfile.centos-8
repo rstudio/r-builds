@@ -74,4 +74,5 @@ ENV R_RD4PDF="times,hyper"
 
 COPY package.centos-8 /package.sh
 COPY build.sh .
+COPY patches /patches
 ENTRYPOINT ./build.sh

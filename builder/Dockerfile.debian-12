@@ -30,4 +30,5 @@ ENV INCLUDE_PCRE2_IN_R_3 yes
 
 COPY package.debian-12 /package.sh
 COPY build.sh .
+COPY patches /patches
 ENTRYPOINT ./build.sh

@@ -23,4 +23,5 @@ ENV PAGER /usr/bin/pager
 
 COPY package.debian-10 /package.sh
 COPY build.sh .
+COPY patches /patches
 ENTRYPOINT ./build.sh
