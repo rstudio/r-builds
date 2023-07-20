@@ -22,4 +22,5 @@ ENV PAGER /usr/bin/pager
 
 COPY package.ubuntu-2004 /package.sh
 COPY build.sh .
+COPY patches /patches
 ENTRYPOINT ./build.sh
