@@ -25,6 +25,7 @@ R binaries are built for the following Linux operating systems:
 - Red Hat Enterprise Linux 7, 8, 9
 - openSUSE 15.4
 - SUSE Linux Enterprise 15 SP4
+- Fedora 37, 38
 
 Operating systems are supported until their vendor end-of-support dates, which
 can be found on the [Posit Platform Support](https://posit.co/about/platform-support/)
@@ -145,6 +146,25 @@ Then install the package:
 ```bash
 sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.x86_64.rpm
 ```
+
+Download the deb package:
+```bash
+# Debian 10
+curl -O https://cdn.posit.co/r/fedora-37/pkgs/r-${R_VERSION}_1_amd64.rpm
+
+# Debian 11
+curl -O https://cdn.posit.co/r/fedora-38/pkgs/r-${R_VERSION}_1_amd64.rpm
+
+# Debian 12
+curl -O https://cdn.posit.co/r/debian-12/pkgs/r-${R_VERSION}_1_amd64.deb
+```
+
+Then install the package:
+```bash
+sudo dnf install r-${R_VERSION}_1_amd64.rpm
+```
+
+
 
 ### Verify R installation
 
