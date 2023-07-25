@@ -1,0 +1,103 @@
+FROM opensuse/leap:15.5
+
+ENV OS_IDENTIFIER opensuse-155
+
+# Most of these packages, and also the configure options that follow were determined
+# by reviewing "R-base.spec" from the following OpenSUSE RPM:
+# https://download.opensuse.org/repositories/devel:/languages:/R:/released/openSUSE_Leap_42.3/src/R-base-3.5.3-103.1.src.rpm
+
+RUN zypper --non-interactive update
+RUN zypper --non-interactive --gpg-auto-import-keys -n install \
+    bzip2 \
+    cairo-devel \
+    curl \
+    fdupes \
+    gcc \
+    gcc-c++ \
+    gcc-fortran \
+    glib2-devel \
+    glibc-locale \
+    help2man \
+    # Like openSUSE/SLES 15.3 and 15.4, SUSE 15.5 ships with both ICU 65 (libicu-devel) and
+    # ICU 69 (icu.691-devel). Prefer ICU 69 because the devel packages can't coexist, and
+    # zypper resolves libicu-devel to icu.691-devel when installing RPMs.
+    icu.691-devel \
+    java-11-openjdk-devel \
+    libX11-devel \
+    libXScrnSaver-devel \
+    libXmu-devel \
+    libXt-devel \
+    libbz2-devel \
+    libcurl-devel \
+    libjpeg-devel \
+    libpng-devel \
+    libtiff-devel \
+    make \
+    pango-devel \
+    pcre-devel \
+    pcre2-devel \
+    perl \
+    perl-macros \
+    readline-devel \
+    rpm-build \
+    shadow \
+    tcl-devel \
+    texinfo \
+    texlive-ae \
+    texlive-bibtex \
+    texlive-cm-super \
+    texlive-dvips \
+    texlive-fancyvrb \
+    texlive-helvetic \
+    texlive-inconsolata \
+    texlive-latex \
+    texlive-makeindex \
+    texlive-metafont \
+    texlive-psnfss \
+    texlive-tex \
+    texlive-times \
+    tk-devel \
+    unzip \
+    wget \
+    xdg-utils \
+    xorg-x11-devel \
+    xz-devel \
+    zip \
+    zlib-devel \
+    && zypper clean
+
+# Install AWS CLI
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip
+
+RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(cat /tmp/arch).rpm" && \
+    zypper --non-interactive --no-gpg-checks install "nfpm_$(cat /tmp/arch).rpm" && \
+    rm "nfpm_$(cat /tmp/arch).rpm"
+
+RUN chmod 0777 /opt
+
+# Configure flags for SUSE that don't use the defaults in build.sh
+ENV CONFIGURE_OPTIONS="\
+    --enable-R-shlib \
+    --with-tcltk \
+    --with-x \
+    --enable-memory-profiling \
+    --with-tcl-config=/usr/lib64/tclConfig.sh \
+    --with-tk-config=/usr/lib64/tkConfig.sh"
+
+# Make sure that patching Java does not break R.
+# On SUSE, the default JAVA_HOME path always uses the major Java version only,
+# but the JDK path is chosen by default. We change this to the JRE path to
+# support users who only want to install the JRE (non-devel) package.
+# https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Java-support
+# https://solutions.posit.co/envs-pkgs/using-rjava/
+ENV JAVA_HOME=/usr/lib64/jvm/jre-11-openjdk
+
+COPY package.opensuse-155 /package.sh
+COPY build.sh .
+COPY patches /patches
+ENTRYPOINT ./build.sh

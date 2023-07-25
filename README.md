@@ -23,8 +23,8 @@ R binaries are built for the following Linux operating systems:
 - Debian 10, 11, 12
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8, 9
-- openSUSE 15.4
-- SUSE Linux Enterprise 15 SP4
+- openSUSE 15.4, 15.5
+- SUSE Linux Enterprise 15 SP4, 15 SP5
 
 Operating systems are supported until their vendor end-of-support dates, which
 can be found on the [Posit Platform Support](https://posit.co/about/platform-support/)
@@ -48,7 +48,7 @@ bash -c "$(curl -L https://rstd.io/r-install)"
 Define the version of R that you want to install. Available versions
 of R can be found here: https://cdn.posit.co/r/versions.json
 ```bash
-R_VERSION=4.1.3
+R_VERSION=4.2.3
 ```
 
 ### Download and install R
@@ -139,6 +139,9 @@ Download the rpm package:
 ```bash
 # openSUSE 15.4 / SLES 15 SP4
 curl -O https://cdn.posit.co/r/opensuse-154/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+
+# openSUSE 15.5 / SLES 15 SP5
+curl -O https://cdn.posit.co/r/opensuse-155/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
