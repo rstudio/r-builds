@@ -68,7 +68,8 @@ ENV CONFIGURE_OPTIONS="\
     --with-tcl-config=/usr/lib64/tclConfig.sh \
     --with-tk-config=/usr/lib64/tkConfig.sh \
     --enable-prebuilt-html \
-    --with-blas=flexiblas"
+    --with-blas=flexiblas \
+    --with-lapack=flexiblas"
 
 # Make sure that patching Java does not break R.
 # R's default JAVA_HOME path includes the exact Java version on CentOS/RHEL, which
