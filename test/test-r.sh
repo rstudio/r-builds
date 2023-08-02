@@ -14,8 +14,5 @@ $("${R_HOME}/bin/R" CMD config FC)  --version
 
 # List shared library dependencies (e.g. BLAS/LAPACK)
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${R_HOME}/lib ldd "${R_HOME}/lib/libR.so"
-LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${R_HOME}/lib ldd "${R_HOME}/lib/libRblas.so"
-
-ls -la "${R_HOME}/lib/"
 
 DIR=$SCRIPT_DIR "${R_HOME}/bin/Rscript" "${SCRIPT_DIR}/test.R"
