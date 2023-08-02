@@ -58,7 +58,7 @@ RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_
 
 RUN chmod 0777 /opt
 
-# Configure flags for RHEL 9 that don't use the defaults in build.sh
+# Configure flags for that don't use the defaults in build.sh
 ENV CONFIGURE_OPTIONS="\
     --enable-R-shlib \
     --with-tcltk \
