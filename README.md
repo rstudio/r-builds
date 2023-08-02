@@ -147,16 +147,15 @@ Then install the package:
 sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
-Download the deb package:
+#### Fedora Linux
+
+Download the rpm package:
 ```bash
-# Debian 10
+# Fedora 37
 curl -O https://cdn.posit.co/r/fedora-37/pkgs/r-${R_VERSION}_1_amd64.rpm
 
-# Debian 11
+# Fedora 38
 curl -O https://cdn.posit.co/r/fedora-38/pkgs/r-${R_VERSION}_1_amd64.rpm
-
-# Debian 12
-curl -O https://cdn.posit.co/r/debian-12/pkgs/r-${R_VERSION}_1_amd64.deb
 ```
 
 Then install the package:
