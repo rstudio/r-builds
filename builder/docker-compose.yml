@@ -107,3 +107,27 @@ services:
     image: r-builds:opensuse-154
     volumes:
       - ./integration/tmp:/tmp/output
+  fedora-37:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.fedora-37
+    image: r-builds:fedora-37
+    volumes:
+      - ./integration/tmp:/tmp/output
+  fedora-38:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.fedora-38
+    image: r-builds:fedora-38
+    volumes:
+      - ./integration/tmp:/tmp/output
