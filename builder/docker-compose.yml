@@ -95,6 +95,18 @@ services:
     image: r-builds:rhel-9
     volumes:
       - ./integration/tmp:/tmp/output
+  opensuse-155:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.opensuse-155
+    image: r-builds:opensuse-155
+    volumes:
+      - ./integration/tmp:/tmp/output
   opensuse-154:
     command: ./build.sh
     environment:
