@@ -75,6 +75,10 @@ patch_r() {
   if [ -f "/patches/R-${1}-${OS_IDENTIFIER}.patch" ]; then
       patch -p1 < "/patches/R-${1}-${OS_IDENTIFIER}.patch"
   fi
+
+  if [ -f "/patches/R-${1}-`arch`.patch" ]; then
+      patch -p1 < "/patches/R-${1}-`arch`.patch"
+  fi
 }
 
 # compile_r() - $1 as r version
