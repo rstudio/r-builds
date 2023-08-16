@@ -152,10 +152,10 @@ sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.x86_64.rpm
 Download the rpm package:
 ```bash
 # Fedora 37
-curl -O https://cdn.posit.co/r/fedora-37/pkgs/r-${R_VERSION}_1_amd64.rpm
+curl -O https://cdn.posit.co/r/fedora-37/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
 # Fedora 38
-curl -O https://cdn.posit.co/r/fedora-38/pkgs/r-${R_VERSION}_1_amd64.rpm
+curl -O https://cdn.posit.co/r/fedora-38/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
