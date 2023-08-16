@@ -35,6 +35,7 @@ depends:
 - libc6
 - libcairo2
 - libcurl4
+- libdeflate0
 - libglib2.0-0
 - libgomp1
 - libicu-dev
