@@ -84,6 +84,10 @@ rBuildsEcsLaunchTemplate:
           Ebs:
             VolumeType: gp3
             VolumeSize: 96
+            Encrypted: true
+      MetadataOptions:
+        HttpTokens: required
+        HttpPutResponseHopLimit: 2
 
 rBuildsBatchComputeEnvironment:
   Type: AWS::Batch::ComputeEnvironment
