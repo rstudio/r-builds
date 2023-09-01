@@ -147,7 +147,6 @@ rBuildsBatchJobDefinitionUbuntu2004:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-2004"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -163,7 +162,6 @@ rBuildsBatchJobDefinitionUbuntu2204:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-2204"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -179,7 +177,6 @@ rBuildsBatchJobDefinitionDebian10:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-10"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -195,7 +192,6 @@ rBuildsBatchJobDefinitionDebian11:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-11"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -211,7 +207,6 @@ rBuildsBatchJobDefinitionDebian12:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-12"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -227,7 +222,6 @@ rBuildsBatchJobDefinitionCentos7:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-7"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -243,7 +237,6 @@ rBuildsBatchJobDefinitionCentos8:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-8"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -259,7 +252,6 @@ rBuildsBatchJobDefinitionRhel9:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:rhel-9"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -275,7 +267,6 @@ rBuildsBatchJobDefinitionOpensuse154:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-154"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -291,7 +282,6 @@ rBuildsBatchJobDefinitionFedora37:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:fedora-37"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
@@ -307,7 +297,6 @@ rBuildsBatchJobDefinitionFedora38:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:fedora-38"
-      Privileged: false
       ReadOnlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
