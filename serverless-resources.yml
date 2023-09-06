@@ -147,7 +147,7 @@ rBuildsBatchJobDefinitionUbuntu2004:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-2004"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionUbuntu2204:
@@ -162,7 +162,7 @@ rBuildsBatchJobDefinitionUbuntu2204:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-2204"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionDebian10:
@@ -177,7 +177,7 @@ rBuildsBatchJobDefinitionDebian10:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-10"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionDebian11:
@@ -192,7 +192,7 @@ rBuildsBatchJobDefinitionDebian11:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-11"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionDebian12:
@@ -207,7 +207,7 @@ rBuildsBatchJobDefinitionDebian12:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-12"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionCentos7:
@@ -222,7 +222,7 @@ rBuildsBatchJobDefinitionCentos7:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-7"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionCentos8:
@@ -237,7 +237,7 @@ rBuildsBatchJobDefinitionCentos8:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:centos-8"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionRhel9:
@@ -252,7 +252,7 @@ rBuildsBatchJobDefinitionRhel9:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:rhel-9"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionOpensuse154:
@@ -267,7 +267,7 @@ rBuildsBatchJobDefinitionOpensuse154:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:opensuse-154"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionFedora37:
@@ -282,7 +282,7 @@ rBuildsBatchJobDefinitionFedora37:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:fedora-37"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionFedora38:
@@ -297,7 +297,7 @@ rBuildsBatchJobDefinitionFedora38:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:fedora-38"
-      ReadOnlyRootFilesystem: true
+      ReadonlyRootFilesystem: true
     Timeout:
       AttemptDurationSeconds: 7200
 
