@@ -4,7 +4,7 @@ rBuildsSecurityGroup:
     GroupDescription: Security Group for the RBuilds jobs
     GroupName: RBuildsJobs
     VpcId: ${self:custom.vpcId}
-    Tags: ${self:custom.tagsList}
+    Tags: ${self:provider.stackTags}
 
 
 rBuildsBatchIamRole:
