@@ -1,3 +1,12 @@
+rBuildsSecurityGroup:
+  Type: AWS::EC2::SecurityGroup
+  Properties:
+    GroupDescription: Security Group for the RBuilds jobs
+    GroupName: RBuildsJobs
+    VpcId: ${self:custom.vpcId}
+    Tags: ${self:custom.tagsList}
+
+
 rBuildsBatchIamRole:
   Type: AWS::IAM::Role
   Properties:
@@ -103,7 +112,8 @@ rBuildsBatchComputeEnvironment:
         Version: '$Latest'
       SpotIamFleetRole:
         "Fn::GetAtt": [ rBuildsSpotFleetIamRole, Arn ]
-      SecurityGroupIds: ${self:custom.securityGroupIds}
+      SecurityGroupIds:
+        "Fn::GetAtt": [ rBuildsSecurityGroup, GroupId ]
       Subnets: ${self:custom.subnets}
       Type: SPOT
       BidPercentage: 100
