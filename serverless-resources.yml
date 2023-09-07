@@ -113,7 +113,7 @@ rBuildsBatchComputeEnvironment:
       SpotIamFleetRole:
         "Fn::GetAtt": [ rBuildsSpotFleetIamRole, Arn ]
       SecurityGroupIds:
-        "Fn::GetAtt": [ rBuildsSecurityGroup, GroupId ]
+        - "Fn::GetAtt": [ rBuildsSecurityGroup, GroupId ]
       Subnets: ${self:custom.subnets}
       Type: SPOT
       BidPercentage: 100
