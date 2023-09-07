@@ -106,6 +106,7 @@ rBuildsBatchComputeEnvironment:
     ServiceRole:
       "Fn::GetAtt": [ rBuildsBatchIamRole, Arn ]
     ComputeResources:
+      AllocationStrategy: BEST_FIT_PROGRESSIVE
       LaunchTemplate:
         LaunchTemplateId:
           Ref: rBuildsEcsLaunchTemplate
