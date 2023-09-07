@@ -1,8 +1,8 @@
 rBuildsSecurityGroup:
   Type: AWS::EC2::SecurityGroup
   Properties:
-    GroupDescription: Security Group for the RBuilds jobs
-    GroupName: RBuildsJobs
+    GroupDescription: RBuilds jobs - ${self:provider.stage}
+    GroupName: RBuildsJobs-${self:provider.stage}
     VpcId: ${self:custom.vpcId}
     Tags: ${self:provider.stackTags}
 
