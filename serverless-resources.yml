@@ -4,7 +4,7 @@ rBuildsSecurityGroup:
     GroupDescription: RBuilds jobs - ${self:provider.stage}
     GroupName: RBuildsJobs-${self:provider.stage}
     VpcId: ${self:custom.vpcId}
-    Tags: ${self:provider.stackTags}
+    Tags: ${self:provider.tagsList}
 
 
 rBuildsBatchIamRole:
@@ -131,7 +131,7 @@ rBuildsBatchComputeEnvironment:
         - c5a.xlarge
         - c5a.2xlarge
       Ec2KeyPair: ${self:custom.ec2KeyPair}
-      Tags: ${self:provider.stackTags}
+      Tags: ${self:provider.tagsMap}
       MinvCpus: 0
       DesiredvCpus: 0
       MaxvCpus: 256

@@ -22,7 +22,17 @@ provider:
   stage: ${opt:stage, self:custom.defaultStage}
   deploymentBucket:
     name: ${self:custom.deploymentBucket}
-  stackTags: ${self:custom.${self:provider.stage}.stackTags}
+  tagsList:
+    - Key: rs:project
+      Value: ${self:custom.${self:provider.stage}.tags.project}
+    - Key: rs:owner
+      Value: ${self:custom.${self:provider.stage}.tags.owner}
+    - Key: rs:environment
+      Value: ${self:custom.${self:provider.stage}.tags.environment}
+  tagsMap:
+    "rs:owner": ${self:custom.${self:provider.stage}.tags.owner}
+    "rs:project": ${self:custom.${self:provider.stage}.tags.project}
+    "rs:environment": ${self:custom.${self:provider.stage}.tags.environment}
   iamRoleStatements:
     -  Effect: Allow
        Action:
