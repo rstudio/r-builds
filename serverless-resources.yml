@@ -1,3 +1,12 @@
+rBuildsSecurityGroup:
+  Type: AWS::EC2::SecurityGroup
+  Properties:
+    GroupDescription: RBuilds jobs - ${self:provider.stage}
+    GroupName: RBuildsJobs-${self:provider.stage}
+    VpcId: ${self:custom.vpcId}
+    Tags: ${self:provider.tagsList}
+
+
 rBuildsBatchIamRole:
   Type: AWS::IAM::Role
   Properties:
@@ -97,13 +106,15 @@ rBuildsBatchComputeEnvironment:
     ServiceRole:
       "Fn::GetAtt": [ rBuildsBatchIamRole, Arn ]
     ComputeResources:
+      AllocationStrategy: BEST_FIT_PROGRESSIVE
       LaunchTemplate:
         LaunchTemplateId:
           Ref: rBuildsEcsLaunchTemplate
         Version: '$Latest'
       SpotIamFleetRole:
         "Fn::GetAtt": [ rBuildsSpotFleetIamRole, Arn ]
-      SecurityGroupIds: ${self:custom.securityGroupIds}
+      SecurityGroupIds:
+        - "Fn::GetAtt": [ rBuildsSecurityGroup, GroupId ]
       Subnets: ${self:custom.subnets}
       Type: SPOT
       BidPercentage: 100
@@ -120,7 +131,7 @@ rBuildsBatchComputeEnvironment:
         - c5a.xlarge
         - c5a.2xlarge
       Ec2KeyPair: ${self:custom.ec2KeyPair}
-      Tags: ${self:provider.stackTags}
+      Tags: ${self:provider.tagsMap}
       MinvCpus: 0
       DesiredvCpus: 0
       MaxvCpus: 256
