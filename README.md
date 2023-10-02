@@ -24,7 +24,9 @@ R binaries are built for the following Linux operating systems:
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8, 9
 - openSUSE 15.4
+- openSUSE 15.5
 - SUSE Linux Enterprise 15 SP4
+- SUSE Linux Enterprise 15 SP5
 - Fedora 37, 38
 
 Operating systems are supported until their vendor end-of-support dates, which
@@ -140,6 +142,10 @@ Download the rpm package:
 ```bash
 # openSUSE 15.4 / SLES 15 SP4
 curl -O https://cdn.posit.co/r/opensuse-154/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+
+
+# openSUSE 15.5 / SLES 15 SP5
+curl -O https://cdn.posit.co/r/opensuse-155/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
