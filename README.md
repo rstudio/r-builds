@@ -24,7 +24,9 @@ R binaries are built for the following Linux operating systems:
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8, 9
 - openSUSE 15.4
+- openSUSE 15.5
 - SUSE Linux Enterprise 15 SP4
+- SUSE Linux Enterprise 15 SP5
 - Fedora 37, 38
 
 Operating systems are supported until their vendor end-of-support dates, which
@@ -140,6 +142,10 @@ Download the rpm package:
 ```bash
 # openSUSE 15.4 / SLES 15 SP4
 curl -O https://cdn.posit.co/r/opensuse-154/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+
+
+# openSUSE 15.5 / SLES 15 SP5
+curl -O https://cdn.posit.co/r/opensuse-155/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
@@ -247,6 +253,11 @@ make build-r-$PLATFORM
 
 ## Adding a new platform.
 
+### README
+
+1. Add the new platform to the `Supported Platforms` list.
+2. Add rpm package download instructions for the new platform.
+
 ### Dockerfile
 
 Create a `builder/Dockerfile.platform-version` (where `platform-version` is `ubuntu-2204` or `centos-7`, etc.) This file must contain four major tasks:
@@ -255,6 +266,10 @@ Create a `builder/Dockerfile.platform-version` (where `platform-version` is `ubu
 2. a step which ensures the R source build dependencies are installed
 3. The `awscli`, 1.17.10+ if installed via `pip`, for uploading tarballs to S3
 4. `COPY` and `ENTRYPOINT` for the `build.sh` file in `builder/`.
+
+### Packaging script
+
+Create a `builder/package.platform-version` script (where `platform-version` is `ubuntu-2204` or `centos-7`, etc.). 
 
 ### docker-compose.yml
 
