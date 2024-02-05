@@ -85,7 +85,6 @@ rBuildsEcsLaunchTemplate:
 
 rBuildsBatchComputeEnvironment:
   Type: AWS::Batch::ComputeEnvironment
-  DependsOn: rBuildsBatchIamRole
   Properties:
     Type: MANAGED
     ComputeResources:
