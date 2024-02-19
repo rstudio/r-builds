@@ -35,8 +35,8 @@ tryCatch(capabilities(), warning = function(w) {
 # Check graphics devices
 # https://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/Devices.html
 devices <- c("png", "jpeg", "tiff", "svg", "bmp", "pdf", "postscript",
-             if (getRversion() < "4.4.0") "xfig",
-             "pictex", "cairo_pdf", "cairo_ps")
+             if (getRversion() < "4.4.0") c("xfig", "pictex"),
+             "cairo_pdf", "cairo_ps")
 for (dev_name in devices) {
   # Skip unsupported graphics devices (e.g. tiff in R >= 3.3 on CentOS 6)
   if (dev_name %in% names(capabilities()) && capabilities(dev_name) == FALSE) {
