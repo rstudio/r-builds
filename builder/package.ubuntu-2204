@@ -11,6 +11,11 @@ if [[ "${R_VERSION}" =~ ^3 ]]; then
 - libpcre3-dev'
 fi
 
+deflate_libs='# - libdeflate-dev'
+if grep -q '^LIBS *=.*[-]ldeflate' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
+    deflate_libs='- libdeflate-dev'
+fi
+
 cat <<EOF > /tmp/nfpm.yml
 name: r-${R_VERSION}
 version: 1
@@ -35,6 +40,7 @@ depends:
 - libc6
 - libcairo2
 - libcurl4
+${deflate_libs}
 - libglib2.0-0
 - libgomp1
 - libicu-dev
