@@ -1,6 +1,6 @@
-FROM fedora:37
+FROM fedora:39
 
-ENV OS_IDENTIFIER fedora-37
+ENV OS_IDENTIFIER fedora-39
 
 RUN dnf -y upgrade \
     && dnf -y install dnf-plugins-core \
@@ -82,7 +82,7 @@ ENV JAVA_HOME=/usr/lib/jvm/jre-11-openjdk
 # R 3.x requires PCRE2 for Pango support on RHEL 9
 ENV INCLUDE_PCRE2_IN_R_3 yes
 
-COPY package.fedora-37 /package.sh
+COPY package.fedora-39 /package.sh
 COPY build.sh .
 COPY patches /patches
 ENTRYPOINT ./build.sh
