@@ -27,7 +27,7 @@ R binaries are built for the following Linux operating systems:
 - openSUSE 15.5
 - SUSE Linux Enterprise 15 SP4
 - SUSE Linux Enterprise 15 SP5
-- Fedora 37, 38
+- Fedora 38, 39
 
 Operating systems are supported until their vendor end-of-support dates, which
 can be found on the [Posit Platform Support](https://posit.co/about/platform-support/)
@@ -157,11 +157,11 @@ sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.x86_64.rpm
 
 Download the rpm package:
 ```bash
-# Fedora 37
-curl -O https://cdn.posit.co/r/fedora-37/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-
 # Fedora 38
 curl -O https://cdn.posit.co/r/fedora-38/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+
+# Fedora 39
+curl -O https://cdn.posit.co/r/fedora-39/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
 
 Then install the package:
