@@ -52,7 +52,7 @@ def _cran_r_versions(url):
     r_versions = []
     for link in soup.find_all('a'):
         href = link.get('href')
-        if 'R-' in href:
+        if href.startswith('R-') and href.endswith('.tar.gz'):
             v = href.replace('.tar.gz', '').replace('R-', '')
             if '-revised' not in v:  # reject 3.2.4-revised
                 r_versions.append(v)
