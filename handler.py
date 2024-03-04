@@ -124,7 +124,10 @@ def _versions_to_build(force, versions):
     new_versions = _compare_versions(cran_versions, known_versions)
 
     if len(new_versions) > 0:
-        print('New R Versions found: %s' % new_versions)
+        print('New R Versions found on CRAN: %s' % new_versions)
+        _persist_r_versions(_cran_all_r_versions())
+    elif versions is None:
+        # Always publish versions.json for full versions builds
         _persist_r_versions(_cran_all_r_versions())
 
     if force in [True, 'True', 'true']:
