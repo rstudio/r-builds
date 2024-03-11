@@ -18,6 +18,7 @@ package:
 
 provider:
   name: aws
+  # Make sure to update the Python version in jenkins/Dockerfile whenever this changes
   runtime: python3.8
   stage: ${opt:stage, self:custom.defaultStage}
   deploymentBucket:
