@@ -157,6 +157,20 @@ rBuildsBatchJobDefinitionUbuntu2204:
       Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-2204"
     Timeout:
       AttemptDurationSeconds: 7200
+rBuildsBatchJobDefinitionUbuntu2404:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:ubuntu-2404"
+    Timeout:
+      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionDebian10:
   Type: AWS::Batch::JobDefinition
   Properties:

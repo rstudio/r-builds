@@ -15,6 +15,14 @@ services:
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
+  ubuntu-2404:
+    image: ubuntu:noble
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-2404
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
   debian-12:
     image: debian:bookworm
     command: /r-builds/test/test-apt.sh

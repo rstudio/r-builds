@@ -19,7 +19,7 @@ bug, or ask questions on [Posit Community](https://community.rstudio.com).
 
 R binaries are built for the following Linux operating systems:
 
-- Ubuntu 20.04, 22.04
+- Ubuntu 20.04, 22.04, 24.04
 - Debian 10, 11, 12
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8, 9
@@ -51,7 +51,7 @@ bash -c "$(curl -L https://rstd.io/r-install)"
 Define the version of R that you want to install. Available versions
 of R can be found here: https://cdn.posit.co/r/versions.json
 ```bash
-R_VERSION=4.1.3
+R_VERSION=4.3.3
 ```
 
 ### Download and install R
@@ -64,6 +64,9 @@ curl -O https://cdn.posit.co/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Ubuntu 22.04
 curl -O https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
+
+# Ubuntu 24.04
+curl -O https://cdn.posit.co/r/ubuntu-2404/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Debian 10
 curl -O https://cdn.posit.co/r/debian-10/pkgs/r-${R_VERSION}_1_amd64.deb
