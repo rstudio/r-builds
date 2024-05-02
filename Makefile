@@ -1,5 +1,5 @@
-PLATFORMS := ubuntu-1804 ubuntu-2004 ubuntu-2204 debian-9 debian-10 debian-11 centos-7 centos-8 opensuse-153
-SLS_BINARY ?= ./node_modules/serverless/bin/serverless
+PLATFORMS := ubuntu-2004 ubuntu-2204 ubuntu-2404 debian-10 debian-11 debian-12 centos-7 centos-8 rhel-9 opensuse-154 opensuse-155 fedora-38 fedora-39
+SLS_BINARY ?= ./node_modules/serverless/bin/serverless.js
 
 deps:
 	npm install
@@ -37,7 +37,30 @@ rebuild-all: deps fetch-serverless-custom-file
 	$(SLS_BINARY) invoke stepf -n rBuilds -d '{"force": true}'
 
 serverless-deploy.%: deps fetch-serverless-custom-file
-	$(SLS_BINARY) deploy --stage $*
+	$(SLS_BINARY) deploy --stage $* --verbose
+
+define GEN_TARGETS
+docker-build-$(platform):
+	@cd builder && docker-compose build $(platform)
+
+build-r-$(platform):
+	@cd builder && R_VERSION=$(R_VERSION) docker-compose run --rm $(platform)
+
+test-r-$(platform):
+	@cd test && R_VERSION=$(R_VERSION) docker-compose run --rm $(platform)
+
+bash-$(platform):
+	docker run -it --rm --entrypoint /bin/bash -v $(CURDIR):/r-builds r-builds:$(platform)
+
+.PHONY: docker-build-$(platform) build-r-$(platform) test-r-$(platform) bash-$(platform)
+endef
+
+$(foreach platform,$(PLATFORMS), \
+    $(eval $(GEN_TARGETS)) \
+)
+
+print-platforms:
+	@echo $(PLATFORMS)
 
 # Helper for launching a bash session on a docker image of your choice. Defaults
 # to "ubuntu:xenial".
@@ -48,4 +71,4 @@ bash:
 		-w /r-builds \
 		${TARGET_IMAGE} /bin/bash
 
-.PHONY: deps docker-build docker-push docker-down docker-build-package docker-shell-package-env ecr-login fetch-serverless-custom-file serverless-deploy
+.PHONY: deps docker-build docker-push docker-down docker-build-package docker-shell-package-env ecr-login fetch-serverless-custom-file print-platforms serverless-deploy

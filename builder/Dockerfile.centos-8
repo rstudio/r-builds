@@ -34,8 +34,6 @@ RUN dnf -y upgrade \
     python3-pip \
     readline-devel \
     rpm-build \
-    ruby \
-    ruby-devel \
     tcl-devel \
     tex \
     texinfo-tex \
@@ -52,8 +50,11 @@ RUN dnf -y upgrade \
 RUN pip3 install awscli --upgrade --user \
     && ln -s /root/.local/bin/aws /usr/bin/aws
 
-# Pin fpm to avoid git dependency in 1.12.0
-RUN gem install fpm:1.11.0
+RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(cat /tmp/arch).rpm" && \
+    dnf install -y "nfpm_$(cat /tmp/arch).rpm" && \
+    rm "nfpm_$(cat /tmp/arch).rpm"
 
 RUN chmod 0777 /opt
 
@@ -73,4 +74,5 @@ ENV R_RD4PDF="times,hyper"
 
 COPY package.centos-8 /package.sh
 COPY build.sh .
+COPY patches /patches
 ENTRYPOINT ./build.sh

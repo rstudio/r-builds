@@ -1,0 +1,105 @@
+services:
+  ubuntu-2004:
+    image: ubuntu:focal
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-2004
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  ubuntu-2204:
+    image: ubuntu:jammy
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-2204
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  ubuntu-2404:
+    image: ubuntu:noble
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-2404
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  debian-12:
+    image: debian:bookworm
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=debian-12
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  debian-11:
+    image: debian:bullseye
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=debian-11
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  debian-10:
+    image: debian:buster
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=debian-10
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  centos-7:
+    image: centos:centos7
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=centos-7
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  centos-8:
+    image: rockylinux:8
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=centos-8
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  rhel-9:
+    image: rockylinux:9
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=rhel-9
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  opensuse-155:
+    image: opensuse/leap:15.5
+    command: /r-builds/test/test-zypper.sh
+    environment:
+      - OS_IDENTIFIER=opensuse-155
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  opensuse-154:
+    image: opensuse/leap:15.4
+    command: /r-builds/test/test-zypper.sh
+    environment:
+      - OS_IDENTIFIER=opensuse-154
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  fedora-38:
+    image: fedora:38
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=fedora-38
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  fedora-39:
+    image: fedora:39
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=fedora-39
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds

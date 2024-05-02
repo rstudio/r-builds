@@ -1,21 +1,9 @@
-version: '2.0'
-
 services:
-  ubuntu-1804:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.ubuntu-1804
-    image: r-builds:ubuntu-1804
-    volumes:
-      - ./integration/tmp:/tmp/output
   ubuntu-2004:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -27,6 +15,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -34,21 +23,23 @@ services:
     image: r-builds:ubuntu-2204
     volumes:
       - ./integration/tmp:/tmp/output
-  debian-9:
+  ubuntu-2404:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
-      dockerfile: Dockerfile.debian-9
-    image: r-builds:debian-9
+      dockerfile: Dockerfile.ubuntu-2404
+    image: r-builds:ubuntu-2404
     volumes:
       - ./integration/tmp:/tmp/output
   debian-10:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -60,6 +51,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -67,10 +59,23 @@ services:
     image: r-builds:debian-11
     volumes:
       - ./integration/tmp:/tmp/output
+  debian-12:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.debian-12
+    image: r-builds:debian-12
+    volumes:
+      - ./integration/tmp:/tmp/output
   centos-7:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -82,6 +87,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -89,14 +95,63 @@ services:
     image: r-builds:centos-8
     volumes:
       - ./integration/tmp:/tmp/output
-  opensuse-153:
+  rhel-9:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
-      dockerfile: Dockerfile.opensuse-153
-    image: r-builds:opensuse-153
+      dockerfile: Dockerfile.rhel-9
+    image: r-builds:rhel-9
+    volumes:
+      - ./integration/tmp:/tmp/output
+  opensuse-155:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.opensuse-155
+    image: r-builds:opensuse-155
+    volumes:
+      - ./integration/tmp:/tmp/output
+  opensuse-154:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.opensuse-154
+    image: r-builds:opensuse-154
+    volumes:
+      - ./integration/tmp:/tmp/output
+  fedora-38:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.fedora-38
+    image: r-builds:fedora-38
+    volumes:
+      - ./integration/tmp:/tmp/output
+  fedora-39:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.fedora-39
+    image: r-builds:fedora-39
     volumes:
       - ./integration/tmp:/tmp/output

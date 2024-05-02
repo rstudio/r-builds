@@ -1,58 +1,76 @@
 #!/bin/bash
 
-if [[ ! -d /tmp/output/ubuntu-2204 ]]; then
-  mkdir -p /tmp/output/ubuntu-2204
+if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
+  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
 fi
 
 # R 3.x requires PCRE1. On Ubuntu 22, R 3.x also requires PCRE2 for Pango support.
-pcre_lib_flags='-d libpcre2-dev'
+pcre_libs='- libpcre2-dev'
 if [[ "${R_VERSION}" =~ ^3 ]]; then
-  pcre_lib_flags='-d libpcre2-dev -d libpcre3-dev'
+  pcre_libs='- libpcre2-dev
+- libpcre3-dev'
 fi
 
-fpm \
-  -s dir \
-  -t deb \
-  -v 1 \
-  -n R-${R_VERSION} \
-  --vendor "RStudio, PBC" \
-  --deb-priority "optional" \
-  --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
-  --url "http://www.r-project.org/" \
-  --description "GNU R statistical computation and graphics system" \
-  --maintainer "RStudio, PBC https://github.com/rstudio/r-builds" \
-  --license "GPL-2" \
-  -p /tmp/output/ubuntu-2204/ \
-  -d g++ \
-  -d gcc \
-  -d gfortran \
-  -d libbz2-dev \
-  -d libc6 \
-  -d libcairo2 \
-  -d libcurl4 \
-  -d libglib2.0-0 \
-  -d libgomp1 \
-  -d libicu-dev \
-  -d libjpeg8 \
-  -d liblzma-dev \
-  -d libopenblas-dev \
-  -d libpango-1.0-0 \
-  -d libpangocairo-1.0-0 \
-  -d libpaper-utils \
-  ${pcre_lib_flags} \
-  -d libpng16-16 \
-  -d libreadline8 \
-  -d libtcl8.6 \
-  -d libtiff5 \
-  -d libtk8.6 \
-  -d libx11-6 \
-  -d libxt6 \
-  -d make \
-  -d ucf \
-  -d unzip \
-  -d zip \
-  -d zlib1g-dev \
-  /opt/R/${R_VERSION}
+deflate_libs='# - libdeflate-dev'
+if grep -q '^LIBS *=.*[-]ldeflate' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
+    deflate_libs='- libdeflate-dev'
+fi
 
-shopt -s extglob
-export PKG_FILE=$(ls /tmp/output/ubuntu-2204/[rR]-${R_VERSION}*.@(deb|rpm) | head -1)
+cat <<EOF > /tmp/nfpm.yml
+name: r-${R_VERSION}
+version: 1
+version_schema: none
+section: universe/math
+priority: optional
+arch: $(dpkg --print-architecture)
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPL-2
+deb:
+  fields:
+    Bugs: https://github.com/rstudio/r-builds/issues
+depends:
+- g++
+- gcc
+- gfortran
+- libbz2-dev
+- libc6
+- libcairo2
+- libcurl4
+${deflate_libs}
+- libglib2.0-0
+- libgomp1
+- libicu-dev
+- libjpeg8
+- liblzma-dev
+- libopenblas-dev
+- libpango-1.0-0
+- libpangocairo-1.0-0
+- libpaper-utils
+${pcre_libs}
+- libpng16-16
+- libreadline8
+- libtcl8.6
+- libtiff5
+- libtk8.6
+- libx11-6
+- libxt6
+- make
+- ucf
+- unzip
+- zip
+- zlib1g-dev
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+EOF
+
+nfpm package \
+  -f /tmp/nfpm.yml \
+  -p deb \
+  -t "/tmp/output/${OS_IDENTIFIER}"
+
+export PKG_FILE=$(ls /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.deb | head -1)

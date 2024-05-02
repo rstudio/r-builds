@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ ! -d /tmp/output/debian-10 ]]; then
-  mkdir -p /tmp/output/debian-10
+if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
+  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
 fi
 
 # R 3.x requires PCRE1
@@ -10,50 +10,60 @@ if [[ "${R_VERSION}" =~ ^3 ]]; then
   pcre_lib='libpcre3-dev'
 fi
 
-fpm \
-  -s dir \
-  -t deb \
-  -v 1 \
-  -n R-${R_VERSION} \
-  --vendor "RStudio, PBC" \
-  --deb-priority "optional" \
-  --deb-field 'Bugs: https://github.com/rstudio/r-builds/issues' \
-  --url "http://www.r-project.org/" \
-  --description "GNU R statistical computation and graphics system" \
-  --maintainer "RStudio, PBC https://github.com/rstudio/r-builds" \
-  --license "GPL-2" \
-  -p /tmp/output/debian-10/ \
-  -d ca-certificates \
-  -d g++ \
-  -d gcc \
-  -d gfortran \
-  -d libbz2-dev \
-  -d libc6 \
-  -d libcairo2 \
-  -d libcurl4-openssl-dev \
-  -d libglib2.0-0 \
-  -d libgomp1 \
-  -d libicu-dev \
-  -d liblzma-dev \
-  -d libopenblas-dev \
-  -d libpango-1.0-0 \
-  -d libpangocairo-1.0-0 \
-  -d libpaper-utils \
-  -d ${pcre_lib} \
-  -d libpng16-16 \
-  -d libreadline7 \
-  -d libtcl8.6 \
-  -d libtiff5 \
-  -d libtk8.6 \
-  -d libx11-6 \
-  -d libxt6 \
-  -d make \
-  -d ucf \
-  -d unzip \
-  -d zip \
-  -d zlib1g-dev \
-  /opt/R/${R_VERSION}
+cat <<EOF > /tmp/nfpm.yml
+name: r-${R_VERSION}
+version: 1
+version_schema: none
+section: gnu-r
+arch: $(dpkg --print-architecture)
+priority: optional
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPL-2
+deb:
+  fields:
+    Bugs: https://github.com/rstudio/r-builds/issues
+depends:
+- ca-certificates
+- g++
+- gcc
+- gfortran
+- libbz2-dev
+- libc6
+- libcairo2
+- libcurl4-openssl-dev
+- libglib2.0-0
+- libgomp1
+- libicu-dev
+- liblzma-dev
+- libopenblas-dev
+- libpango-1.0-0
+- libpangocairo-1.0-0
+- libpaper-utils
+- ${pcre_lib}
+- libpng16-16
+- libreadline7
+- libtcl8.6
+- libtiff5
+- libtk8.6
+- libx11-6
+- libxt6
+- make
+- ucf
+- unzip
+- zip
+- zlib1g-dev
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+EOF
 
-shopt -s extglob
-export PKG_FILE=$(ls /tmp/output/debian-10/[rR]-${R_VERSION}*.@(deb|rpm) | head -1)
+nfpm package \
+  -f /tmp/nfpm.yml \
+  -p deb \
+  -t "/tmp/output/${OS_IDENTIFIER}"
 
+export PKG_FILE=$(ls /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.deb | head -1)

@@ -11,7 +11,10 @@ package:
     - integration/**
     - builder/**
     - docs/**
+    # Generated files by other tools
     - node_modules/**
+    - .npm/**
+    - .cache/**
 
 provider:
   name: aws
@@ -19,7 +22,17 @@ provider:
   stage: ${opt:stage, self:custom.defaultStage}
   deploymentBucket:
     name: ${self:custom.deploymentBucket}
-  stackTags: ${self:custom.${self:provider.stage}.stackTags}
+  tagsList:
+    - Key: rs:project
+      Value: ${self:custom.${self:provider.stage}.tags.project}
+    - Key: rs:owner
+      Value: ${self:custom.${self:provider.stage}.tags.owner}
+    - Key: rs:environment
+      Value: ${self:custom.${self:provider.stage}.tags.environment}
+  tagsMap:
+    "rs:owner": ${self:custom.${self:provider.stage}.tags.owner}
+    "rs:project": ${self:custom.${self:provider.stage}.tags.project}
+    "rs:environment": ${self:custom.${self:provider.stage}.tags.environment}
   iamRoleStatements:
     -  Effect: Allow
        Action:
@@ -31,29 +44,44 @@ provider:
        Resource:
         - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}
         - arn:aws:s3:::${self:custom.${self:provider.stage}.s3Bucket}/*
+    -  Effect: Allow
+       Action:
+         - "sns:Publish"
+       Resource:
+         Ref: rBuildsTopic
   environment:
     S3_BUCKET: ${self:custom.${self:provider.stage}.s3Bucket}
+    SNS_TOPIC_ARN:
+      Ref: rBuildsTopic
     JOB_QUEUE_ARN:
       Ref: rBuildsBatchJobQueue
-    JOB_DEFINITION_ARN_ubuntu_1804:
-      Ref: rBuildsBatchJobDefinitionUbuntu1804
     JOB_DEFINITION_ARN_ubuntu_2004:
       Ref: rBuildsBatchJobDefinitionUbuntu2004
     JOB_DEFINITION_ARN_ubuntu_2204:
       Ref: rBuildsBatchJobDefinitionUbuntu2204
-    JOB_DEFINITION_ARN_debian_9:
-      Ref: rBuildsBatchJobDefinitionDebian9
+    JOB_DEFINITION_ARN_ubuntu_2404:
+      Ref: rBuildsBatchJobDefinitionUbuntu2404
     JOB_DEFINITION_ARN_debian_10:
       Ref: rBuildsBatchJobDefinitionDebian10
     JOB_DEFINITION_ARN_debian_11:
       Ref: rBuildsBatchJobDefinitionDebian11
+    JOB_DEFINITION_ARN_debian_12:
+      Ref: rBuildsBatchJobDefinitionDebian12
     JOB_DEFINITION_ARN_centos_7:
       Ref: rBuildsBatchJobDefinitionCentos7
     JOB_DEFINITION_ARN_centos_8:
       Ref: rBuildsBatchJobDefinitionCentos8
-    JOB_DEFINITION_ARN_opensuse_153:
-      Ref: rBuildsBatchJobDefinitionOpensuse153
-    SUPPORTED_PLATFORMS: ubuntu-1804,ubuntu-2004,ubuntu-2204,debian-9,debian-10,debian-11,centos-7,centos-8,opensuse-153
+    JOB_DEFINITION_ARN_rhel_9:
+      Ref: rBuildsBatchJobDefinitionRhel9
+    JOB_DEFINITION_ARN_opensuse_155:
+      Ref: rBuildsBatchJobDefinitionOpensuse155
+    JOB_DEFINITION_ARN_opensuse_154:
+      Ref: rBuildsBatchJobDefinitionOpensuse154
+    JOB_DEFINITION_ARN_fedora_38:
+      Ref: rBuildsBatchJobDefinitionFedora38
+    JOB_DEFINITION_ARN_fedora_39:
+      Ref: rBuildsBatchJobDefinitionFedora39
+    SUPPORTED_PLATFORMS: ubuntu-2004,ubuntu-2204,ubuntu-2404,debian-10,debian-11,debian-12,centos-7,centos-8,rhel-9,opensuse-154,opensuse-155,fedora-38,fedora-39
 
 functions:
   queueBuilds:
@@ -61,6 +89,8 @@ functions:
     handler: handler.queue_builds
   jobQueueStatus:
     handler: handler.poll_running_jobs
+  finished:
+    handler: handler.finished
 
 
 stepFunctions:

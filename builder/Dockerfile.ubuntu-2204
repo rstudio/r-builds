@@ -6,12 +6,14 @@ RUN set -x \
   && sed -i "s|# deb-src|deb-src|g" /etc/apt/sources.list \
   && export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
-  && apt-get install -y libcurl4-openssl-dev libicu-dev libopenblas-base libpcre2-dev wget python3-pip ruby ruby-dev \
+  && apt-get install -y curl libcurl4-openssl-dev libicu-dev libopenblas-base libpcre2-dev wget python3-pip \
   && apt-get build-dep -y r-base
 
 RUN pip3 install awscli
 
-RUN gem install fpm
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(dpkg --print-architecture).deb" && \
+    apt install -y "./nfpm_$(dpkg --print-architecture).deb" && \
+    rm "nfpm_$(dpkg --print-architecture).deb"
 
 RUN chmod 0777 /opt
 
@@ -23,4 +25,5 @@ ENV INCLUDE_PCRE2_IN_R_3 yes
 
 COPY package.ubuntu-2204 /package.sh
 COPY build.sh .
+COPY patches /patches
 ENTRYPOINT ./build.sh

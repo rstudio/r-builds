@@ -27,25 +27,22 @@ if [[ $(id -u) != "0" ]]; then
 fi
 
 # The root of the S3 URL for downloads
-CDN_URL='https://cdn.rstudio.com/r'
+CDN_URL='https://cdn.posit.co/r'
 
 # The URL for listing available R versions
 VERSIONS_URL="${CDN_URL}/versions.json"
 
-R_VERSIONS=$(curl -s ${VERSIONS_URL} | \
+R_VERSIONS=$(curl -s ${VERSIONS_URL} |
   # Matches the JSON line that contains the r versions
-  grep r_versions | \
+  grep r_versions |
   # Gets the value of the `r_version` property (e.g., "[ 3.0.0, 3.0.3, ... ]")
-  cut -f2 -d ":" | \
+  cut -f2 -d ":" |
   # Removes the opening and closing brackets of the array
-  cut -f2 -d "[" | cut -f1 -d "]" | \
+  cut -f2 -d "[" | cut -f1 -d "]" |
   # Removes the quotes and commas from the values
-  sed -e 's/\"//g' | sed -e 's/\,//g' | \
-  # Appends a placeholder to the end of the string. Without an extra element at the
-  # end, the last version will be missing after we reverse the order.
-  { IFS= read -r vers; printf '%s placeholder' "$vers"; } | \
-  # Reverses the order of the list
-  ( while read -d ' ' f;do g="$f${g+ }$g" ;done;echo "$g" ))
+  sed -e 's/\"//g' | sed -e 's/\,//g' |
+  # Convert to newlines and sort in descending order, with devel/next at the bottom
+  tr ' ' '\n' | sort --numeric-sort --reverse)
 
 # Returns the OS
 detect_os () {
@@ -55,9 +52,14 @@ detect_os () {
   then
    distro="LEAP12"
   fi
-  if [[ -f /etc/centos-release || -f /etc/redhat-release ]]
+  if [[ -f /etc/centos-release || -f /etc/redhat-release || -f /etc/fedora-release  ]]
   then
-   distro="RedHat"
+    if [[ -f /etc/fedora-release ]]
+    then
+      distro="Fedora"
+    else
+      distro="RedHat"
+    fi
   fi
   if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:suse:sles:12 ]]
   then
@@ -79,13 +81,17 @@ detect_os () {
   then
    distro="Amazon"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:almalinux:almalinux:8::baseos ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:almalinux:almalinux: ]]
   then
    distro="Alma"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:rocky:rocky:8.5:GA ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:rocky:rocky: ]]
   then
    distro="Rocky"
+  fi
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:oracle:linux: ]]
+  then
+   distro="Oracle"
   fi
   if [[ $(cat /etc/os-release | grep -e "^ID\=*" | cut -f 2 -d '=') == "debian" ]]; then
     distro="Debian"
@@ -97,20 +103,16 @@ detect_os () {
 # Returns the OS version
 detect_os_version () {
   os=$1
-  if [[ "${os}" == "RedHat" ]]; then
-    if [[ $(cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=') =~ ^(\"8.|28) ]]; then
-      echo "8"
-    elif [[ $(cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=') =~ ^(\"7.) ]]; then
-      echo "7"
+  if [[ "${os}" =~ ^(RedHat|Alma|Rocky|Fedora|Oracle)$ ]]; then
+    # Get the major version. /etc/redhat-release is used if /etc/os-release isn't available,
+    # e.g., on CentOS/RHEL 6.
+    if [[ -f /etc/os-release ]]; then
+      cat /etc/os-release | grep VERSION_ID= | sed -E 's/VERSION_ID="?([0-9.]*)"?/\1/' | cut -d '.' -f 1
     elif [[ -f /etc/redhat-release ]]; then
-      if [[ $(cat /etc/redhat-release | grep "6.") ]]; then
-        echo 6
-      fi
-    elif [[ -f /etc/os-release ]]; then
-        cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/"//g'
+      cat /etc/redhat-release | sed -E 's/[^0-9]+([0-9.]+)[^0-9]*/\1/' | cut -d '.' -f 1
     fi
   fi
-  if [[ "${os}" == "Ubuntu" ]]; then
+  if [[ "${os}" == "Ubuntu" ]] || [[ "${os}" == "Debian" ]]; then
     cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/[".]//g'
   fi
   if [[ "${os}" == "SLES15" ]] || [[ "${os}" == "LEAP15" ]]; then
@@ -120,17 +122,13 @@ detect_os_version () {
   if [[ "${os}" == "Amazon" ]]; then
     echo "7"
   fi
-  # reuse rhel8 binaries for alma and rocky
-  if [[ "${os}" =~ ^(Alma|Rocky) ]]; then
-    echo "8"
-  fi
 }
 
 # Returns the installer type
 detect_installer_type () {
   os=$1
   case $os in
-    "RedHat" | "CentOS" | "LEAP12" | "LEAP15" | "SLES12" | "SLES15" | "Amazon" | "Alma" | "Rocky")
+    "RedHat" | "Fedora" | "CentOS" | "LEAP12" | "LEAP15" | "SLES12" | "SLES15" | "Amazon" | "Alma" | "Rocky" | "Oracle")
       echo "rpm"
       ;;
     "Ubuntu" | "Debian")
@@ -155,19 +153,30 @@ do_show_versions () {
   done
 }
 
-# Returns the installer name for a given version and OS
+# Returns the installer name for a given version, OS, arch
 download_name () {
   os=$1
   version=$2
+  arch=$3
+  case $arch in
+    "x86_64" | "amd64")
+      rpm_arch="x86_64"
+      deb_arch="amd64"
+      ;;
+    "aarch64")
+      rpm_arch="aarch64"
+      deb_arch="arm64"
+      ;;
+  esac
   case $os in
-    "RedHat" | "CentOS" | "Amazon" | "Alma" | "Rocky")
-      echo "R-${version}-1-1.x86_64.rpm"
+    "RedHat" | "Fedora" | "CentOS" | "Amazon" | "Alma" | "Rocky" | "Oracle")
+      echo "R-${version}-1-1.${rpm_arch}.rpm"
       ;;
     "Ubuntu" | "Debian")
-      echo "r-${version}_1_amd64.deb"
+      echo "r-${version}_1_${deb_arch}.deb"
       ;;
     "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
-      echo "R-${version}-1-1.x86_64.rpm"
+      echo "R-${version}-1-1.${rpm_arch}.rpm"
       ;;
   esac
 }
@@ -185,8 +194,15 @@ download_url () {
   else
 
     case $os in
-      "RedHat" | "CentOS" | "Amazon" | "Alma" | "Rocky")
-        echo "${CDN_URL}/centos-${ver}/pkgs/${name}"
+      "Fedora")
+        echo "${CDN_URL}/fedora-${ver}/pkgs/${name}"
+        ;;
+      "RedHat" | "CentOS" | "Amazon" | "Alma" | "Rocky" | "Oracle")
+        if [ "${ver}" -ge 9 ]; then
+          echo "${CDN_URL}/rhel-${ver}/pkgs/${name}"
+        else
+          echo "${CDN_URL}/centos-${ver}/pkgs/${name}"
+        fi
         ;;
       "Ubuntu")
         echo "${CDN_URL}/ubuntu-${ver}/pkgs/${name}"
@@ -198,7 +214,11 @@ download_url () {
         echo "${CDN_URL}/opensuse-42/pkgs/${name}"
         ;;
       "LEAP15" | "SLES15")
-        if [ "${ver}" -ge 153 ]; then
+        if [ "${ver}" -ge 155 ]; then
+          echo "${CDN_URL}/opensuse-155/pkgs/${name}"
+        elif [ "${ver}" -eq 154 ]; then
+          echo "${CDN_URL}/opensuse-154/pkgs/${name}"
+        elif [ "${ver}" -eq 153 ]; then
           echo "${CDN_URL}/opensuse-153/pkgs/${name}"
         elif [ "${ver}" -eq 152 ]; then
           echo "${CDN_URL}/opensuse-152/pkgs/${name}"
@@ -277,6 +297,7 @@ install_deb () {
   if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
       yes="--n"
       yesapt="-y"
+      export DEBIAN_FRONTEND=noninteractive
   fi
   echo "Updating package indexes..."
   ${SUDO} apt-get update
@@ -297,7 +318,7 @@ install_rpm () {
       yes="-y"
   fi
   case $os in
-    "RedHat" | "CentOS" | "Amazon" | "Alma" | "Rocky")
+    "RedHat" | "Fedora" | "CentOS" | "Amazon" | "Alma" | "Rocky" | "Oracle")
       if ! has_sudo "yum"; then
         echo "Must have sudo privileges to run yum"
         exit 1
@@ -326,8 +347,10 @@ install_pre () {
   ver=$2
 
   case $os in
-    "RedHat" | "CentOS" | "Alma" | "Rocky")
-      install_epel "${ver}"
+    "Fedora")
+      ;;
+    "RedHat" | "CentOS" | "Alma" | "Rocky" | "Oracle")
+      install_epel "${os}" "${ver}"
       ;;
     "Amazon")
       install_epel_amzn
@@ -351,7 +374,8 @@ install_epel_amzn () {
 
 # Installs EPEL for RHEL/CentOS/Alma/Rocky
 install_epel () {
-  ver=$1
+  os=$1
+  ver=$2
   yes=
   if [[ "${RUN_UNATTENDED}" -ne "0" ]]; then
       yes="-y"
@@ -364,6 +388,18 @@ install_epel () {
       ${SUDO} yum install ${yes} https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
       ;;
     "8")
+      ;;
+    "9")
+      if [[ "${os}" == "RedHat" ]]; then
+        ${SUDO} subscription-manager repos --enable "codeready-builder-for-rhel-9-$(arch)-rpms"
+        ${SUDO} dnf install ${yes} https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+      elif [[ "${os}" == "Oracle" ]]; then
+        ${SUDO} dnf config-manager --set-enabled ol9_codeready_builder
+      else
+        ${SUDO} dnf install ${yes} dnf-plugins-core
+        ${SUDO} dnf config-manager --set-enabled crb
+        ${SUDO} dnf install ${yes} epel-release
+      fi
       ;;
   esac
 }
@@ -479,8 +515,10 @@ do_install () {
   prompt_version
   [ -z $SELECTED_VERSION ] && { echo "Invalid version"; exit 1; }
 
+  arch=$(uname -m)
+
   # Get the name of the installer to use
-  installer_file_name=$(download_name "${os}" "${SELECTED_VERSION}")
+  installer_file_name=$(download_name "${os}" "${SELECTED_VERSION}" "${arch}")
 
   # Get the URL to download from. If the installer already exists in the current
   # directory, this will return a blank string.

@@ -1,0 +1,34 @@
+FROM debian:bookworm
+
+ENV OS_IDENTIFIER debian-12
+
+RUN set -x \
+  && export DEBIAN_FRONTEND=noninteractive \
+  && echo 'deb-src http://deb.debian.org/debian bookworm main' >> /etc/apt/sources.list \
+  && apt-get update \
+  && apt-get install -y curl gcc libcurl4-openssl-dev libicu-dev \
+     libopenblas0 libpcre2-dev make unzip wget \
+  && apt-get build-dep -y r-base
+
+# Install AWS CLI
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip
+
+RUN chmod 0777 /opt
+
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(dpkg --print-architecture).deb" && \
+    apt install -y "./nfpm_$(dpkg --print-architecture).deb" && \
+    rm "nfpm_$(dpkg --print-architecture).deb"
+
+# Override the default pager used by R
+ENV PAGER /usr/bin/pager
+
+# R 3.x requires PCRE2 for Pango support on Debian 12
+ENV INCLUDE_PCRE2_IN_R_3 yes
+
+COPY package.debian-12 /package.sh
+COPY build.sh .
+COPY patches /patches
+ENTRYPOINT ./build.sh

@@ -1,6 +1,6 @@
-FROM opensuse/leap:15.3
+FROM opensuse/leap:15.5
 
-ENV OS_IDENTIFIER opensuse-153
+ENV OS_IDENTIFIER opensuse-155
 
 # Most of these packages, and also the configure options that follow were determined
 # by reviewing "R-base.spec" from the following OpenSUSE RPM:
@@ -10,6 +10,7 @@ RUN zypper --non-interactive update
 RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     bzip2 \
     cairo-devel \
+    curl \
     fdupes \
     gcc \
     gcc-c++ \
@@ -17,11 +18,11 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     glib2-devel \
     glibc-locale \
     help2man \
-    # openSUSE/SLES 15.3 originally shipped with ICU 65 (libicu-devel), but later
-    # added ICU 69 (icu.691-devel) in a patch update. Prefer ICU 69 because the devel
-    # packages can't coexist, and zypper now resolves libicu-devel to icu.691-devel.
+    # Like openSUSE/SLES 15.4, SUSE 15.5 ships with both ICU 65 (libicu-devel) and
+    # ICU 69 (icu.691-devel). Prefer ICU 69 because the devel packages can't coexist, and
+    # zypper resolves libicu-devel to icu.691-devel when installing RPMs.
     icu.691-devel \
-    java-1_8_0-openjdk-devel \
+    java-11-openjdk-devel \
     libX11-devel \
     libXScrnSaver-devel \
     libXmu-devel \
@@ -37,12 +38,8 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     pcre2-devel \
     perl \
     perl-macros \
-    python \
-    python-pip \
     readline-devel \
     rpm-build \
-    ruby \
-    ruby-devel \
     shadow \
     tcl-devel \
     texinfo \
@@ -69,11 +66,17 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     zlib-devel \
     && zypper clean
 
-RUN pip install awscli
+# Install AWS CLI
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip
 
-# Pin fpm to avoid git dependency in 1.12.0
-RUN gem install fpm:1.11.0 && \
-    ln -s /usr/bin/fpm.ruby2.5 /usr/local/bin/fpm
+RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(cat /tmp/arch).rpm" && \
+    zypper --non-interactive --no-gpg-checks install "nfpm_$(cat /tmp/arch).rpm" && \
+    rm "nfpm_$(cat /tmp/arch).rpm"
 
 RUN chmod 0777 /opt
 
@@ -86,6 +89,15 @@ ENV CONFIGURE_OPTIONS="\
     --with-tcl-config=/usr/lib64/tclConfig.sh \
     --with-tk-config=/usr/lib64/tkConfig.sh"
 
-COPY package.opensuse-153 /package.sh
+# Make sure that patching Java does not break R.
+# On SUSE, the default JAVA_HOME path always uses the major Java version only,
+# but the JDK path is chosen by default. We change this to the JRE path to
+# support users who only want to install the JRE (non-devel) package.
+# https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Java-support
+# https://solutions.posit.co/envs-pkgs/using-rjava/
+ENV JAVA_HOME=/usr/lib64/jvm/jre-11-openjdk
+
+COPY package.opensuse-155 /package.sh
 COPY build.sh .
+COPY patches /patches
 ENTRYPOINT ./build.sh
