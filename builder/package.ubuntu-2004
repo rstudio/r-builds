@@ -38,7 +38,7 @@ depends:
 - libgomp1
 - libicu-dev
 - libjpeg8
-- libopenblas-base
+- libopenblas-dev
 - liblzma-dev
 - libpango-1.0-0
 - libpangocairo-1.0-0
