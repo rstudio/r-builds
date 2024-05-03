@@ -31,7 +31,6 @@ depends:
 - gcc
 - gfortran
 - libbz2-dev
-- libblas-dev
 - libc6
 - libcairo2
 - libcurl4
@@ -39,7 +38,7 @@ depends:
 - libgomp1
 - libicu-dev
 - libjpeg8
-- liblapack-dev
+- libopenblas-dev
 - liblzma-dev
 - libpango-1.0-0
 - libpangocairo-1.0-0
