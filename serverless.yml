@@ -75,13 +75,11 @@ provider:
       Ref: rBuildsBatchJobDefinitionRhel9
     JOB_DEFINITION_ARN_opensuse_155:
       Ref: rBuildsBatchJobDefinitionOpensuse155
-    JOB_DEFINITION_ARN_opensuse_154:
-      Ref: rBuildsBatchJobDefinitionOpensuse154
     JOB_DEFINITION_ARN_fedora_38:
       Ref: rBuildsBatchJobDefinitionFedora38
     JOB_DEFINITION_ARN_fedora_39:
       Ref: rBuildsBatchJobDefinitionFedora39
-    SUPPORTED_PLATFORMS: ubuntu-2004,ubuntu-2204,ubuntu-2404,debian-10,debian-11,debian-12,centos-7,centos-8,rhel-9,opensuse-154,opensuse-155,fedora-38,fedora-39
+    SUPPORTED_PLATFORMS: ubuntu-2004,ubuntu-2204,ubuntu-2404,debian-10,debian-11,debian-12,centos-7,centos-8,rhel-9,opensuse-155,fedora-38,fedora-39
 
 functions:
   queueBuilds:
