@@ -95,3 +95,11 @@ services:
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
+  fedora-40:
+    image: fedora:40
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=fedora-40
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
