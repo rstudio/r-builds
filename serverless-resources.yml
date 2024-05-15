@@ -79,6 +79,7 @@ rBuildsEcsLaunchTemplate:
             VolumeType: gp3
             VolumeSize: 96
             Encrypted: true
+      ImageId: ami-00d4cdb3bda21c6ed  # This is al2023-ami-ecs-hvm-2023.0.20240430-kernel-6.1-x86_64
       MetadataOptions:
         HttpTokens: required
         HttpPutResponseHopLimit: 2
