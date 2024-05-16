@@ -89,6 +89,8 @@ rBuildsBatchComputeEnvironment:
     Type: MANAGED
     ComputeResources:
       AllocationStrategy: BEST_FIT_PROGRESSIVE
+      Ec2Configuration:
+        - ImageType: ECS_AL2023
       LaunchTemplate:
         LaunchTemplateId:
           Ref: rBuildsEcsLaunchTemplate
