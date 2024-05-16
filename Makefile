@@ -30,14 +30,22 @@ ecr-login:
 push-serverless-custom-file:
 	aws s3 cp serverless-custom.yml s3://rstudio-devops/r-builds/serverless-custom.yml
 
+# Temporarily patch serverless-custom.yml to not Dockerize pip for the
+# serverless-python-requirements plugin.
 fetch-serverless-custom-file:
 	aws s3 cp s3://rstudio-devops/r-builds/serverless-custom.yml .
+	sed -i 's|dockerizePip: true|dockerizePip: false|' serverless-custom.yml
 
 rebuild-all: deps fetch-serverless-custom-file
 	$(SLS_BINARY) invoke stepf -n rBuilds -d '{"force": true}'
 
 serverless-deploy.%: deps fetch-serverless-custom-file
 	$(SLS_BINARY) deploy --stage $* --verbose
+
+# Package the service only, for debugging.
+# Requires deps and fetch-serverless-custom-file to be run first.
+serverless-package:
+	$(SLS_BINARY) package --verbose
 
 define GEN_TARGETS
 docker-build-$(platform):
