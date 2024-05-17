@@ -45,18 +45,20 @@ index a389f71311..a190fbf8f3 100644
      SEXP object, icon, type, ver, fun;
      object = CAR(args); args = CDR(args);
      icon = CAR(args); args = CDR(args);
-diff --git a/doc/NEWS b/doc/NEWS
-index 502ee68..704deb0 100644
---- a/doc/NEWS
-+++ b/doc/NEWS
-@@ -1,5 +1,10 @@
- R News
+diff --git a/doc/NEWS.Rd b/doc/NEWS.Rd
+index 4c45f26..69285cd 100644
+--- a/doc/NEWS.Rd
++++ b/doc/NEWS.Rd
+@@ -6,6 +6,12 @@
+ \encoding{UTF-8}
  
-+CHANGES IN POSIT'S BUILD FROM https://github.com/rstudio/r-builds
-+
-+    * readRDS() and unserialize() now signal an error instead of returning a PROMSXP,
-+      to fix CVE-2024-27322.
-+
- CHANGES IN R 4.0.2:
+ \section{\Rlogo CHANGES IN R 4.0.2}{
++  \subsection{CHANGES IN POSIT'S BUILD FROM \url{https://github.com/rstudio/r-builds}}{
++    \itemize{
++      \item readRDS() and unserialize() now signal an error instead of
++      returning a PROMSXP, to fix CVE-2024-27322.
++    }
++  }
  
-   UTILITIES:
+   \subsection{UTILITIES}{
+     \itemize{

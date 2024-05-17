@@ -45,18 +45,21 @@ index a389f71311..a190fbf8f3 100644
      SEXP object, icon, type, ver, fun;
      object = CAR(args); args = CDR(args);
      icon = CAR(args); args = CDR(args);
-diff --git a/doc/NEWS b/doc/NEWS
-index 238859d..3c8f99f 100644
---- a/doc/NEWS
-+++ b/doc/NEWS
-@@ -1,5 +1,10 @@
- R News
+diff --git a/doc/NEWS.Rd b/doc/NEWS.Rd
+index 630c88f..3504a87 100644
+--- a/doc/NEWS.Rd
++++ b/doc/NEWS.Rd
+@@ -6,6 +6,13 @@
+ \encoding{UTF-8}
  
-+CHANGES IN POSIT'S BUILD FROM https://github.com/rstudio/r-builds
+ \section{\Rlogo CHANGES IN R 4.2.1}{
++  \subsection{CHANGES IN POSIT'S BUILD FROM \url{https://github.com/rstudio/r-builds}}{
++    \itemize{
++      \item readRDS() and unserialize() now signal an error instead of
++      returning a PROMSXP, to fix CVE-2024-27322.
++    }
++  }
 +
-+    * readRDS() and unserialize() now signal an error instead of returning a PROMSXP,
-+      to fix CVE-2024-27322.
-+
- CHANGES IN R 4.2.1:
- 
-   NEW FEATURES:
+   \subsection{NEW FEATURES}{
+     \itemize{
+       \item New function \code{utils::findCRANmirror()} to find out if a
