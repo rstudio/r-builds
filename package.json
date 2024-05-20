@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "dependencies": {},
   "devDependencies": {
-    "serverless": "^3.21.0",
-    "serverless-python-requirements": "^5.4.0",
-    "serverless-pseudo-parameters": "^2.2.0",
-    "serverless-step-functions": "^3.12.1"
+    "serverless": "^3.36.0",
+    "serverless-python-requirements": "^6.0.0",
+    "serverless-step-functions": "^3.21.0",
+    "serverless-better-credentials": "^2.0.0"
   }
 }
