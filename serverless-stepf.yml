@@ -6,7 +6,8 @@ rBuilds:
     States:
       QueueBuilds:
         Type: Task
-        Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-queueBuilds
+        Resource:
+          Fn::Sub: arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${self:service}-${self:provider.stage}-queueBuilds
         Next: Wait
       Wait:
         Type: Wait
@@ -14,7 +15,8 @@ rBuilds:
         Next: JobQueueStatus
       JobQueueStatus:
         Type: Task
-        Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-jobQueueStatus
+        Resource:
+          Fn::Sub: arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${self:service}-${self:provider.stage}-jobQueueStatus
         Next: QueueEmpty?
       QueueEmpty?:
         Type: Choice
@@ -27,7 +29,8 @@ rBuilds:
             Next: Finished
       Finished:
         Type: Task
-        Resource: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-finished
+        Resource:
+          Fn::Sub: arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${self:service}-${self:provider.stage}-finished
         Next: SuccessOrFail
       SuccessOrFail:
         Type: Choice
