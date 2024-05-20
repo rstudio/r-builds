@@ -3,7 +3,7 @@ service: r-builds
 plugins:
   - serverless-python-requirements
   - serverless-step-functions
-  - serverless-pseudo-parameters
+  - serverless-better-credentials
 custom: ${file(./serverless-custom.yml)}
 
 package:
