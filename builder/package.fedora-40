@@ -1,0 +1,75 @@
+#!/bin/bash
+
+if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
+  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
+fi
+
+# R 3.x requires PCRE1. On RHEL 9, R 3.x also requires PCRE2 for Pango support.
+pcre_libs='- pcre2-devel'
+if [[ "${R_VERSION}" =~ ^3 ]]; then
+  pcre_libs='- pcre2-devel
+- pcre-devel'
+fi
+
+blas_lib='flexiblas-devel'
+
+# Create postremove script to remove empty directories, as nFPM doesn't include them in the RPM files.
+cat <<EOF >> /after-remove.sh
+if [ -d ${R_INSTALL_PATH} ]; then
+  rm -r ${R_INSTALL_PATH}
+fi
+EOF
+
+scripts="scripts:
+  postremove: /after-remove.sh
+"
+
+if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+
+cat <<EOF > /tmp/nfpm.yml
+name: R-${R_VERSION}
+version: 1
+version_schema: none
+arch: $(cat /tmp/arch)
+release: 1
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPLv2+
+depends:
+- bzip2-devel
+- gcc
+- gcc-c++
+- gcc-gfortran
+- libcurl-devel
+- libicu-devel
+- libSM
+- libtiff
+- libXmu
+- libXt
+- make
+- ${blas_lib}
+- pango
+${pcre_libs}
+- tcl
+- tk
+- unzip
+- util-linux-core
+- which
+- xz-devel
+- zip
+- zlib-devel
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+${scripts}
+EOF
+
+nfpm package \
+  -f /tmp/nfpm.yml \
+  -p rpm \
+  -t "/tmp/output/${OS_IDENTIFIER}"
+
+export PKG_FILE=$(ls /tmp/output/${OS_IDENTIFIER}/R-${R_VERSION}*.rpm | head -1)
