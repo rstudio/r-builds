@@ -310,7 +310,7 @@ rBuildsBatchJobDefinitionFedora40:
       Memory: 4096
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: "#{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:fedora-40"
+      Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/r-builds:fedora-40"
     Timeout:
       AttemptDurationSeconds: 7200
 
