@@ -7,13 +7,13 @@ The R language is open source, please see the official documentation at https://
 These binaries are not a replacement to existing binary distributions for R.
 The binaries were built with the following considerations:
 - They use a minimal set of [build and runtime dependencies](builder).
-- They are designed to be used side-by-side, e.g., on [Posit Workbench](https://docs.posit.co/ide/server-pro/r_versions/using_multiple_versions_of_r.html).
+- They are designed to be used side-by-side, e.g., on [Posit Workbench](https://docs.posit.co/ide/server-pro/r/using_multiple_versions_of_r.html).
 - They give users a consistent option for accessing R across different Linux distributions.
 
 These binaries have been extensively tested, and are used in production everyday
 on [Posit Cloud](https://posit.cloud) and
 [shinyapps.io](https://shinyapps.io). Please open an issue to report a specific
-bug, or ask questions on [Posit Community](https://community.rstudio.com).
+bug, or ask questions on [Posit Community](https://forum.posit.co/).
 
 ## Supported Platforms
 
@@ -31,6 +31,11 @@ Operating systems are supported until their vendor end-of-support dates, which
 can be found on the [Posit Platform Support](https://posit.co/about/platform-support/)
 page. When an operating system has reached its end of support, builds for it
 will be discontinued, but existing binaries will continue to be available.
+
+## Supported R Versions
+
+R binaries are primarily supported for the current R version and previous four minor versions of R.
+Older R versions down to R 3.0.0 are also built when possible, but support for older R versions is best effort and not guaranteed. 
 
 ## Quick Installation
 
@@ -248,12 +253,31 @@ export R_INSTALL_PATH=/opt/custom/R-4.1.3
 make build-r-$PLATFORM
 ```
 
+## Submitting pull requests
+
+For significant changes to the R builds, such as adding a new platform or updating existing builds,
+include any relevant testing notes and changes that may affect existing users, such as system dependency changes.
+
+On successful merge, the changes will be automatically deployed to the staging environment.
+
+A project maintainer can then trigger the builds in staging to test the changes, and then deploy/build in production
+when the changes have been verified.
+
 ## Adding a new platform.
+
+### R configuration
+
+- Builds should use OpenBLAS and align their BLAS/LAPACK configuration with the default distribution of R when possible,
+  for maximum compatibility of binary R packages across R distributions. For example, Ubuntu/Debian should be configured
+  to use external BLAS, RHEL 9+ should use FlexiBLAS (to match EPEL), and SUSE should use shared BLAS. The BLAS/LAPACK
+  library should be swappable at runtime when possible.
+- DEB/RPM packages should include the minimum set of dependencies when possible. Different R versions may have different
+  dependencies, so packaging scripts may conditionally add dependencies based on the R version.
 
 ### README
 
 1. Add the new platform to the `Supported Platforms` list.
-2. Add rpm package download instructions for the new platform.
+2. Add DEB or RPM package download instructions for the new platform.
 
 ### Dockerfile
 
@@ -261,8 +285,9 @@ Create a `builder/Dockerfile.platform-version` (where `platform-version` is `ubu
 
 1. an `OS_IDENTIFIER` env with the `platform-version`.
 2. a step which ensures the R source build dependencies are installed
-3. The `awscli`, 1.17.10+ if installed via `pip`, for uploading tarballs to S3
-4. `COPY` and `ENTRYPOINT` for the `build.sh` file in `builder/`.
+3. The `awscli` for uploading packages and tarballs to S3
+4. `COPY` for the packaging script (`builder/package.platform-version`) to `/package.sh`
+5. `COPY` and `ENTRYPOINT` for the `build.sh` file in `builder/`.
 
 ### Packaging script
 
@@ -272,25 +297,27 @@ Create a `builder/package.platform-version` script (where `platform-version` is 
 
 A new service in the docker-compose file named according to the `platform-version` and containing the proper entries:
 
-```
-command: ./build.sh
-environment:
-  - R_VERSION=${R_VERSION} # for testing out R builds locally
-  - LOCAL_STORE=/tmp/output # ensures that output tarballs are persisted locally
-build:
-  context: .
-  dockerfile: Dockerfile.debian-11
-image: r-builds:debian-11
-volumes:
-  - ./integration/tmp:/tmp/output  # path to output tarballs
+```yaml
+ubuntu-2404:
+  command: ./build.sh
+  environment:
+    - R_VERSION=${R_VERSION}  # for testing out R builds locally
+    - R_INSTALL_PATH=${R_INSTALL_PATH}  # custom installation path
+    - LOCAL_STORE=/tmp/output  # ensures that output tarballs are persisted locally
+  build:
+    context: .
+    dockerfile: Dockerfile.ubuntu-2404
+  image: r-builds:ubuntu-2404
+  volumes:
+    - ./integration/tmp:/tmp/output  # path to output tarballs
 ```
 
 ### Job definition
 
 IN `serverless-resources.yml` you'll need to add a job definition that points to the ECR image.
 
-```
-rBuildsBatchJobDefinitionDebian11:
+```yaml
+rBuildsBatchJobDefinitionUbuntu2404:
   Type: AWS::Batch::JobDefinition
   Properties:
     Type: container
@@ -301,7 +328,9 @@ rBuildsBatchJobDefinitionDebian11:
       Memory: 4096
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: #{AWS::AccountId}.dkr.ecr.#{AWS::Region}.amazonaws.com/r-builds:debian-11
+      Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/r-builds:ubuntu-2404"
+    Timeout:
+      AttemptDurationSeconds: 7200
 ```
 
 ### Environment variables in the serverless.yml functions.
@@ -311,7 +340,7 @@ The serverless functions which trigger R builds need to be informed of new platf
 1. Add a `JOB_DEFINITION_ARN_PlatformVersion` env variable with a ref to the Job definition above.
 2. Append the `platform-version` to `SUPPORTED_PLATFORMS`.
 
-```
+```yaml
 environment:
   # snip
   JOB_DEFINITION_ARN_debian_11:
@@ -321,7 +350,7 @@ environment:
 
 ### Makefile
 
-In order for the makefile to push these new platforms to ECR, add them to the PLATFORMS variable near the top of the Makefile
+In order for the makefile to push these new platforms to ECR, add them to the `PLATFORMS` variable near the top of the Makefile.
 
 ### test/docker-compose.yml
 
@@ -338,9 +367,17 @@ A new service in the `test/docker-compose.yml` file named according to the `plat
       - ../:/r-builds
 ```
 
-### Submit a Pull Request
+### Quick install script
 
-Once you've followed the steps above, submit a pull request. On successful merge, builds for this platform will begin to be available from the CDN.
+Update the quick install script at [`install.sh`](install.sh), if necessary, to support the new platform.
+
+Once you've followed the steps above, submit a pull request.
+
+## R builds tarballs
+
+In addition to the DEB and RPM packages, R builds also publishes tarballs of the binaries at: `https://cdn.posit.co/r/${OS_IDENTIFIER}/R-${R_VERSION}-${OS_IDENTIFIER}.tar.gz`.
+These may be used with a manual installation of R's system dependencies. System dependencies will differ between R versions,
+so inspect the corresponding DEB or RPM package for the list of system dependencies.
 
 ## "Break Glass"
 
