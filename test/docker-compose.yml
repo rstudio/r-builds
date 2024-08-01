@@ -49,7 +49,9 @@ services:
       - ../:/r-builds
   centos-7:
     image: centos:centos7
-    command: /r-builds/test/test-yum.sh
+    command: |
+      /bin/bash -c 'sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/* &&
+      /r-builds/test/test-yum.sh'
     environment:
       - OS_IDENTIFIER=centos-7
       - R_VERSION=${R_VERSION}
@@ -76,6 +78,14 @@ services:
     command: /r-builds/test/test-zypper.sh
     environment:
       - OS_IDENTIFIER=opensuse-155
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  opensuse-156:
+    image: opensuse/leap:15.6
+    command: /r-builds/test/test-zypper.sh
+    environment:
+      - OS_IDENTIFIER=opensuse-156
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
