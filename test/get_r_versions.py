@@ -15,10 +15,11 @@ def main():
         'versions',
         type=str,
         nargs='?',
-        default='last-5,devel',
+        # R 3.6 is a special case, as we need longer term (but unstated) support for it.
+        default='last-5,3.6.3,devel',
         help="""Comma-separated list of R versions. Specify "last-N" to use the
             last N minor R versions, or "all" to use all minor R versions since R 3.1.
-            Defaults to "last-5,devel".
+            Defaults to "last-5,3.6.3,devel".
             """
     )
     args = parser.parse_args()
