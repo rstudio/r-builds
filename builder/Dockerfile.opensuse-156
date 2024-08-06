@@ -99,6 +99,9 @@ ENV CONFIGURE_OPTIONS="\
 # https://solutions.posit.co/envs-pkgs/using-rjava/
 ENV JAVA_HOME=/usr/lib64/jvm/jre-11-openjdk
 
+# R 3.x requires PCRE2 for Pango support on SUSE 15.6
+ENV INCLUDE_PCRE2_IN_R_3 yes
+
 COPY package.opensuse-156 /package.sh
 COPY build.sh .
 COPY patches /patches

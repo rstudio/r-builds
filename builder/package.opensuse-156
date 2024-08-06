@@ -4,10 +4,11 @@ if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
   mkdir -p "/tmp/output/${OS_IDENTIFIER}"
 fi
 
-# R 3.x requires PCRE1
-pcre_lib='pcre2-devel'
+# R 3.x requires PCRE1. On openSUSE 15.6+, R 3.x also requires PCRE2 for Pango support.
+pcre_libs='- pcre2-devel'
 if [[ "${R_VERSION}" =~ ^3 ]]; then
-  pcre_lib='pcre-devel'
+  pcre_libs='- pcre2-devel
+- pcre-devel'
 fi
 
 # Create post-install script required for OpenBLAS.
@@ -72,7 +73,7 @@ depends:
 - libreadline7
 - libtiff6
 - make
-- ${pcre_lib}
+${pcre_libs}
 - tar
 - tcl
 - tk
