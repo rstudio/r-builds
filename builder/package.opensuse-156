@@ -8,7 +8,7 @@ fi
 pcre_libs='- pcre2-devel'
 if [[ "${R_VERSION}" =~ ^3 ]]; then
   pcre_libs='- pcre2-devel
--d pcre-devel'
+- pcre-devel'
 fi
 
 # Create post-install script required for OpenBLAS.
