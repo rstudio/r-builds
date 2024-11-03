@@ -89,14 +89,6 @@ services:
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
-  fedora-38:
-    image: fedora:38
-    command: /r-builds/test/test-yum.sh
-    environment:
-      - OS_IDENTIFIER=fedora-38
-      - R_VERSION=${R_VERSION}
-    volumes:
-      - ../:/r-builds
   fedora-39:
     image: fedora:39
     command: /r-builds/test/test-yum.sh
@@ -110,6 +102,14 @@ services:
     command: /r-builds/test/test-yum.sh
     environment:
       - OS_IDENTIFIER=fedora-40
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+  fedora-41:
+    image: fedora:41
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=fedora-41
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
