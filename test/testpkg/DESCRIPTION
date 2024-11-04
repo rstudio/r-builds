@@ -6,7 +6,7 @@ Authors@R: person("Test", "Pkg", email = "test@test", role = c("aut", "cre"))
 Description: A test package.
 License: MIT
 Depends:
-    R (>= 3.1)
+    R (>= 3.0)
 SystemRequirements: C++11
 RoxygenNote: 6.1.1
 Encoding: UTF-8
