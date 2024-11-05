@@ -1,6 +1,6 @@
-FROM fedora:38
+FROM fedora:41
 
-ENV OS_IDENTIFIER fedora-38
+ENV OS_IDENTIFIER fedora-41
 
 RUN dnf -y upgrade \
     && dnf -y install dnf-plugins-core \
@@ -58,7 +58,7 @@ RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_
 
 RUN chmod 0777 /opt
 
-# Configure flags that don't use the defaults in build.sh
+# Configure flags for that don't use the defaults in build.sh
 ENV CONFIGURE_OPTIONS="\
     --enable-R-shlib \
     --with-tcltk \
@@ -82,7 +82,7 @@ ENV JAVA_HOME=/usr/lib/jvm/jre-11-openjdk
 # R 3.x requires PCRE2 for Pango support on RHEL 9
 ENV INCLUDE_PCRE2_IN_R_3 yes
 
-COPY package.fedora-38 /package.sh
+COPY package.fedora-41 /package.sh
 COPY build.sh .
 COPY patches /patches
 ENTRYPOINT ./build.sh

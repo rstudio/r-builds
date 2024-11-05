@@ -285,20 +285,6 @@ rBuildsBatchJobDefinitionOpensuse156:
       Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/r-builds:opensuse-156"
     Timeout:
       AttemptDurationSeconds: 7200
-rBuildsBatchJobDefinitionFedora38:
-  Type: AWS::Batch::JobDefinition
-  Properties:
-    Type: container
-    ContainerProperties:
-      Command:
-        - ./build.sh
-      Vcpus: 4
-      Memory: 4096
-      JobRoleArn:
-        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/r-builds:fedora-38"
-    Timeout:
-      AttemptDurationSeconds: 7200
 rBuildsBatchJobDefinitionFedora39:
   Type: AWS::Batch::JobDefinition
   Properties:
@@ -325,6 +311,20 @@ rBuildsBatchJobDefinitionFedora40:
       JobRoleArn:
         "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
       Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/r-builds:fedora-40"
+    Timeout:
+      AttemptDurationSeconds: 7200
+rBuildsBatchJobDefinitionFedora41:
+  Type: AWS::Batch::JobDefinition
+  Properties:
+    Type: container
+    ContainerProperties:
+      Command:
+        - ./build.sh
+      Vcpus: 4
+      Memory: 4096
+      JobRoleArn:
+        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
+      Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/r-builds:fedora-41"
     Timeout:
       AttemptDurationSeconds: 7200
 
