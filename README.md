@@ -25,7 +25,7 @@ R binaries are built for the following Linux operating systems:
 - Red Hat Enterprise Linux 7, 8, 9
 - openSUSE 15.5
 - openSUSE 15.6
-- SUSE Linux Enterprise 15 SP5
+- SUSE Linux Enterprise 15 SP5, 15 SP6
 - Fedora 39, 40, 41
 
 Operating systems are supported until their vendor end-of-support dates, which
@@ -37,6 +37,8 @@ will be discontinued, but existing binaries will continue to be available.
 
 R binaries are primarily supported for the current R version and previous four minor versions of R.
 Older R versions down to R 3.0.0 are also built when possible, but support for older R versions is best effort and not guaranteed. 
+
+R versions 4.0.0 through 4.3.3 have been patched for [CVE-2024-27322](https://nvd.nist.gov/vuln/detail/cve-2024-27322). See [#218](https://github.com/rstudio/r-builds/issues/218) for more details.
 
 ## Quick Installation
 
@@ -84,8 +86,7 @@ curl -O https://cdn.posit.co/r/debian-12/pkgs/r-${R_VERSION}_1_amd64.deb
 
 Then install the package:
 ```bash
-sudo apt-get install gdebi-core
-sudo gdebi r-${R_VERSION}_1_amd64.deb
+sudo apt-get install ./r-${R_VERSION}_1_amd64.deb
 ```
 
 #### RHEL/CentOS Linux
