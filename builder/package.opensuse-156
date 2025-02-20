@@ -12,7 +12,7 @@ if [[ "${R_VERSION}" =~ ^3 ]]; then
 fi
 
 # R 4.5.0 and later require libzstd (with headers to link against libR)
-zstd_libs='# - libzstd-dev'
+zstd_libs='# - libzstd-devel'
 if grep -q '^LIBS *=.*[-]lzstd' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
     zstd_libs='- libzstd-devel'
 fi
