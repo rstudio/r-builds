@@ -11,6 +11,12 @@ if [[ "${R_VERSION}" =~ ^3 ]]; then
 - pcre-devel'
 fi
 
+# R 4.5.0 and later require libzstd (with headers to link against libR)
+zstd_libs='# - libzstd-devel'
+if grep -q '^LIBS *=.*[-]lzstd' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
+    zstd_libs='- libzstd-devel'
+fi
+
 # Create post-install script required for OpenBLAS.
 #
 # On RHEL and SUSE, we link R against the internal shared BLAS to make the
@@ -72,6 +78,7 @@ depends:
 - libpango-1_0-0
 - libreadline7
 - libtiff6
+${zstd_libs}
 - make
 ${pcre_libs}
 - tar

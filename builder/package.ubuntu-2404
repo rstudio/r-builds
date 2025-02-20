@@ -16,6 +16,12 @@ if grep -q '^LIBS *=.*[-]ldeflate' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
     deflate_libs='- libdeflate-dev'
 fi
 
+# R 4.5.0 and later require libzstd (with headers to link against libR)
+zstd_libs='# - libzstd-dev'
+if grep -q '^LIBS *=.*[-]lzstd' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
+    zstd_libs='- libzstd-dev'
+fi
+
 cat <<EOF > /tmp/nfpm.yml
 name: r-${R_VERSION}
 version: 1
@@ -59,6 +65,7 @@ ${pcre_libs}
 - libtk8.6
 - libx11-6
 - libxt6t64
+${zstd_libs}
 - make
 - ucf
 - unzip
