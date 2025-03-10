@@ -87,7 +87,8 @@ ENV CONFIGURE_OPTIONS="\
     --with-x \
     --enable-memory-profiling \
     --with-tcl-config=/usr/lib64/tclConfig.sh \
-    --with-tk-config=/usr/lib64/tkConfig.sh"
+    --with-tk-config=/usr/lib64/tkConfig.sh \
+    --with-2025blas"
 
 # Make sure that patching Java does not break R.
 # On SUSE, the default JAVA_HOME path always uses the major Java version only,
