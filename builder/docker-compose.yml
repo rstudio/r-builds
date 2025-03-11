@@ -35,18 +35,6 @@ services:
     image: r-builds:ubuntu-2404
     volumes:
       - ./integration/tmp:/tmp/output
-  debian-10:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.debian-10
-    image: r-builds:debian-10
-    volumes:
-      - ./integration/tmp:/tmp/output
   debian-11:
     command: ./build.sh
     environment:
@@ -107,18 +95,6 @@ services:
     image: r-builds:rhel-9
     volumes:
       - ./integration/tmp:/tmp/output
-  opensuse-155:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.opensuse-155
-    image: r-builds:opensuse-155
-    volumes:
-      - ./integration/tmp:/tmp/output
   opensuse-156:
     command: ./build.sh
     environment:
@@ -129,18 +105,6 @@ services:
       context: .
       dockerfile: Dockerfile.opensuse-156
     image: r-builds:opensuse-156
-    volumes:
-      - ./integration/tmp:/tmp/output
-  fedora-39:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.fedora-39
-    image: r-builds:fedora-39
     volumes:
       - ./integration/tmp:/tmp/output
   fedora-40:
