@@ -20,13 +20,12 @@ bug, or ask questions on [Posit Community](https://forum.posit.co/).
 R binaries are built for the following Linux operating systems:
 
 - Ubuntu 20.04, 22.04, 24.04
-- Debian 10, 11, 12
+- Debian 11, 12
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8, 9
-- openSUSE 15.5
 - openSUSE 15.6
-- SUSE Linux Enterprise 15 SP5, 15 SP6
-- Fedora 39, 40, 41
+- SUSE Linux Enterprise 15 SP6
+- Fedora 40, 41
 
 Operating systems are supported until their vendor end-of-support dates, which
 can be found on the [Posit Platform Support](https://posit.co/about/platform-support/)
@@ -73,9 +72,6 @@ curl -O https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Ubuntu 24.04
 curl -O https://cdn.posit.co/r/ubuntu-2404/pkgs/r-${R_VERSION}_1_amd64.deb
-
-# Debian 10
-curl -O https://cdn.posit.co/r/debian-10/pkgs/r-${R_VERSION}_1_amd64.deb
 
 # Debian 11
 curl -O https://cdn.posit.co/r/debian-11/pkgs/r-${R_VERSION}_1_amd64.deb
@@ -148,9 +144,6 @@ sudo yum install R-${R_VERSION}-1-1.x86_64.rpm
 
 Download the rpm package:
 ```bash
-# openSUSE 15.5 / SLES 15 SP5
-curl -O https://cdn.posit.co/r/opensuse-155/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-
 # openSUSE 15.6 / SLES 15 SP6
 curl -O https://cdn.posit.co/r/opensuse-156/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 ```
@@ -164,9 +157,6 @@ sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.x86_64.rpm
 
 Download the rpm package:
 ```bash
-# Fedora 39
-curl -O https://cdn.posit.co/r/fedora-39/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-
 # Fedora 40
 curl -O https://cdn.posit.co/r/fedora-40/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
 
