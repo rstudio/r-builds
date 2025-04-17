@@ -31,14 +31,6 @@ services:
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
-  debian-11:
-    image: debian:bullseye
-    command: /r-builds/test/test-apt.sh
-    environment:
-      - OS_IDENTIFIER=debian-11
-      - R_VERSION=${R_VERSION}
-    volumes:
-      - ../:/r-builds
   centos-7:
     image: centos:centos7
     command: |

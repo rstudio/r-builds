@@ -61,8 +61,6 @@ provider:
       Ref: rBuildsBatchJobDefinitionUbuntu2204
     JOB_DEFINITION_ARN_ubuntu_2404:
       Ref: rBuildsBatchJobDefinitionUbuntu2404
-    JOB_DEFINITION_ARN_debian_11:
-      Ref: rBuildsBatchJobDefinitionDebian11
     JOB_DEFINITION_ARN_debian_12:
       Ref: rBuildsBatchJobDefinitionDebian12
     JOB_DEFINITION_ARN_centos_7:
@@ -77,7 +75,7 @@ provider:
       Ref: rBuildsBatchJobDefinitionFedora40
     JOB_DEFINITION_ARN_fedora_41:
       Ref: rBuildsBatchJobDefinitionFedora41
-    SUPPORTED_PLATFORMS: ubuntu-2004,ubuntu-2204,ubuntu-2404,debian-11,debian-12,centos-7,centos-8,rhel-9,opensuse-156,fedora-40,fedora-41
+    SUPPORTED_PLATFORMS: ubuntu-2004,ubuntu-2204,ubuntu-2404,debian-12,centos-7,centos-8,rhel-9,opensuse-156,fedora-40,fedora-41
 
 functions:
   queueBuilds:

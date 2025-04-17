@@ -73,9 +73,6 @@ curl -O https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
 # Ubuntu 24.04
 curl -O https://cdn.posit.co/r/ubuntu-2404/pkgs/r-${R_VERSION}_1_amd64.deb
 
-# Debian 11
-curl -O https://cdn.posit.co/r/debian-11/pkgs/r-${R_VERSION}_1_amd64.deb
-
 # Debian 12
 curl -O https://cdn.posit.co/r/debian-12/pkgs/r-${R_VERSION}_1_amd64.deb
 ```
