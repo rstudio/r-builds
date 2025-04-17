@@ -55,7 +55,8 @@ jobs:
     strategy:
       matrix:
         platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
-    runs-on: ubuntu-latest
+        arch: [arm64]
+    runs-on: ubuntu-24.04-arm
     name: Docker image (${{ matrix.platform }})
     steps:
       - uses: actions/checkout@v3
@@ -74,8 +75,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ matrix.platform }}-buildx-${{ github.sha }}
-          restore-keys: ${{ matrix.platform }}-buildx-
+          key: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-${{ github.sha }}
+          restore-keys: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-
 
       # Use docker buildx instead of docker-compose here because cache exporting
       # does not seem to work as of docker-compose v2.6.0 and buildx v0.8.2, even
@@ -103,8 +104,9 @@ jobs:
       matrix:
         platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
         r_version: ${{ fromJson(needs.setup-matrix.outputs.r_versions) }}
-    runs-on: ubuntu-latest
-    name: ${{ matrix.platform }} (R ${{ matrix.r_version }})
+        arch: [arm64]
+    runs-on: ubuntu-24.04-arm
+    name: ${{ matrix.platform }}-${{ matrix.arch }} (R ${{ matrix.r_version }})
     steps:
       - uses: actions/checkout@v3
 
@@ -117,8 +119,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ matrix.platform }}-buildx-${{ github.sha }}
-          restore-keys: ${{ matrix.platform }}-buildx-
+          key: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-${{ github.sha }}
+          restore-keys: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-
 
       - name: Load cached Docker image
         run: |
