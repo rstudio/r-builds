@@ -35,18 +35,6 @@ services:
     image: r-builds:ubuntu-2404
     volumes:
       - ./integration/tmp:/tmp/output
-  debian-11:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.debian-11
-    image: r-builds:debian-11
-    volumes:
-      - ./integration/tmp:/tmp/output
   debian-12:
     command: ./build.sh
     environment:
