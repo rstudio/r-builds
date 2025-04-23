@@ -41,18 +41,33 @@ serverless-deploy.%: deps fetch-serverless-custom-file
 
 define GEN_TARGETS
 docker-build-$(platform):
-	@cd builder && docker compose build $(platform)
+	@cd builder && PLATFORM_ARCH=$(PLATFORM_ARCH) docker compose build $(platform)
 
 build-r-$(platform):
-	@cd builder && R_VERSION=$(R_VERSION) docker compose run --rm $(platform)
+	cd builder && R_VERSION=$(R_VERSION) PLATFORM_ARCH=$(PLATFORM_ARCH) docker compose run --rm $(platform)
 
 test-r-$(platform):
-	@cd test && R_VERSION=$(R_VERSION) docker compose run --rm $(platform)
+	@cd test && R_VERSION=$(R_VERSION) PLATFORM_ARCH=$(PLATFORM_ARCH) docker compose run --rm $(platform)
+
+# TODO: rename arm64 tarball differently
+
+OUTPUT_DIR = builder/integration/tmp
+
+# publish-r-$(platform):
+# 	baseName="r/${OS_IDENTIFIER}"
+# 	if [ -n "$S3_BUCKET" ] && [ "$S3_BUCKET" != "" ]; then
+#     echo "Storing artifact on s3: ${S3_BUCKET}, tarball: ${TARBALL_NAME}"
+#     aws s3 cp /tmp/${TARBALL_NAME} s3://${S3_BUCKET}/${S3_BUCKET_PREFIX}${baseName}/${TARBALL_NAME}
+#     # check if PKG_FILE has been set by a packager script and act accordingly
+#     if [ -n "$PKG_FILE" ] && [ "$PKG_FILE" != "" ]; then
+#       if [ -f "$PKG_FILE" ]; then
+# 	aws s3 cp ${PKG_FILE} s3://${S3_BUCKET}/${S3_BUCKET_PREFIX}${baseName}/pkgs/$(basename ${PKG_FILE})
+# 	@cd test && R_VERSION=$(R_VERSION) docker compose run --rm $(platform) publish
 
 bash-$(platform):
 	docker run -it --rm --entrypoint /bin/bash -v $(CURDIR):/r-builds r-builds:$(platform)
 
-.PHONY: docker-build-$(platform) build-r-$(platform) test-r-$(platform) bash-$(platform)
+.PHONY: docker-build-$(platform) build-r-$(platform) test-r-$(platform) publish-r-$(platform) bash-$(platform)
 endef
 
 $(foreach platform,$(PLATFORMS), \
@@ -63,8 +78,8 @@ print-platforms:
 	@echo $(PLATFORMS)
 
 # Helper for launching a bash session on a docker image of your choice. Defaults
-# to "ubuntu:xenial".
-TARGET_IMAGE?=ubuntu:xenial
+# to "ubuntu:noble".
+TARGET_IMAGE?=ubuntu:noble
 bash:
 	docker run --privileged=true -it --rm \
 		-v $(CURDIR):/r-builds \

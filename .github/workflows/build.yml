@@ -6,13 +6,13 @@ on:
       - 'builder/**'
       - 'test/**'
       - 'Makefile'
-      - '.github/workflows/test.yml'
+      - '.github/workflows/build.yml'
   pull_request:
     paths:
       - 'builder/**'
       - 'test/**'
       - 'Makefile'
-      - '.github/workflows/test.yml'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
     inputs:
       platforms:
@@ -29,8 +29,48 @@ on:
         required: false
         default: 'last-5,3.6.3,devel'
         type: string
+      publish:
+        description: |
+          Publish the builds to S3 staging or production? Defaults to not publishing.
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - staging
+          - production
+  workflow_call:
+    inputs:
+      platforms:
+        description: |
+          Comma-separated list of platforms. Specify "all" to use all platforms (the default).
+        required: false
+        default: 'all'
+        type: string
+      r_versions:
+        description: |
+          Comma-separated list of R versions. Specify "last-N" to use the
+          last N minor R versions, or "all" to use all minor R versions since R 3.1.
+          Defaults to "last-5,3.6.3,devel".
+        required: false
+        default: 'last-5,3.6.3,devel'
+        type: string
+      publish:
+        description: |
+          Publish the builds to S3 staging or production? Allowed values are "staging", "production", or empty (default).
+        required: false
+        default: ''
+        type: string
+    secrets:
+      AWS_PUBLISH_ROLE:
+        required: true
+      S3_BUCKET_STAGING:
+        required: true
+      S3_BUCKET_PRODUCTION:
+        required: true
 
 permissions:
+  id-token: write
   contents: read
 
 jobs:
@@ -55,9 +95,9 @@ jobs:
     strategy:
       matrix:
         platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
-        arch: [arm64]
-    runs-on: ubuntu-24.04-arm
-    name: Docker image (${{ matrix.platform }})
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
+    name: Docker image (${{ matrix.platform }}-${{ matrix.arch }})
     steps:
       - uses: actions/checkout@v3
 
@@ -97,15 +137,15 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-  test:
+  build:
     needs: [setup-matrix, docker-images]
     strategy:
       fail-fast: false
       matrix:
         platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
         r_version: ${{ fromJson(needs.setup-matrix.outputs.r_versions) }}
-        arch: [arm64]
-    runs-on: ubuntu-24.04-arm
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     name: ${{ matrix.platform }}-${{ matrix.arch }} (R ${{ matrix.r_version }})
     steps:
       - uses: actions/checkout@v3
@@ -137,3 +177,24 @@ jobs:
       - name: Test R
         run: |
           R_VERSION=${{ matrix.r_version }} make test-r-${{ matrix.platform }}
+      
+      - name: Configure AWS Credentials
+        if: ${{ inputs.publish != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Publish R
+        if: ${{ inputs.publish != '' }}
+        run: |
+          s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
+          R_VERSION=${{ matrix.r_version }} S3_BUCKET=$s3_bucket make publish-r-${{ matrix.platform }}-${{ matrix.arch }}
+
+      - name: Update versions.json
+        if: ${{ inputs.publish == 'production' }}
+        run: |
+          # TODO: Update versions.json? make sure no race conditions, maybe only at end for production only
+
+# TODO publish versions.json
+# TODO publish to staging on main merges?
