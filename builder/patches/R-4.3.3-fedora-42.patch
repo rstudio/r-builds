@@ -1,29 +1,3 @@
-diff --git a/configure b/configure
-index dfe3b71..a9a6790 100755
---- a/configure
-+++ b/configure
-@@ -34117,7 +34117,7 @@ char BZ2_bzlibVersion ();
- 
- #endif
- int
--main ()
-+main (void)
- {
- return BZ2_bzlibVersion ();
-   ;
-@@ -34181,9 +34181,11 @@ else
- /* end confdefs.h.  */
- 
- #ifdef HAVE_BZLIB_H
-+#include <stdlib.h> // for exit
-+#include <string.h> // for strcmp
- #include <bzlib.h>
- #endif
--int main() {
-+int main(void) {
-     char *ver = BZ2_bzlibVersion();
-     exit(strcmp(ver, "1.0.6") < 0);
- }
 From 5c5c426023c4f2c9d22582a5f94f9b3337f4973b Mon Sep 17 00:00:00 2001
 From: plummer <plummer@00db46b3-68df-0310-9c12-caf00c1e9a41>
 Date: Wed, 16 Apr 2025 21:29:31 +0000
