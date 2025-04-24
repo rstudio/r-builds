@@ -6,8 +6,8 @@ temp_lib <- tempdir()
 .libPaths(temp_lib)
 
 # Install a package from CRAN
-install.packages("R6")
-library(R6)
+install.packages("pkgconfig")
+library(pkgconfig)
 
 # Install a package with C/C++ and Fortran code, which links against libR, BLAS, LAPACK
 curr_dir <- Sys.getenv("DIR", ".")
