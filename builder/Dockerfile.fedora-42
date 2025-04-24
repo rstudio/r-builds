@@ -12,7 +12,7 @@ RUN dnf -y upgrade \
     flexiblas-devel \
     gcc-c++ \
     gcc-gfortran \
-    java-11-openjdk-devel \
+    java-21-openjdk-devel \
     libICE-devel \
     libSM-devel \
     libX11-devel \
