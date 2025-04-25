@@ -101,14 +101,23 @@ compile_r() {
   # https://cran.r-project.org/doc/manuals/r-release/NEWS.3.html
   # https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Using-Fortran
   # https://gcc.gnu.org/gcc-10/porting_to.html
+  export CFLAGS="-g -O2"
+  export FFLAGS="-g -O2"
   gcc_major_version=$(gcc -dumpversion | cut -d '.' -f 1)
   if _version_is_less_than "${r_version}" 3.6.2 && _version_is_greater_than "${gcc_major_version}" 9; then
     # Default CFLAGS/FFLAGS for all R 3.x versions is '-g -O2' when using GCC
-    export CFLAGS='-g -O2 -fcommon'
-    export FFLAGS='-g -O2 -fallow-argument-mismatch'
-    echo "Setting CFLAGS: ${CFLAGS}"
-    echo "Setting FFLAGS: ${FFLAGS}"
+    export CFLAGS="$CFLAGS -fcommon"
+    export FFLAGS="$FFLAGS -fallow-argument-mismatch"
   fi
+
+  # GCC 15 and above needs -std=gnu11, because it defaults to C23, and R
+  # versions below R 4.5.0 do not compile in C23 mode.
+  if _version_is_less_than "${r_version}" 4.5.0 && _version_is_greater_than "${gcc_major_version}" 14; then
+    export CFLAGS="$CFLAGS -std=gnu11"
+  fi
+
+  echo "Setting CFLAGS: ${CFLAGS}"
+  echo "Setting FFLAGS: ${FFLAGS}"
 
   # Avoid a PCRE2 dependency for R 3.5 and 3.6. R 3.x uses PCRE1, but R 3.5+
   # will link against PCRE2 if present, although it is not actually used.

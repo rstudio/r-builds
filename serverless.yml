@@ -75,7 +75,9 @@ provider:
       Ref: rBuildsBatchJobDefinitionFedora40
     JOB_DEFINITION_ARN_fedora_41:
       Ref: rBuildsBatchJobDefinitionFedora41
-    SUPPORTED_PLATFORMS: ubuntu-2004,ubuntu-2204,ubuntu-2404,debian-12,centos-7,centos-8,rhel-9,opensuse-156,fedora-40,fedora-41
+    JOB_DEFINITION_ARN_fedora_42:
+      Ref: rBuildsBatchJobDefinitionFedora42
+    SUPPORTED_PLATFORMS: ubuntu-2004,ubuntu-2204,ubuntu-2404,debian-12,centos-7,centos-8,rhel-9,opensuse-156,fedora-40,fedora-41,fedora-42
 
 functions:
   queueBuilds:
