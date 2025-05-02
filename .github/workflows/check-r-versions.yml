@@ -25,10 +25,10 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run check-r-versions.py
+      - name: Check for new R versions to build
         id: check_r_versions
         run: |
-          new_r_versions=$(python check-r-versions.py)
+          new_r_versions=$(python manage_r_versions.py check --s3-bucket="${{ secrets.S3_BUCKET_PRODUCTION }})"
           echo "$new_r_versions"
           echo "new_r_versions=$new_r_versions" >> $GITHUB_OUTPUT
 

@@ -64,6 +64,8 @@ on:
     secrets:
       AWS_PUBLISH_ROLE:
         required: true
+      AWS_REGION:
+        required: true
       S3_BUCKET_STAGING:
         required: true
       S3_BUCKET_PRODUCTION:
@@ -85,9 +87,9 @@ jobs:
     - name: Set up matrix of platforms and R versions
       id: setup-matrix
       run: |
-        platforms=$(python test/get_platforms.py ${{ github.event.inputs.platforms }})
+        platforms=$(python get_platforms.py ${{ github.event.inputs.platforms }})
         echo "platforms=$platforms" >> $GITHUB_OUTPUT
-        r_versions=$(python test/get_r_versions.py ${{ github.event.inputs.r_versions }})
+        r_versions=$(python get_r_versions.py ${{ github.event.inputs.r_versions }})
         echo "r_versions=$r_versions" >> $GITHUB_OUTPUT
 
   docker-images:
@@ -189,12 +191,33 @@ jobs:
         if: ${{ inputs.publish != '' }}
         run: |
           s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
-          R_VERSION=${{ matrix.r_version }} S3_BUCKET=$s3_bucket make publish-r-${{ matrix.platform }}-${{ matrix.arch }}
+          S3_BUCKET=$s3_bucket make publish-r-${{ matrix.platform }}
+
+  update-versions-json:
+    if: ${{ inputs.publish != '' }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Update versions.json
-        if: ${{ inputs.publish == 'production' }}
         run: |
-          # TODO: Update versions.json? make sure no race conditions, maybe only at end for production only
-
-# TODO publish versions.json
-# TODO publish to staging on main merges?
+          s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
+          versions=$(echo "${{ needs.setup-matrix.outputs.r_versions }}" | jq -r 'join(",")')
+          python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"

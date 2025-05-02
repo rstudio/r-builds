@@ -49,20 +49,9 @@ build-r-$(platform):
 test-r-$(platform):
 	@cd test && R_VERSION=$(R_VERSION) PLATFORM_ARCH=$(PLATFORM_ARCH) docker compose run --rm $(platform)
 
-# TODO: rename arm64 tarball differently
-
-OUTPUT_DIR = builder/integration/tmp
-
-# publish-r-$(platform):
-# 	baseName="r/${OS_IDENTIFIER}"
-# 	if [ -n "$S3_BUCKET" ] && [ "$S3_BUCKET" != "" ]; then
-#     echo "Storing artifact on s3: ${S3_BUCKET}, tarball: ${TARBALL_NAME}"
-#     aws s3 cp /tmp/${TARBALL_NAME} s3://${S3_BUCKET}/${S3_BUCKET_PREFIX}${baseName}/${TARBALL_NAME}
-#     # check if PKG_FILE has been set by a packager script and act accordingly
-#     if [ -n "$PKG_FILE" ] && [ "$PKG_FILE" != "" ]; then
-#       if [ -f "$PKG_FILE" ]; then
-# 	aws s3 cp ${PKG_FILE} s3://${S3_BUCKET}/${S3_BUCKET_PREFIX}${baseName}/pkgs/$(basename ${PKG_FILE})
-# 	@cd test && R_VERSION=$(R_VERSION) docker compose run --rm $(platform) publish
+publish-r-$(platform):
+	aws s3 cp builder/integration/tmp/r/$(platform)/ s3://$(S3_BUCKET)/r/$(platform) --recursive
+	aws s3 cp builder/integration/tmp/$(platform)/ s3://$(S3_BUCKET)/r/$(platform)/pkgs --recursive
 
 bash-$(platform):
 	docker run -it --rm --entrypoint /bin/bash -v $(CURDIR):/r-builds r-builds:$(platform)
