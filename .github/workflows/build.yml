@@ -2,17 +2,7 @@ name: R builds
 
 on:
   push:
-    paths:
-      - 'builder/**'
-      - 'test/**'
-      - 'Makefile'
-      - '.github/workflows/build.yml'
-  pull_request:
-    paths:
-      - 'builder/**'
-      - 'test/**'
-      - 'Makefile'
-      - '.github/workflows/build.yml'
+
   workflow_dispatch:
     inputs:
       platforms:
