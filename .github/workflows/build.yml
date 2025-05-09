@@ -171,20 +171,20 @@ jobs:
           R_VERSION=${{ matrix.r_version }} make test-r-${{ matrix.platform }}
       
       - name: Configure AWS Credentials
-        if: ${{ inputs.publish != '' }}
+        if: ${{ true }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Publish R
-        if: ${{ inputs.publish != '' }}
+        if: ${{ true }}
         run: |
-          s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
+          s3_bucket=${{ true && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
           S3_BUCKET=$s3_bucket make publish-r-${{ matrix.platform }}
 
   update-versions-json:
-    if: ${{ inputs.publish != '' }}
+    if: ${{ true }}
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -208,6 +208,6 @@ jobs:
 
       - name: Update versions.json
         run: |
-          s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
+          s3_bucket=${{ true && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
           versions=$(echo "${{ needs.setup-matrix.outputs.r_versions }}" | jq -r 'join(",")')
           python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"
