@@ -221,7 +221,7 @@ identifiers, such as `ubuntu-2204` or `rhel-9`.
 
 ```bash
 export PLATFORM=ubuntu-2204
-export R_VERSION=4.1.3
+export R_VERSION=4.5.0
 
 make build-r-$PLATFORM
 ```
@@ -231,19 +231,19 @@ directory.
 
 ```bash
 $ ls builder/integration/tmp/$PLATFORM
-r-4.1.3_1_amd64.deb
+r-4.5.0_1_amd64.deb
 ```
 
 ### Custom installation path
 
 R is installed to `/opt/R/${R_VERSION}` by default. If you want to customize the
 installation path, set the optional `R_INSTALL_PATH` environment variable to a
-custom location such as `/opt/custom/R-4.1.3`.
+custom location such as `/opt/custom/R-4.5.0`.
 
 ```bash
 export PLATFORM=rhel-9
-export R_VERSION=4.1.3
-export R_INSTALL_PATH=/opt/custom/R-4.1.3
+export R_VERSION=4.5.0
+export R_INSTALL_PATH=/opt/custom/R-4.5.0
 
 make build-r-$PLATFORM
 ```
@@ -255,7 +255,7 @@ include any relevant testing notes and changes that may affect existing users, s
 
 On successful merge, the changes will be automatically deployed to the staging environment.
 
-A project maintainer can then trigger the builds in staging to test the changes, and then deploy/build in production
+A project maintainer can then trigger the builds in staging to test the changes, and then in production
 when the changes have been verified.
 
 ## Adding a new platform.
@@ -305,47 +305,12 @@ ubuntu-2404:
   image: r-builds:ubuntu-2404
   volumes:
     - ./integration/tmp:/tmp/output  # path to output tarballs
-```
-
-### Job definition
-
-IN `serverless-resources.yml` you'll need to add a job definition that points to the ECR image.
-
-```yaml
-rBuildsBatchJobDefinitionUbuntu2404:
-  Type: AWS::Batch::JobDefinition
-  Properties:
-    Type: container
-    ContainerProperties:
-      Command:
-        - ./build.sh
-      Vcpus: 4
-      Memory: 4096
-      JobRoleArn:
-        "Fn::GetAtt": [ rBuildsEcsTaskIamRole, Arn ]
-      Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/r-builds:ubuntu-2404"
-    Timeout:
-      AttemptDurationSeconds: 7200
-```
-
-### Environment variables in the serverless.yml functions.
-
-The serverless functions which trigger R builds need to be informed of new platforms.
-
-1. Add a `JOB_DEFINITION_ARN_PlatformVersion` env variable with a ref to the Job definition above.
-2. Append the `platform-version` to `SUPPORTED_PLATFORMS`.
-
-```yaml
-environment:
-  # snip
-  JOB_DEFINITION_ARN_debian_11:
-    Ref: rBuildsBatchJobDefinitionDebian11
-  SUPPORTED_PLATFORMS: debian-10,centos-7,centos-8
+  platform: ${PLATFORM_ARCH}  # for testing other architectures via emulation
 ```
 
 ### Makefile
 
-In order for the makefile to push these new platforms to ECR, add them to the `PLATFORMS` variable near the top of the Makefile.
+Add the new platform to the `PLATFORMS` variable near the top of the Makefile.
 
 ### test/docker-compose.yml
 
@@ -360,6 +325,7 @@ A new service in the `test/docker-compose.yml` file named according to the `plat
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
 ```
 
 ### Quick install script
@@ -370,25 +336,31 @@ Once you've followed the steps above, submit a pull request.
 
 ## R builds tarballs
 
-In addition to the DEB and RPM packages, R builds also publishes tarballs of the binaries at: `https://cdn.posit.co/r/${OS_IDENTIFIER}/R-${R_VERSION}-${OS_IDENTIFIER}.tar.gz`.
+In addition to the DEB and RPM packages, R builds also publishes tarballs of the binaries at:
+
+- x86_64: `https://cdn.posit.co/r/${OS_IDENTIFIER}/R-${R_VERSION}-${OS_IDENTIFIER}.tar.gz`
+- arm64: `https://cdn.posit.co/r/${OS_IDENTIFIER}/R-${R_VERSION}-${OS_IDENTIFIER}-arm64.tar.gz`
+
 These may be used with a manual installation of R's system dependencies. System dependencies will differ between R versions,
 so inspect the corresponding DEB or RPM package for the list of system dependencies.
 
-## "Break Glass"
+## "Break Glass" and scheduled builds
 
-Periodically, someone with access to these resources may need to re-trigger every R version/platform combination. This quite easy with the `serverless` tool installed.
+The [Check for new R versions](https://github.com/rstudio/r-builds/actions/workflows/check-r-versions.yml) workflow
+checks for new R versions hourly and automatically builds and publishes them.
 
-```bash
-# Rebuild all R versions
-serverless invoke stepf -n rBuilds -d '{"force": true}'
+The [Daily R-devel and R-next builds](https://github.com/rstudio/r-builds/actions/workflows/devel-daily.yml) workflow
+builds and publishes R-devel and R-next each day.
 
-# Rebuild specific R versions
-serverless invoke stepf -n rBuilds -d '{"force": true, "versions": ["3.6.3", "4.0.2"]}'
-```
+The [R builds](https://github.com/rstudio/r-builds/actions/workflows/build.yml) workflow
+tests building the R binaries and optionally publishes them. Builds are not automatically published upon merging to `main`.
+
+After making any changes to R-builds, this workflow may be run manually to test the changes in `staging` first. Then,
+the workflow can be rerun for `production` to build new binaries or rebuild existing binaries.
 
 ## Testing
 
-Tests are automatically run on each push that changes a file in `builder/`, `test/`, or the `Makefile`.
+Tests are automatically run on each push.
 These tests validate that R was correctly configured, built, and packaged. By default, the tests run
 for the last 5 minor R versions on each platform.
 
@@ -403,11 +375,11 @@ targets to build R and run the tests. The tests use the quick install script to 
 using a locally built R if present, or otherwise a build from the CDN.
 
 ```bash
-# Build R 4.1.3 for Ubuntu 22
-R_VERSION=4.1.3 make build-r-ubuntu-2204
+# Build R 4.5.0 for Ubuntu 22
+R_VERSION=4.5.0 make build-r-ubuntu-2204
 
-# Test R 4.1.3 for Ubuntu 22
-R_VERSION=4.1.3 make test-r-ubuntu-2204
+# Test R 4.5.0 for Ubuntu 22
+R_VERSION=4.5.0 make test-r-ubuntu-2204
 ```
 
 Alternatively, you can build an image using the `docker-build-$PLATFORM`
@@ -421,12 +393,23 @@ make docker-build-ubuntu-2204
 # Launch a bash session for Ubuntu 22
 make bash-ubuntu-2204
 
-# Build R 4.1.3
-R_VERSION=4.1.3 ./build.sh
+# Build R 4.5.0
+R_VERSION=4.5.0 ./build.sh
 
 # Build R devel with parallel execution to speed up the build
 MAKEFLAGS=-j4 R_VERSION=devel ./build.sh
 
 # Build a prerelease version of R (e.g., alpha or beta)
 R_VERSION=rc R_TARBALL_URL=https://cran.r-project.org/src/base-prerelease/R-latest.tar.gz ./build.sh
+```
+
+Builds default to the current host architecture by default. If you would like to test a different
+architecture via emulation in Docker, set `PLATFORM_ARCH` to a valid Docker `--platform` flag:
+
+```bash
+# Build R 4.5.0 for Ubuntu 22, ARM64
+R_VERSION=4.5.0 PLATFORM_ARCH=linux/arm64 make build-r-ubuntu-2204
+
+# Test R 4.5.0 for Ubuntu 22, ARM64
+R_VERSION=4.5.0 PLATFORM_ARCH=linux/arm64 make test-r-ubuntu-2204
 ```

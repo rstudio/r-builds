@@ -40,6 +40,8 @@ serverless-deploy.%: deps fetch-serverless-custom-file
 	$(SLS_BINARY) deploy --stage $* --verbose
 
 define GEN_TARGETS
+# Use PLATFORM_ARCH to override the architecture, e.g. PLATFORM_ARCH=linux/arm64 or PLATFORM_ARCH=linux/amd64
+# If unset, PLATFORM_ARCH will default to the architecture of the host machine.
 docker-build-$(platform):
 	@cd builder && PLATFORM_ARCH=$(PLATFORM_ARCH) docker compose build $(platform)
 
