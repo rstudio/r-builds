@@ -4,7 +4,13 @@ set -e
 export CRAN=${CRAN-"https://cran.rstudio.com"}
 export S3_BUCKET_PREFIX=${S3_BUCKET_PREFIX-""}
 export OS_IDENTIFIER=${OS_IDENTIFIER-"unknown"}
-export TARBALL_NAME="R-${R_VERSION}-${OS_IDENTIFIER}.tar.gz"
+ARCH=$(uname -m)
+if [ "$ARCH" = "x86_64" ]; then
+  # x86_64 tarballs do not include arch for backward compatibility.
+  export TARBALL_NAME="R-${R_VERSION}-${OS_IDENTIFIER}.tar.gz"
+elif [ "$ARCH" = "aarch64" ]; then
+  export TARBALL_NAME="R-${R_VERSION}-${OS_IDENTIFIER}-arm64.tar.gz"
+fi
 export R_INSTALL_PATH=${R_INSTALL_PATH:-"/opt/R/${R_VERSION}"}
 
 # Some Dockerfiles may copy a `/env.sh` to set up environment variables

@@ -2,17 +2,7 @@ name: R builds
 
 on:
   push:
-    paths:
-      - 'builder/**'
-      - 'test/**'
-      - 'Makefile'
-      - '.github/workflows/test.yml'
-  pull_request:
-    paths:
-      - 'builder/**'
-      - 'test/**'
-      - 'Makefile'
-      - '.github/workflows/test.yml'
+
   workflow_dispatch:
     inputs:
       platforms:
@@ -29,8 +19,50 @@ on:
         required: false
         default: 'last-5,3.6.3,devel'
         type: string
+      publish:
+        description: |
+          Publish the builds to S3 staging or production? Defaults to not publishing.
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - staging
+          - production
+  workflow_call:
+    inputs:
+      platforms:
+        description: |
+          Comma-separated list of platforms. Specify "all" to use all platforms (the default).
+        required: false
+        default: 'all'
+        type: string
+      r_versions:
+        description: |
+          Comma-separated list of R versions. Specify "last-N" to use the
+          last N minor R versions, or "all" to use all minor R versions since R 3.1.
+          Defaults to "last-5,3.6.3,devel".
+        required: false
+        default: 'last-5,3.6.3,devel'
+        type: string
+      publish:
+        description: |
+          Publish the builds to S3 staging or production? Allowed values are "staging", "production", or empty (default).
+        required: false
+        default: ''
+        type: string
+    secrets:
+      AWS_PUBLISH_ROLE:
+        required: true
+      AWS_REGION:
+        required: true
+      S3_BUCKET_STAGING:
+        required: true
+      S3_BUCKET_PRODUCTION:
+        required: true
 
 permissions:
+  id-token: write
   contents: read
 
 jobs:
@@ -45,9 +77,9 @@ jobs:
     - name: Set up matrix of platforms and R versions
       id: setup-matrix
       run: |
-        platforms=$(python test/get_platforms.py ${{ github.event.inputs.platforms }})
+        platforms=$(python get_platforms.py ${{ github.event.inputs.platforms }})
         echo "platforms=$platforms" >> $GITHUB_OUTPUT
-        r_versions=$(python test/get_r_versions.py ${{ github.event.inputs.r_versions }})
+        r_versions=$(python get_r_versions.py ${{ github.event.inputs.r_versions }})
         echo "r_versions=$r_versions" >> $GITHUB_OUTPUT
 
   docker-images:
@@ -55,8 +87,9 @@ jobs:
     strategy:
       matrix:
         platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
-    runs-on: ubuntu-latest
-    name: Docker image (${{ matrix.platform }})
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
+    name: Docker image (${{ matrix.platform }}-${{ matrix.arch }})
     steps:
       - uses: actions/checkout@v3
 
@@ -74,8 +107,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ matrix.platform }}-buildx-${{ github.sha }}
-          restore-keys: ${{ matrix.platform }}-buildx-
+          key: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-${{ github.sha }}
+          restore-keys: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-
 
       # Use docker buildx instead of docker-compose here because cache exporting
       # does not seem to work as of docker-compose v2.6.0 and buildx v0.8.2, even
@@ -96,15 +129,16 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-  test:
+  build:
     needs: [setup-matrix, docker-images]
     strategy:
       fail-fast: false
       matrix:
         platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
         r_version: ${{ fromJson(needs.setup-matrix.outputs.r_versions) }}
-    runs-on: ubuntu-latest
-    name: ${{ matrix.platform }} (R ${{ matrix.r_version }})
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
+    name: ${{ matrix.platform }}-${{ matrix.arch }} (R ${{ matrix.r_version }})
     steps:
       - uses: actions/checkout@v3
 
@@ -117,8 +151,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ matrix.platform }}-buildx-${{ github.sha }}
-          restore-keys: ${{ matrix.platform }}-buildx-
+          key: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-${{ github.sha }}
+          restore-keys: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-
 
       - name: Load cached Docker image
         run: |
@@ -135,3 +169,45 @@ jobs:
       - name: Test R
         run: |
           R_VERSION=${{ matrix.r_version }} make test-r-${{ matrix.platform }}
+      
+      - name: Configure AWS Credentials
+        if: ${{ inputs.publish != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Publish R
+        if: ${{ inputs.publish != '' }}
+        run: |
+          s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
+          S3_BUCKET=$s3_bucket make publish-r-${{ matrix.platform }}
+
+  update-versions-json:
+    if: ${{ inputs.publish != '' }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update versions.json
+        run: |
+          s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
+          versions=$(echo "${{ needs.setup-matrix.outputs.r_versions }}" | jq -r 'join(",")')
+          python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"

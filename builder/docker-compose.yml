@@ -11,6 +11,7 @@ services:
     image: r-builds:ubuntu-2004
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   ubuntu-2204:
     command: ./build.sh
     environment:
@@ -23,6 +24,7 @@ services:
     image: r-builds:ubuntu-2204
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   ubuntu-2404:
     command: ./build.sh
     environment:
@@ -35,6 +37,7 @@ services:
     image: r-builds:ubuntu-2404
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   debian-12:
     command: ./build.sh
     environment:
@@ -47,6 +50,7 @@ services:
     image: r-builds:debian-12
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   centos-7:
     command: ./build.sh
     environment:
@@ -59,6 +63,7 @@ services:
     image: r-builds:centos-7
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   centos-8:
     command: ./build.sh
     environment:
@@ -71,6 +76,7 @@ services:
     image: r-builds:centos-8
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   rhel-9:
     command: ./build.sh
     environment:
@@ -83,6 +89,7 @@ services:
     image: r-builds:rhel-9
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   opensuse-156:
     command: ./build.sh
     environment:
@@ -95,6 +102,7 @@ services:
     image: r-builds:opensuse-156
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   fedora-40:
     command: ./build.sh
     environment:
@@ -107,6 +115,7 @@ services:
     image: r-builds:fedora-40
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   fedora-41:
     command: ./build.sh
     environment:
@@ -119,6 +128,7 @@ services:
     image: r-builds:fedora-41
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   fedora-42:
     command: ./build.sh
     environment:
@@ -131,3 +141,4 @@ services:
     image: r-builds:fedora-42
     volumes:
       - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
