@@ -1,0 +1,17 @@
+name: Daily R-devel and R-next builds
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r-builds:
+    uses: ./.github/workflows/build.yml
+    with:
+      r_versions: 'devel,next'
+      publish: production
+    secrets: inherit

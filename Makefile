@@ -40,19 +40,25 @@ serverless-deploy.%: deps fetch-serverless-custom-file
 	$(SLS_BINARY) deploy --stage $* --verbose
 
 define GEN_TARGETS
+# Use PLATFORM_ARCH to override the architecture, e.g. PLATFORM_ARCH=linux/arm64 or PLATFORM_ARCH=linux/amd64
+# If unset, PLATFORM_ARCH will default to the architecture of the host machine.
 docker-build-$(platform):
-	@cd builder && docker compose build $(platform)
+	@cd builder && PLATFORM_ARCH=$(PLATFORM_ARCH) docker compose build $(platform)
 
 build-r-$(platform):
-	@cd builder && R_VERSION=$(R_VERSION) docker compose run --rm $(platform)
+	cd builder && R_VERSION=$(R_VERSION) PLATFORM_ARCH=$(PLATFORM_ARCH) docker compose run --rm $(platform)
 
 test-r-$(platform):
-	@cd test && R_VERSION=$(R_VERSION) docker compose run --rm $(platform)
+	@cd test && R_VERSION=$(R_VERSION) PLATFORM_ARCH=$(PLATFORM_ARCH) docker compose run --rm $(platform)
+
+publish-r-$(platform):
+	aws s3 cp builder/integration/tmp/r/$(platform)/ s3://$(S3_BUCKET)/r/$(platform) --recursive
+	aws s3 cp builder/integration/tmp/$(platform)/ s3://$(S3_BUCKET)/r/$(platform)/pkgs --recursive
 
 bash-$(platform):
 	docker run -it --rm --entrypoint /bin/bash -v $(CURDIR):/r-builds r-builds:$(platform)
 
-.PHONY: docker-build-$(platform) build-r-$(platform) test-r-$(platform) bash-$(platform)
+.PHONY: docker-build-$(platform) build-r-$(platform) test-r-$(platform) publish-r-$(platform) bash-$(platform)
 endef
 
 $(foreach platform,$(PLATFORMS), \
@@ -63,8 +69,8 @@ print-platforms:
 	@echo $(PLATFORMS)
 
 # Helper for launching a bash session on a docker image of your choice. Defaults
-# to "ubuntu:xenial".
-TARGET_IMAGE?=ubuntu:xenial
+# to "ubuntu:noble".
+TARGET_IMAGE?=ubuntu:noble
 bash:
 	docker run --privileged=true -it --rm \
 		-v $(CURDIR):/r-builds \

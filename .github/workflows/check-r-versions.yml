@@ -1,0 +1,41 @@
+name: Check for new R versions
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-r-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Check for new R versions to build
+        id: check_r_versions
+        run: |
+          new_r_versions=$(python manage_r_versions.py check --s3-bucket="${{ secrets.S3_BUCKET_PRODUCTION }})"
+          echo "$new_r_versions"
+          echo "new_r_versions=$new_r_versions" >> $GITHUB_OUTPUT
+
+      - name: Trigger Build Workflow
+        if: steps.check_r_versions.outputs.new_r_versions != ""
+        uses: ./.github/workflows/build.yml
+        with:
+          r_versions: ${{ steps.check_r_versions.outputs.new_r_versions }}
+          publish: production
+        secrets: inherit
