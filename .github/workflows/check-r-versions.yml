@@ -54,7 +54,11 @@ jobs:
             s3_bucket=${{ secrets.S3_BUCKET_PRODUCTION }}
           fi
           new_r_versions=$(python manage_r_versions.py check --s3-bucket="${s3_bucket}")
-          echo "$new_r_versions"
+          if [ -z "$new_r_versions" ]; then
+            echo "No new R versions found"
+          else
+            echo "New R versions: $new_r_versions"
+          fi
           echo "new_r_versions=$new_r_versions" >> $GITHUB_OUTPUT
 
   build-new-r-versions:
