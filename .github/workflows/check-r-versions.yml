@@ -23,7 +23,7 @@ jobs:
   check-r-versions:
     runs-on: ubuntu-latest
     outputs:
-      new_r_versions: ${{ steps.setup-check_r_versions.outputs.new_r_versions }}
+      new_r_versions: ${{ steps.check_r_versions.outputs.new_r_versions }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,10 +38,22 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Check for new R versions to build
         id: check_r_versions
         run: |
-          new_r_versions=$(python manage_r_versions.py check --s3-bucket="${{ secrets.S3_BUCKET_PRODUCTION }})"
+          publish=${{ inputs.publish || 'production' }}
+          if [ $publish == 'staging' ]; then
+            s3_bucket=${{ secrets.S3_BUCKET_STAGING }}
+          else
+            s3_bucket=${{ secrets.S3_BUCKET_PRODUCTION }}
+          fi
+          new_r_versions=$(python manage_r_versions.py check --s3-bucket="${s3_bucket}")
           echo "$new_r_versions"
           echo "new_r_versions=$new_r_versions" >> $GITHUB_OUTPUT
 
@@ -50,6 +62,6 @@ jobs:
     if: ${{ needs.check-r-versions.outputs.new_r_versions != '' }}
     uses: ./.github/workflows/build.yml
     with:
-      r_versions: ${{ needs.check_r_versions.outputs.new_r_versions }}
+      r_versions: ${{ needs.check-r-versions.outputs.new_r_versions }}
       publish: ${{ inputs.publish || 'production' }}
     secrets: inherit
