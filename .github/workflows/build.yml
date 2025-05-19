@@ -96,12 +96,12 @@ jobs:
     - name: Set up matrix of platforms and R versions
       id: setup-matrix
       run: |
-        platforms=$(python get_platforms.py ${{ github.event.inputs.platforms }})
+        platforms=$(python get_platforms.py ${{ inputs.platforms }})
         echo "platforms=$platforms" >> $GITHUB_OUTPUT
-        r_versions=$(python get_r_versions.py ${{ github.event.inputs.r_versions }})
+        r_versions=$(python get_r_versions.py ${{ inputs.r_versions }})
         echo "r_versions=$r_versions" >> $GITHUB_OUTPUT
         # Convert comma-separated list of architectures to JSON array
-        arch=$(echo "${{ github.event.inputs.arch || 'amd64,arm64' }}" | jq -Rc 'split(",")')
+        arch=$(echo "${{ inputs.arch || 'amd64,arm64' }}" | jq -Rc 'split(",")')
         echo "arch=$arch" >> $GITHUB_OUTPUT
 
   docker-images:
