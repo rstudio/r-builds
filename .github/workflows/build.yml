@@ -186,7 +186,7 @@ jobs:
 
   update-versions-json:
     if: ${{ inputs.publish != '' }}
-    needs: build
+    needs: [build, setup-matrix]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
