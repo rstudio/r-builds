@@ -233,5 +233,5 @@ jobs:
         run: |
           echo "Publishing versions.json for ${{ inputs.publish }}"
           s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
-          versions=$(echo "${{ needs.setup-matrix.outputs.r_versions }}" | jq -r 'join(",")')
+          versions=$(echo '${{ needs.setup-matrix.outputs.r_versions }}' | jq -r 'join(",")')
           python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"
