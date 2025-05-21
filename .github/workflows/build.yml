@@ -19,6 +19,17 @@ on:
         required: false
         default: 'last-5,3.6.3,devel'
         type: string
+      arch:
+        description: |
+          Comma-separated list of architectures. Specify "amd64", "arm64", or both.
+          Defaults to "amd64,arm64".
+        required: false
+        default: 'amd64,arm64'
+        type: choice
+        options:
+          - 'amd64,arm64'
+          - 'amd64'
+          - 'arm64'
       publish:
         description: |
           Publish the builds to S3 staging or production? Defaults to not publishing.
@@ -44,6 +55,13 @@ on:
           Defaults to "last-5,3.6.3,devel".
         required: false
         default: 'last-5,3.6.3,devel'
+        type: string
+      arch:
+        description: |
+          Comma-separated list of architectures. Specify "amd64", "arm64", or both.
+          Defaults to "amd64,arm64".
+        required: false
+        default: 'amd64,arm64'
         type: string
       publish:
         description: |
@@ -71,23 +89,27 @@ jobs:
     outputs:
       platforms: ${{ steps.setup-matrix.outputs.platforms }}
       r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
+      arch: ${{ steps.setup-matrix.outputs.arch }}
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up matrix of platforms and R versions
       id: setup-matrix
       run: |
-        platforms=$(python get_platforms.py ${{ github.event.inputs.platforms }})
+        platforms=$(python get_platforms.py ${{ inputs.platforms }})
         echo "platforms=$platforms" >> $GITHUB_OUTPUT
-        r_versions=$(python get_r_versions.py ${{ github.event.inputs.r_versions }})
+        r_versions=$(python get_r_versions.py ${{ inputs.r_versions }})
         echo "r_versions=$r_versions" >> $GITHUB_OUTPUT
+        # Convert comma-separated list of architectures to JSON array
+        arch=$(echo "${{ inputs.arch || 'amd64,arm64' }}" | jq -Rc 'split(",")')
+        echo "arch=$arch" >> $GITHUB_OUTPUT
 
   docker-images:
     needs: setup-matrix
     strategy:
       matrix:
         platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
-        arch: [amd64, arm64]
+        arch: ${{ fromJson(needs.setup-matrix.outputs.arch) }}
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     name: Docker image (${{ matrix.platform }}-${{ matrix.arch }})
     steps:
@@ -136,7 +158,7 @@ jobs:
       matrix:
         platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
         r_version: ${{ fromJson(needs.setup-matrix.outputs.r_versions) }}
-        arch: [amd64, arm64]
+        arch: ${{ fromJson(needs.setup-matrix.outputs.arch) }}
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     name: ${{ matrix.platform }}-${{ matrix.arch }} (R ${{ matrix.r_version }})
     steps:
@@ -180,12 +202,13 @@ jobs:
       - name: Publish R
         if: ${{ inputs.publish != '' }}
         run: |
+          echo "Publishing R for ${{ inputs.publish }}"
           s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
           S3_BUCKET=$s3_bucket make publish-r-${{ matrix.platform }}
 
   update-versions-json:
     if: ${{ inputs.publish != '' }}
-    needs: build
+    needs: [build, setup-matrix]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -208,6 +231,7 @@ jobs:
 
       - name: Update versions.json
         run: |
+          echo "Publishing versions.json for ${{ inputs.publish }}"
           s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
-          versions=$(echo "${{ needs.setup-matrix.outputs.r_versions }}" | jq -r 'join(",")')
+          versions=$(echo '${{ needs.setup-matrix.outputs.r_versions }}' | jq -r 'join(",")')
           python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"
