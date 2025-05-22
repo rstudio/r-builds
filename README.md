@@ -39,6 +39,10 @@ Older R versions down to R 3.0.0 are also built when possible, but support for o
 
 R versions 4.0.0 through 4.3.3 have been patched for [CVE-2024-27322](https://nvd.nist.gov/vuln/detail/cve-2024-27322). See [#218](https://github.com/rstudio/r-builds/issues/218) for more details.
 
+## Supported Architectures
+
+R binaries are built for x86_64/amd64 and aarch64/arm64.
+
 ## Quick Installation
 
 To use our quick install script to install R, simply run the following
@@ -56,7 +60,7 @@ bash -c "$(curl -L https://rstd.io/r-install)"
 Define the version of R that you want to install. Available versions
 of R can be found here: https://cdn.posit.co/r/versions.json
 ```bash
-R_VERSION=4.3.3
+R_VERSION=4.4.3
 ```
 
 ### Download and install R
@@ -65,21 +69,21 @@ R_VERSION=4.3.3
 Download the deb package:
 ```bash
 # Ubuntu 20.04
-curl -O https://cdn.posit.co/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_amd64.deb
+curl -O https://cdn.posit.co/r/ubuntu-2004/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 
 # Ubuntu 22.04
-curl -O https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_amd64.deb
+curl -O https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 
 # Ubuntu 24.04
-curl -O https://cdn.posit.co/r/ubuntu-2404/pkgs/r-${R_VERSION}_1_amd64.deb
+curl -O https://cdn.posit.co/r/ubuntu-2404/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 
 # Debian 12
-curl -O https://cdn.posit.co/r/debian-12/pkgs/r-${R_VERSION}_1_amd64.deb
+curl -O https://cdn.posit.co/r/debian-12/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 ```
 
 Then install the package:
 ```bash
-sudo apt-get install ./r-${R_VERSION}_1_amd64.deb
+sudo apt-get install ./r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 ```
 
 #### RHEL/CentOS Linux
@@ -123,18 +127,18 @@ sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noa
 Download the rpm package:
 ```bash
 # CentOS / RHEL 7
-curl -O https://cdn.posit.co/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/centos-7/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 
 # RHEL 8 / Rocky Linux 8 / AlmaLinux 8
-curl -O https://cdn.posit.co/r/centos-8/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/centos-8/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 
 # RHEL 9 / Rocky Linux 9 / AlmaLinux 9
-curl -O https://cdn.posit.co/r/rhel-9/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/rhel-9/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
 Then install the package:
 ```bash
-sudo yum install R-${R_VERSION}-1-1.x86_64.rpm
+sudo yum install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
 #### SUSE Linux
@@ -142,12 +146,12 @@ sudo yum install R-${R_VERSION}-1-1.x86_64.rpm
 Download the rpm package:
 ```bash
 # openSUSE 15.6 / SLES 15 SP6
-curl -O https://cdn.posit.co/r/opensuse-156/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/opensuse-156/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
 Then install the package:
 ```bash
-sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.x86_64.rpm
+sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
 #### Fedora Linux
@@ -155,18 +159,18 @@ sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.x86_64.rpm
 Download the rpm package:
 ```bash
 # Fedora 40
-curl -O https://cdn.posit.co/r/fedora-40/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/fedora-40/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 
 # Fedora 41
-curl -O https://cdn.posit.co/r/fedora-41/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/fedora-41/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 
 # Fedora 42
-curl -O https://cdn.posit.co/r/fedora-42/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
+curl -O https://cdn.posit.co/r/fedora-42/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
 Then install the package:
 ```bash
-sudo dnf install r-${R_VERSION}_1_amd64.rpm
+sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
 
