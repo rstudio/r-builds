@@ -10,12 +10,6 @@ RUN set -x \
      libopenblas0-pthread libpcre2-dev make unzip wget \
   && apt-get build-dep -y r-base
 
-# Install AWS CLI
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && \
-    ./aws/install && \
-    rm -rf aws awscliv2.zip
-
 RUN chmod 0777 /opt
 
 RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(dpkg --print-architecture).deb" && \

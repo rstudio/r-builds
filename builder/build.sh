@@ -2,7 +2,6 @@
 set -e
 
 export CRAN=${CRAN-"https://cran.rstudio.com"}
-export S3_BUCKET_PREFIX=${S3_BUCKET_PREFIX-""}
 export OS_IDENTIFIER=${OS_IDENTIFIER-"unknown"}
 ARCH=$(uname -m)
 if [ "$ARCH" = "x86_64" ]; then
@@ -23,16 +22,6 @@ fi
 # upload_r()
 upload_r() {
   baseName="r/${OS_IDENTIFIER}"
-  if [ -n "$S3_BUCKET" ] && [ "$S3_BUCKET" != "" ]; then
-    echo "Storing artifact on s3: ${S3_BUCKET}, tarball: ${TARBALL_NAME}"
-    aws s3 cp /tmp/${TARBALL_NAME} s3://${S3_BUCKET}/${S3_BUCKET_PREFIX}${baseName}/${TARBALL_NAME}
-    # check if PKG_FILE has been set by a packager script and act accordingly
-    if [ -n "$PKG_FILE" ] && [ "$PKG_FILE" != "" ]; then
-      if [ -f "$PKG_FILE" ]; then
-	aws s3 cp ${PKG_FILE} s3://${S3_BUCKET}/${S3_BUCKET_PREFIX}${baseName}/pkgs/$(basename ${PKG_FILE})
-      fi
-    fi
-  fi
   if [ -n "$LOCAL_STORE" ] && [ "$LOCAL_STORE" != '' ]; then
     echo "Storing artifact locally: ${LOCAL_STORE}, tarball: ${TARBALL_NAME}"
     mkdir -p ${LOCAL_STORE}/${baseName}

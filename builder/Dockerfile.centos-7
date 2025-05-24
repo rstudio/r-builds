@@ -32,8 +32,6 @@ RUN yum -y update \
     pango-devel \
     pcre-devel \
     pcre2-devel \
-    python3 \
-    python3-pip \
     readline-devel \
     rpm-build \
     tcl-devel \
@@ -47,10 +45,6 @@ RUN yum -y update \
     xz-devel \
     zlib-devel \
     && yum clean all
-
-# Install AWS CLI.
-RUN pip3 install awscli --upgrade --user && \
-    ln -s /root/.local/bin/aws /usr/bin/aws
 
 RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
 

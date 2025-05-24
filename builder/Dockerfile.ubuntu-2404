@@ -16,12 +16,6 @@ RUN set -x \
   && apt install -y curl libcurl4-openssl-dev libicu-dev libopenblas0-pthread libpcre2-dev libpcre3-dev unzip wget \
   && apt build-dep -y r-base
 
-# Install AWS CLI
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && \
-    ./aws/install && \
-    rm -rf aws awscliv2.zip
-
 RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(dpkg --print-architecture).deb" && \
     apt install -y "./nfpm_$(dpkg --print-architecture).deb" && \
     rm "nfpm_$(dpkg --print-architecture).deb"

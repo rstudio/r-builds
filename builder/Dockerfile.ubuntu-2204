@@ -6,10 +6,8 @@ RUN set -x \
   && sed -i "s|# deb-src|deb-src|g" /etc/apt/sources.list \
   && export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
-  && apt-get install -y curl libcurl4-openssl-dev libicu-dev libopenblas-base libpcre2-dev wget python3-pip \
+  && apt-get install -y curl libcurl4-openssl-dev libicu-dev libopenblas-base libpcre2-dev wget \
   && apt-get build-dep -y r-base
-
-RUN pip3 install awscli
 
 RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(dpkg --print-architecture).deb" && \
     apt install -y "./nfpm_$(dpkg --print-architecture).deb" && \

@@ -260,9 +260,7 @@ make build-r-$PLATFORM
 For significant changes to the R builds, such as adding a new platform or updating existing builds,
 include any relevant testing notes and changes that may affect existing users, such as system dependency changes.
 
-On successful merge, the changes will be automatically deployed to the staging environment.
-
-A project maintainer can then trigger the builds in staging to test the changes, and then in production
+On successful merge, a project maintainer can then trigger the builds in staging to test the changes, and then in production
 when the changes have been verified.
 
 ## Adding a new platform.
@@ -287,9 +285,8 @@ Create a `builder/Dockerfile.platform-version` (where `platform-version` is `ubu
 
 1. an `OS_IDENTIFIER` env with the `platform-version`.
 2. a step which ensures the R source build dependencies are installed
-3. The `awscli` for uploading packages and tarballs to S3
-4. `COPY` for the packaging script (`builder/package.platform-version`) to `/package.sh`
-5. `COPY` and `ENTRYPOINT` for the `build.sh` file in `builder/`.
+3. `COPY` for the packaging script (`builder/package.platform-version`) to `/package.sh`
+4. `COPY` and `ENTRYPOINT` for the `build.sh` file in `builder/`.
 
 ### Packaging script
 
