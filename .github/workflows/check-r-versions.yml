@@ -73,7 +73,7 @@ jobs:
   # Notify Hosted about new R versions
   notify-slack-success:
     needs: [build-new-r-versions, check-r-versions]
-    if: ${{ success() && needs.check-r-versions.outputs.new_r_versions != '' }}
+    if: ${{ needs.check-r-versions.outputs.new_r_versions != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on successful new R version build
