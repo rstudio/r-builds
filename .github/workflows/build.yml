@@ -93,16 +93,31 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
     - name: Set up matrix of platforms and R versions
       id: setup-matrix
       run: |
         platforms=$(python get_platforms.py ${{ inputs.platforms }})
         echo "platforms=$platforms" >> $GITHUB_OUTPUT
-        r_versions=$(python get_r_versions.py ${{ inputs.r_versions }})
+        echo "Using platforms: $platforms"
+
+        r_versions=$(python manage_r_versions.py get "${{ inputs.r_versions }}")
         echo "r_versions=$r_versions" >> $GITHUB_OUTPUT
+        echo "Using R versions: $r_versions"
+
         # Convert comma-separated list of architectures to JSON array
         arch=$(echo "${{ inputs.arch || 'amd64,arm64' }}" | jq -Rc 'split(",")')
         echo "arch=$arch" >> $GITHUB_OUTPUT
+        echo "Using architectures: $arch"
 
   docker-images:
     needs: setup-matrix
