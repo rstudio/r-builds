@@ -1,0 +1,116 @@
+#!/bin/bash
+
+if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
+  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
+fi
+
+# R 3.x requires PCRE1. On RHEL 10, R 3.x also requires PCRE2 for Pango support.
+pcre_libs='- pcre2-devel'
+if [[ "${R_VERSION}" =~ ^3 ]]; then
+  pcre_libs='- pcre2-devel
+- pcre-devel'
+fi
+
+# On RHEL and SUSE, we link R against the internal shared BLAS to make the
+# R binaries more portable and allow users to switch BLAS implementations without
+# having to recompile R. We default to OpenBLAS, but users may prefer other implementations.
+# 
+# Binary packages built against the shared BLAS are also more portable and may be used
+# with the default R distributed by RHEL/SUSE, or other R installations using
+# shared BLAS and configured with a different BLAS (such as Microsoft R Open with MKL).
+# This is especially important for Posit Package Manager's binary packages.
+#
+# However, EPEL 10's R now links externally against FlexiBLAS, which provides a
+# native BLAS switching mechanism for Fedora/RHEL. Starting with R 4.3.0, we also
+# link to external FlexiBLAS for compatibility.
+# https://fedoraproject.org/wiki/Changes/FlexiBLAS_as_BLAS/LAPACK_manager
+#
+# On Ubuntu/Debian, we link R against the external BLAS instead (--with-blas/--with-lapack),
+# as those distributions use the alternatives system to swap BLAS libraries at runtime.
+# The default R distributions on Ubuntu/Debian use the external BLAS, so we do as well
+# for portability.
+#
+# https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Shared-BLAS
+if [[ "$("${R_INSTALL_PATH}/bin/R" CMD config BLAS_LIBS)" == "-lflexiblas" ]]; then
+  blas_lib='flexiblas-devel'
+
+  # Create postremove script to remove empty directories, as nFPM doesn't include them in the RPM files.
+  cat <<EOF >> /after-remove.sh
+  if [ -d ${R_INSTALL_PATH} ]; then
+    rm -r ${R_INSTALL_PATH}
+  fi
+EOF
+
+  scripts="scripts:
+  postremove: /after-remove.sh
+"
+else
+  blas_lib='openblas-devel'
+
+  # Create post-install script required for OpenBLAS.
+  cat <<EOF >> /post-install.sh
+  mv ${R_INSTALL_PATH}/lib/R/lib/libRblas.so ${R_INSTALL_PATH}/lib/R/lib/libRblas.so.keep
+  ln -s /usr/lib64/libopenblasp.so ${R_INSTALL_PATH}/lib/R/lib/libRblas.so
+EOF
+
+  # Create after-remove script to remove internal BLAS, which won't be cleaned up automatically.
+  cat <<EOF >> /after-remove.sh
+  if [ -d ${R_INSTALL_PATH} ]; then
+    rm -r ${R_INSTALL_PATH}
+  fi
+EOF
+
+  scripts="scripts:
+  postinstall: /post-install.sh
+  postremove: /after-remove.sh
+"
+fi
+
+if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+
+cat <<EOF > /tmp/nfpm.yml
+name: R-${R_VERSION}
+version: 1
+version_schema: none
+arch: $(cat /tmp/arch)
+release: 1
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPLv2+
+depends:
+- bzip2-devel
+- gcc
+- gcc-c++
+- gcc-gfortran
+- libcurl-devel
+- libicu-devel
+- libSM
+- libtiff
+- libXmu
+- libXt
+- make
+- ${blas_lib}
+- pango
+${pcre_libs}
+- tcl
+- tk
+- unzip
+- which
+- xz-devel
+- zip
+- zlib-devel
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+${scripts}
+EOF
+
+nfpm package \
+  -f /tmp/nfpm.yml \
+  -p rpm \
+  -t "/tmp/output/${OS_IDENTIFIER}"
+
+export PKG_FILE=$(ls /tmp/output/${OS_IDENTIFIER}/R-${R_VERSION}*.rpm | head -1)
