@@ -90,6 +90,19 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
+  rhel-10:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.rhel-10
+    image: r-builds:rhel-10
+    volumes:
+      - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   opensuse-156:
     command: ./build.sh
     environment:

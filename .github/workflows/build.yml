@@ -87,6 +87,7 @@ jobs:
   setup-matrix:
     runs-on: ubuntu-latest
     outputs:
+      matrix: ${{ steps.setup-matrix.outputs.matrix }}
       platforms: ${{ steps.setup-matrix.outputs.platforms }}
       r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
       arch: ${{ steps.setup-matrix.outputs.arch }}
@@ -106,16 +107,26 @@ jobs:
     - name: Set up matrix of platforms and R versions
       id: setup-matrix
       run: |
-        platforms=$(python get_platforms.py ${{ inputs.platforms }})
+        # Validate the R versions
+        r_versions=$(python manage_r_versions.py get "${{ inputs.r_versions }}")
+
+        # Filter out unsupported build combinations
+        build_matrix=$(python get_matrix.py --platforms="${{ inputs.platforms }}" --versions="$r_versions" --arch="${{ inputs.arch }}")
+
+        matrix=$(echo "$build_matrix" | jq -c '.matrix')
+        platforms=$(echo "$build_matrix" | jq -c '.platforms')
+        r_versions=$(echo "$build_matrix" | jq -c '.r_versions')
+        arch=$(echo "$build_matrix" | jq -c '.arch')
+
+        echo "matrix=$matrix" >> $GITHUB_OUTPUT
+        echo "Using matrix: $matrix"
+
         echo "platforms=$platforms" >> $GITHUB_OUTPUT
         echo "Using platforms: $platforms"
 
-        r_versions=$(python manage_r_versions.py get "${{ inputs.r_versions }}")
         echo "r_versions=$r_versions" >> $GITHUB_OUTPUT
         echo "Using R versions: $r_versions"
 
-        # Convert comma-separated list of architectures to JSON array
-        arch=$(echo "${{ inputs.arch || 'amd64,arm64' }}" | jq -Rc 'split(",")')
         echo "arch=$arch" >> $GITHUB_OUTPUT
         echo "Using architectures: $arch"
 
@@ -170,10 +181,7 @@ jobs:
     needs: [setup-matrix, docker-images]
     strategy:
       fail-fast: false
-      matrix:
-        platform: ${{ fromJson(needs.setup-matrix.outputs.platforms) }}
-        r_version: ${{ fromJson(needs.setup-matrix.outputs.r_versions) }}
-        arch: ${{ fromJson(needs.setup-matrix.outputs.arch) }}
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     name: ${{ matrix.platform }}-${{ matrix.arch }} (R ${{ matrix.r_version }})
     steps:
