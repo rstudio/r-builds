@@ -121,7 +121,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Command to get R versions
-    get_parser = subparsers.add_parser("get", help="Get R versions as JSON, filtering out any invalid versions.")
+    get_parser = subparsers.add_parser("get", help="Get R versions as a comma-separated list, filtering out any invalid versions.")
     get_parser.add_argument(
         'versions',
         type=str,
@@ -152,7 +152,7 @@ def main():
         which_versions = args.versions.strip()
         which_versions = which_versions if which_versions else get_parser.get_default('versions')
         versions = get_versions(which=which_versions)
-        print(json.dumps(versions))
+        print(','.join(versions))
     if args.command == "check":
         new_versions = check_new_r_versions(args.s3_bucket)
         print(','.join(new_versions))
