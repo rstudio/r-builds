@@ -22,7 +22,7 @@ R binaries are built for the following Linux operating systems:
 - Ubuntu 20.04, 22.04, 24.04
 - Debian 12
 - CentOS 7
-- Red Hat Enterprise Linux 7, 8, 9
+- Red Hat Enterprise Linux 7, 8, 9, 10
 - openSUSE 15.6
 - SUSE Linux Enterprise 15 SP6
 - Fedora 40, 41, 42
@@ -134,6 +134,9 @@ curl -O https://cdn.posit.co/r/centos-8/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 
 # RHEL 9 / Rocky Linux 9 / AlmaLinux 9
 curl -O https://cdn.posit.co/r/rhel-9/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
+
+# RHEL 10 / Rocky Linux 10 / AlmaLinux 10
+curl -O https://cdn.posit.co/r/rhel-10/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
 Then install the package:
