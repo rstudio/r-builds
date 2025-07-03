@@ -45,11 +45,10 @@ RUN dnf -y upgrade \
     zlib-devel \
     && dnf clean all
 
-RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
-
-RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(cat /tmp/arch).rpm" && \
-    dnf install -y "nfpm_$(cat /tmp/arch).rpm" && \
-    rm "nfpm_$(cat /tmp/arch).rpm"
+ARG NFPM_VERSION=2.43.0
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm-${NFPM_VERSION}-1.$(arch).rpm" && \
+    dnf install -y "nfpm-${NFPM_VERSION}-1.$(arch).rpm" && \
+    rm "nfpm-${NFPM_VERSION}-1.$(arch).rpm"
 
 RUN chmod 0777 /opt
 
