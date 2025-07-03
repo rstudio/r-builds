@@ -403,6 +403,8 @@ install_epel () {
         ${SUDO} dnf install ${yes} epel-release
       fi
       ;;
+    "10")
+      ;;
   esac
 }
 

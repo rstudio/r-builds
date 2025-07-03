@@ -64,6 +64,15 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
+  rhel-10:
+    image: rockylinux/rockylinux:10
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=rhel-10
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
   opensuse-156:
     image: opensuse/leap:15.6
     command: /r-builds/test/test-zypper.sh
