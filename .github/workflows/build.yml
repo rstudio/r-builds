@@ -15,6 +15,7 @@ on:
         description: |
           Comma-separated list of R versions. Specify "last-N" to use the
           last N minor R versions, or "all" to use all minor R versions since R 3.1.
+          Use "all-patch" to use all patch versions since R 3.1.
           Defaults to "last-5,3.6.3,devel".
         required: false
         default: 'last-5,3.6.3,devel'

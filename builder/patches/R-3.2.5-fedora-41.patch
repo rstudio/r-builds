@@ -1,1 +1,26 @@
-R-3.2.5-fedora-40.patch
+diff --git a/configure b/configure
+index b9d91b7..a61cfe4 100755
+--- a/configure
++++ b/configure
+@@ -34212,7 +34212,7 @@ char BZ2_bzlibVersion ();
+ 
+ #endif
+ int
+-main ()
++main (void)
+ {
+ return BZ2_bzlibVersion ();
+   ;
+@@ -34276,9 +34276,11 @@ else
+ /* end confdefs.h.  */
+ 
+ #ifdef HAVE_BZLIB_H
++#include <stdlib.h> // for exit
++#include <string.h> // for strcmp
+ #include <bzlib.h>
+ #endif
+-int main() {
++int main(void) {
+     char *ver = BZ2_bzlibVersion();
+     exit(strcmp(ver, "1.0.6") < 0);
+ }
