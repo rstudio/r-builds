@@ -64,14 +64,17 @@ patch_r() {
   cd /tmp/R-${1}
 
   if [ -f "/patches/R-${1}.patch" ]; then
+      echo "Applying patch /patches/R-${1}.patch"
       patch -p1 < "/patches/R-${1}.patch"
   fi
 
   if [ -f "/patches/R-${1}-${OS_IDENTIFIER}.patch" ]; then
+      echo "Applying patch /patches/R-${1}-${OS_IDENTIFIER}.patch"
       patch -p1 < "/patches/R-${1}-${OS_IDENTIFIER}.patch"
   fi
 
   if [ -f "/patches/R-${1}-`arch`.patch" ]; then
+      echo "Applying patch /patches/R-${1}-`arch`.patch"
       patch -p1 < "/patches/R-${1}-`arch`.patch"
   fi
 }
