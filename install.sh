@@ -304,8 +304,7 @@ install_deb () {
   echo "Updating package indexes..."
   ${SUDO} apt-get update
   echo "Installing ${installer_name}..."
-  ${SUDO} apt-get install ${yesapt} gdebi-core
-  ${SUDO} gdebi ${yes} "${installer_name}"
+  ${SUDO} apt-get install ${yesapt} ./"${installer_name}"
 }
 
 # Installs R for RHEL/CentOS and SUSE
