@@ -184,6 +184,14 @@ compile_r() {
   make
   make install
 
+  # Patch a bug with aarch64 in R 4.2 and below, where the -fpic flag should be -fPIC to prevent issues with compiling large packages like V8.
+  # https://github.com/wch/r-source/commit/d59aac8f5868355478567022772d42d552c5da86
+  # https://bugs.r-project.org/show_bug.cgi?id=18326
+  if _version_is_less_than "${r_version}" 4.3.0 && [ "$ARCH" = "aarch64" ]; then
+    echo "Patching -fpic to -fPIC for R <= 4.2 on aarch64 in ${R_INSTALL_PATH}/lib/R/etc/Makeconf"
+    sed -i 's/-fpic/-fPIC/g' "${R_INSTALL_PATH}/lib/R/etc/Makeconf"
+  fi
+
   # Add OS identifier to the default HTTP user agent.
   # Set this in the system Rprofile so it works when R is run with --vanilla.
   cat <<EOF >> "${R_INSTALL_PATH}"/lib/R/library/base/R/Rprofile
