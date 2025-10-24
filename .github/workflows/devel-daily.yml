@@ -4,15 +4,46 @@ on:
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
+    inputs:
+      publish_cloudsmith:
+        description: |
+          Publish to Cloudsmith? Specify repository (e.g., "posit/r-builds") or leave empty to skip.
+        required: false
+        default: 'posit/r-builds'
+        type: string
+      cloudsmith_dry_run:
+        description: |
+          Test Cloudsmith upload without actually publishing.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
+  # Generate date-based version for devel builds
+  generate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      package_version: ${{ steps.version.outputs.package_version }}
+    steps:
+      - name: Generate date-based version
+        id: version
+        run: |
+          # Use YYYYMMDD format for package version
+          date_string=$(date -u +%Y%m%d)
+          echo "package_version=$date_string" >> $GITHUB_OUTPUT
+          echo "Generated package version: $date_string"
+
   r-builds:
+    needs: generate-version
     uses: ./.github/workflows/build.yml
     with:
       r_versions: 'devel,next'
       publish: production
+      package_version: ${{ needs.generate-version.outputs.package_version }}
+      publish_cloudsmith: ${{ inputs.publish_cloudsmith || 'posit/r-builds' }}
+      cloudsmith_dry_run: ${{ inputs.cloudsmith_dry_run || false }}
     secrets: inherit
