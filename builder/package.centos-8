@@ -23,10 +23,10 @@ fi
 #
 # However, as of R 4.2.3, EPEL 8's R no longer uses shared BLAS and now links to an
 # external OpenBLAS (OpenMP). This means EPEL R no longer has a swappable BLAS and
-# is no longer compatible with these R builds.
+# create post-install script required for openblas
 cat <<EOF >> /post-install.sh
-mv ${R_INSTALL_PATH}/lib/R/lib/libRblas.so ${R_INSTALL_PATH}/lib/R/lib/libRblas.so.keep
-ln -s /usr/lib64/libopenblasp.so.0 ${R_INSTALL_PATH}/lib/R/lib/libRblas.so
+mv ${R_INSTALL_PATH}/lib/R/lib/libRblas.so ${R_INSTALL_PATH}/lib/R/lib/libRblas.so.keep 
+ln -s /usr/lib64/libopenblasp.so ${R_INSTALL_PATH}/lib/R/lib/libRblas.so
 EOF
 
 # create after-remove script to remove internal blas
@@ -38,9 +38,13 @@ EOF
 
 if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
 
+# Allow PACKAGE_VERSION to be overridden for Cloudsmith publishing
+# Default to "1" if not set
+PKG_VERSION=${PACKAGE_VERSION:-1}
+
 cat <<EOF > /tmp/nfpm.yml
 name: R-${R_VERSION}
-version: 1
+version: ${PKG_VERSION}
 version_schema: none
 arch: $(cat /tmp/arch)
 release: 1
