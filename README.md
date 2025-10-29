@@ -173,7 +173,22 @@ Then install the package:
 sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
+## Cloudsmith Package Repositories
 
+In addition to direct downloads from the CDN, R builds are also available through Cloudsmith package repositories,
+which provide signed packages that can be installed and updated using your system's native package manager.
+
+### Repository Setup
+
+Visit the Cloudsmith repository page for detailed setup instructions for your distribution:
+https://cloudsmith.io/~posit/repos/r-builds/setup/
+
+### Package Versions
+
+- **Stable releases**: Packages are versioned sequentially (e.g., `r-4.4.1_1`, `r-4.4.1_2`)
+- **Development builds**: Packages use date-based versions (e.g., `r-devel_20251027`)
+
+New development builds are published daily at 4 AM UTC and can be updated in place using your package manager.
 
 ### Verify R installation
 
@@ -354,13 +369,44 @@ The [Check for new R versions](https://github.com/rstudio/r-builds/actions/workf
 checks for new R versions hourly and automatically builds and publishes them.
 
 The [Daily R-devel and R-next builds](https://github.com/rstudio/r-builds/actions/workflows/devel-daily.yml) workflow
-builds and publishes R-devel and R-next each day.
+builds and publishes R-devel and R-next each day to both S3 and Cloudsmith.
 
 The [R builds](https://github.com/rstudio/r-builds/actions/workflows/build.yml) workflow
-tests building the R binaries and optionally publishes them. Builds are not automatically published upon merging to `main`.
+tests building the R binaries and optionally publishes them to S3 and/or Cloudsmith. Builds are not automatically published upon merging to `main`.
 
 After making any changes to R-builds, this workflow may be run manually to test the changes in `staging` first. Then,
 the workflow can be rerun for `production` to build new binaries or rebuild existing binaries.
+
+### Cloudsmith Publishing
+
+R builds can be published to Cloudsmith repositories in addition to S3. To publish to Cloudsmith:
+
+1. Set `publish_cloudsmith` to your Cloudsmith repository (e.g., `posit/r-builds`)
+2. Set `package_version` for versioning (defaults to `1` for stable releases, `YYYYMMDD` for devel builds)
+3. Optionally set `cloudsmith_dry_run: true` for testing
+
+**Example: Publishing a stable release to Cloudsmith**
+```yaml
+platforms: all
+r_versions: 4.4.2
+publish: production          # Also publish to S3
+package_version: 1
+publish_cloudsmith: posit/r-builds
+cloudsmith_dry_run: false
+```
+
+**Example: Testing Cloudsmith publishing**
+```yaml
+platforms: ubuntu-2204
+r_versions: 4.4.1
+package_version: 999
+publish_cloudsmith: posit/r-builds-test
+cloudsmith_dry_run: true
+```
+
+**Note**: Cloudsmith repositories have force-overwriting disabled. To republish the same R version,
+increment the `package_version` (e.g., from `1` to `2`). Daily devel builds automatically use
+date-based versions to avoid conflicts.
 
 ## Testing
 
