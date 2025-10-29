@@ -181,7 +181,7 @@ which provide signed packages that can be installed and updated using your syste
 ### Repository Setup
 
 Visit the Cloudsmith repository page for detailed setup instructions for your distribution:
-https://cloudsmith.io/~posit/repos/r-builds/setup/
+https://cloudsmith.io/~posit/repos/open/setup/
 
 ### Package Versions
 
@@ -381,7 +381,7 @@ the workflow can be rerun for `production` to build new binaries or rebuild exis
 
 R builds can be published to Cloudsmith repositories in addition to S3. To publish to Cloudsmith:
 
-1. Set `publish_cloudsmith` to your Cloudsmith repository (e.g., `posit/r-builds`)
+1. Set `publish_cloudsmith` to your Cloudsmith repository (e.g., `posit/open/r-builds`)
 2. Set `package_version` for versioning (defaults to `1` for stable releases, `YYYYMMDD` for devel builds)
 3. Optionally set `cloudsmith_dry_run: true` for testing
 
@@ -391,7 +391,7 @@ platforms: all
 r_versions: 4.4.2
 publish: production          # Also publish to S3
 package_version: 1
-publish_cloudsmith: posit/r-builds
+publish_cloudsmith: posit/open/r-builds
 cloudsmith_dry_run: false
 ```
 
@@ -400,7 +400,7 @@ cloudsmith_dry_run: false
 platforms: ubuntu-2204
 r_versions: 4.4.1
 package_version: 999
-publish_cloudsmith: posit/r-builds-test
+publish_cloudsmith: posit/open/r-builds-test
 cloudsmith_dry_run: true
 ```
 
