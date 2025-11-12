@@ -9,7 +9,7 @@ RUN set -x \
   && apt-get install -y bzip2 ca-certificates curl g++ gcc gfortran \
      libblas-dev libbz2-dev libcairo2-dev libcurl4-openssl-dev \
      libicu-dev libjpeg-dev liblzma-dev libopenblas0-pthread \
-     libpango1.0-dev libpcre2-dev libpcre3-dev libpng-dev \
+     libpango1.0-dev libpcre2-dev libpng-dev \
      libreadline-dev libtcl8.6 libtiff-dev libtirpc-dev libtk8.6 \
      libx11-dev libxt-dev make tcl8.6-dev texinfo tk8.6-dev \
      unzip wget xvfb zlib1g-dev \
