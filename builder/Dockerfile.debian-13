@@ -7,7 +7,7 @@ RUN set -x \
   && echo 'deb-src http://deb.debian.org/debian trixie main' >> /etc/apt/sources.list \
   && apt-get update \
   && apt-get install -y curl gcc libcurl4-openssl-dev libicu-dev \
-     libopenblas0-pthread libpcre2-dev make unzip wget \
+     libopenblas0-pthread libpcre2-dev libtirpc-dev make unzip wget \
   && apt-get build-dep -y r-base
 
 RUN chmod 0777 /opt

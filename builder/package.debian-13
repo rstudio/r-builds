@@ -61,6 +61,7 @@ ${pcre_libs}
 - libreadline8
 - libtcl8.6
 - libtiff6
+- libtirpc-dev
 - libtk8.6
 - libx11-6
 - libxt6
