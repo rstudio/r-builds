@@ -60,6 +60,9 @@ def _get_matrix(platforms=['all'], versions=[], arch=['amd64', 'arm64']):
             if platform == 'rhel-10' and version <= '3.6.3':
                 # RHEL 10 does not support R 3.x because it does not have PCRE1
                 continue
+            if platform == 'debian-13' and version <= '3.6.3':
+                # Debian 13 does not support R 3.x because it does not have PCRE1
+                continue
             for a in arch:
                 include.append({
                     "platform": platform,
