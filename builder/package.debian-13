@@ -1,0 +1,84 @@
+#!/bin/bash
+
+if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
+  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
+fi
+
+# R 3.x requires PCRE1. On Debian 13, R 3.x also requires PCRE2 for Pango support.
+pcre_libs='- libpcre2-dev'
+if [[ "${R_VERSION}" =~ ^3 ]]; then
+  pcre_libs='- libpcre2-dev
+- libpcre3-dev'
+fi
+
+deflate_libs='# - libdeflate-dev'
+if grep -q '^LIBS *=.*[-]ldeflate' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
+    deflate_libs='- libdeflate-dev'
+fi
+
+# R 4.5.0 and later require libzstd (with headers to link against libR)
+zstd_libs='# - libzstd-dev'
+if grep -q '^LIBS *=.*[-]lzstd' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
+    zstd_libs='- libzstd-dev'
+fi
+
+cat <<EOF > /tmp/nfpm.yml
+name: r-${R_VERSION}
+version: 1
+version_schema: none
+section: gnu-r
+arch: $(dpkg --print-architecture)
+priority: optional
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPL-2
+deb:
+  fields:
+    Bugs: https://github.com/rstudio/r-builds/issues
+depends:
+- ca-certificates
+- g++
+- gcc
+- gfortran
+- libbz2-dev
+- libc6
+- libcairo2
+- libcurl4-openssl-dev
+${deflate_libs}
+- libglib2.0-0
+- libgomp1
+- libicu-dev
+- liblzma-dev
+- libopenblas-dev
+- libpango-1.0-0
+- libpangocairo-1.0-0
+- libpaper-utils
+${pcre_libs}
+- libpng16-16
+- libreadline8
+- libtcl8.6
+- libtiff6
+- libtirpc-dev
+- libtk8.6
+- libx11-6
+- libxt6
+${zstd_libs}
+- make
+- ucf
+- unzip
+- zip
+- zlib1g-dev
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+EOF
+
+nfpm package \
+  -f /tmp/nfpm.yml \
+  -p deb \
+  -t "/tmp/output/${OS_IDENTIFIER}"
+
+export PKG_FILE=$(ls /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.deb | head -1)

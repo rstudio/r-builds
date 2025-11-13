@@ -1,0 +1,33 @@
+FROM debian:trixie
+
+ENV OS_IDENTIFIER debian-13
+
+RUN set -x \
+  && export DEBIAN_FRONTEND=noninteractive \
+  && echo 'deb-src http://deb.debian.org/debian trixie main' >> /etc/apt/sources.list \
+  && apt-get update \
+  && apt-get install -y bzip2 ca-certificates curl g++ gcc gfortran \
+     libblas-dev libbz2-dev libcairo2-dev libcurl4-openssl-dev \
+     libicu-dev libjpeg-dev liblzma-dev libopenblas0-pthread \
+     libpango1.0-dev libpcre2-dev libpng-dev \
+     libreadline-dev libtcl8.6 libtiff-dev libtirpc-dev libtk8.6 \
+     libx11-dev libxt-dev make tcl8.6-dev texinfo tk8.6-dev \
+     unzip wget xvfb zlib1g-dev \
+  && apt-get build-dep -y r-base || true
+
+RUN chmod 0777 /opt
+
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(dpkg --print-architecture).deb" && \
+    apt install -y "./nfpm_$(dpkg --print-architecture).deb" && \
+    rm "nfpm_$(dpkg --print-architecture).deb"
+
+# Override the default pager used by R
+ENV PAGER /usr/bin/pager
+
+# R 3.x requires PCRE2 for Pango support on Debian 13
+ENV INCLUDE_PCRE2_IN_R_3 yes
+
+COPY package.debian-13 /package.sh
+COPY build.sh .
+COPY patches /patches
+ENTRYPOINT ./build.sh

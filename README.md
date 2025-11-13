@@ -20,7 +20,7 @@ bug, or ask questions on [Posit Community](https://forum.posit.co/).
 R binaries are built for the following Linux operating systems:
 
 - Ubuntu 20.04, 22.04, 24.04
-- Debian 12
+- Debian 12, 13
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8, 9, 10
 - openSUSE 15.6
@@ -79,6 +79,9 @@ curl -O https://cdn.posit.co/r/ubuntu-2404/pkgs/r-${R_VERSION}_1_$(dpkg --print-
 
 # Debian 12
 curl -O https://cdn.posit.co/r/debian-12/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
+
+# Debian 13
+curl -O https://cdn.posit.co/r/debian-13/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 ```
 
 Then install the package:

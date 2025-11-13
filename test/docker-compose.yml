@@ -35,6 +35,15 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
+  debian-13:
+    image: debian:trixie
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=debian-13
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
   centos-7:
     image: centos:centos7
     command: |
