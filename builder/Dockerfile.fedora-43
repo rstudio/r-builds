@@ -1,0 +1,82 @@
+FROM fedora:43
+
+ENV OS_IDENTIFIER fedora-43
+
+RUN dnf -y upgrade \
+    && dnf -y install dnf-plugins-core \
+    && dnf -y install \
+    autoconf \
+    automake \
+    bzip2-devel \
+    cairo-devel \
+    flexiblas-devel \
+    gcc-c++ \
+    gcc-gfortran \
+    java-21-openjdk-devel \
+    libICE-devel \
+    libSM-devel \
+    libX11-devel \
+    libXmu-devel \
+    libXt-devel \
+    libcurl-devel \
+    libicu-devel \
+    libjpeg-devel \
+    libpng-devel \
+    libtiff-devel \
+    libtool \
+    make \
+    ncurses-devel \
+    pango-devel \
+    pcre-devel \
+    pcre2-devel \
+    readline-devel \
+    rpm-build \
+    tcl-devel \
+    tex \
+    texinfo-tex \
+    texlive-collection-latexrecommended \
+    tk-devel \
+    unzip \
+    valgrind-devel \
+    which \
+    wget \
+    xz-devel \
+    zlib-devel \
+    && dnf clean all
+
+RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(cat /tmp/arch).rpm" && \
+    dnf install -y "nfpm_$(cat /tmp/arch).rpm" && \
+    rm "nfpm_$(cat /tmp/arch).rpm"
+
+RUN chmod 0777 /opt
+
+# Configure flags for that don't use the defaults in build.sh
+ENV CONFIGURE_OPTIONS="\
+    --enable-R-shlib \
+    --with-tcltk \
+    --enable-memory-profiling \
+    --with-x \
+    --with-system-valgrind-headers \
+    --with-tcl-config=/usr/lib64/tclConfig.sh \
+    --with-tk-config=/usr/lib64/tkConfig.sh \
+    --enable-prebuilt-html \
+    --with-blas=flexiblas \
+    --with-lapack=flexiblas"
+
+# Make sure that patching Java does not break R.
+# R's default JAVA_HOME path includes the exact Java version on CentOS/RHEL, which
+# requires users to run `R CMD javareconf` even on minor/patch upgrades. Use the
+# major version symlink to avoid this.
+# https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Java-support
+# https://solutions.posit.co/envs-pkgs/using-rjava/
+ENV JAVA_HOME=/usr/lib/jvm/jre-11-openjdk
+
+# R 3.x requires PCRE2 for Pango support on RHEL 9
+ENV INCLUDE_PCRE2_IN_R_3 yes
+
+COPY package.fedora-43 /package.sh
+COPY build.sh .
+COPY patches /patches
+ENTRYPOINT ./build.sh
