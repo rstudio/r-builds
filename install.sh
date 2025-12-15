@@ -69,13 +69,13 @@ detect_os () {
   then
     distro="LEAP12"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:opensuse:leap:15 ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:opensuse:leap:1 ]]
   then
-   distro="SLES15"
+   distro="SLES1X"
   fi
-  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:suse:sles:15 ]]
+  if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:/o:suse:sles:1 ]]
   then
-   distro="LEAP15"
+   distro="LEAP1X"
   fi
   if [[ $(cat /etc/os-release | grep -e "^CPE_NAME\=*" | cut -f 2 -d '=') =~ cpe:2.3:o:amazon:amazon_linux:2 ]]
   then
@@ -115,7 +115,7 @@ detect_os_version () {
   if [[ "${os}" == "Ubuntu" ]] || [[ "${os}" == "Debian" ]]; then
     cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/[".]//g'
   fi
-  if [[ "${os}" == "SLES15" ]] || [[ "${os}" == "LEAP15" ]]; then
+  if [[ "${os}" == "SLES1X" ]] || [[ "${os}" == "LEAP1X" ]]; then
     cat /etc/os-release | grep -e "^VERSION_ID\=*" | cut -f 2 -d '=' | sed -e 's/[".]//g'
   fi
   # reuse rhel7 binaries for amazon
@@ -128,7 +128,7 @@ detect_os_version () {
 detect_installer_type () {
   os=$1
   case $os in
-    "RedHat" | "Fedora" | "CentOS" | "LEAP12" | "LEAP15" | "SLES12" | "SLES15" | "Amazon" | "Alma" | "Rocky" | "Oracle")
+    "RedHat" | "Fedora" | "CentOS" | "LEAP12" | "LEAP1X" | "SLES12" | "SLES1X" | "Amazon" | "Alma" | "Rocky" | "Oracle")
       echo "rpm"
       ;;
     "Ubuntu" | "Debian")
@@ -175,7 +175,7 @@ download_name () {
     "Ubuntu" | "Debian")
       echo "r-${version}_1_${deb_arch}.deb"
       ;;
-    "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
+    "LEAP12" | "LEAP1X" | "SLES12" | "SLES1X")
       echo "R-${version}-1-1.${rpm_arch}.rpm"
       ;;
   esac
@@ -213,8 +213,10 @@ download_url () {
       "LEAP12" | "SLES12")
         echo "${CDN_URL}/opensuse-42/pkgs/${name}"
         ;;
-      "LEAP15" | "SLES15")
-        if [ "${ver}" -ge 156 ]; then
+      "LEAP1X" | "SLES1X")
+        if [ "${ver}" -ge 160 ]; then
+          echo "${CDN_URL}/opensuse-160/pkgs/${name}"
+        elif [ "${ver}" -ge 156 ]; then
           echo "${CDN_URL}/opensuse-156/pkgs/${name}"
         elif [ "${ver}" -ge 155 ]; then
           echo "${CDN_URL}/opensuse-155/pkgs/${name}"
@@ -329,7 +331,7 @@ install_rpm () {
       echo "Installing ${installer_name}..."
       ${SUDO} yum install ${yes} "${installer_name}"
       ;;
-    "LEAP12" | "LEAP15" | "SLES12" | "SLES15")
+    "LEAP12" | "LEAP1X" | "SLES12" | "SLES1X")
       if ! has_sudo "zypper"; then
         echo "Must have sudo privileges to run zypper"
         exit 1
@@ -359,7 +361,7 @@ install_pre () {
     "SLES12")
       install_python_backports
       ;;
-    "LEAP12" | "LEAP15" | "SLES15")
+    "LEAP12" | "LEAP1X" | "SLES1X")
       ;;
   esac
 }
