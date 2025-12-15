@@ -129,6 +129,19 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
+  opensuse-160:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.opensuse-160
+    image: r-builds:opensuse-160
+    volumes:
+      - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   fedora-41:
     command: ./build.sh
     environment:

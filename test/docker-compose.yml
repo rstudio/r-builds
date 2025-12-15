@@ -91,6 +91,15 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
+  opensuse-160:
+    image: opensuse/leap:16.0
+    command: /r-builds/test/test-zypper.sh
+    environment:
+      - OS_IDENTIFIER=opensuse-160
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
   fedora-41:
     image: fedora:41
     command: /r-builds/test/test-yum.sh
