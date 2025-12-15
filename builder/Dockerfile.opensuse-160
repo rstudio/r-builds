@@ -56,6 +56,7 @@ RUN zypper --non-interactive --gpg-auto-import-keys -n install \
     wget \
     xdg-utils \
     xorg-x11-util-devel \
+    libXss-devel \
     xz-devel \
     zip \
     zlib-devel \

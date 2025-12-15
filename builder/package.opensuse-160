@@ -77,7 +77,7 @@ depends:
 - libopenblas_pthreads-devel
 - libpango-1_0-0
 - libpng16-16
-- libreadline7
+- libreadline8
 - libtiff6
 ${zstd_libs}
 - make
