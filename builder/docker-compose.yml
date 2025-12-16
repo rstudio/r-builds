@@ -168,3 +168,16 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
+  fedora-43:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.fedora-43
+    image: r-builds:fedora-43
+    volumes:
+      - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
