@@ -23,9 +23,9 @@ R binaries are built for the following Linux operating systems:
 - Debian 12, 13
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8, 9, 10
-- openSUSE 15.6
+- openSUSE 15.6, 16.0
 - SUSE Linux Enterprise 15 SP6
-- Fedora 41, 42
+- Fedora 41, 42, 43
 
 Operating systems are supported until their vendor end-of-support dates, which
 can be found on the [Posit Platform Support](https://posit.co/about/platform-support/)
@@ -153,6 +153,9 @@ Download the rpm package:
 ```bash
 # openSUSE 15.6 / SLES 15 SP6
 curl -O https://cdn.posit.co/r/opensuse-156/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
+
+# openSUSE 16.0
+curl -O https://cdn.posit.co/r/opensuse-160/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
 Then install the package:
@@ -169,6 +172,9 @@ curl -O https://cdn.posit.co/r/fedora-41/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 
 # Fedora 42
 curl -O https://cdn.posit.co/r/fedora-42/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
+
+# Fedora 43
+curl -O https://cdn.posit.co/r/fedora-43/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
 Then install the package:
