@@ -41,6 +41,28 @@ on:
           - ''
           - staging
           - production
+      package_version:
+        description: |
+          Package version for Cloudsmith publishing (e.g., "1", "2", or "20241014" for date-based).
+          Only used if publish_cloudsmith is set. Defaults to "1".
+        required: false
+        default: '1'
+        type: string
+      publish_cloudsmith:
+        description: |
+          Publish to Cloudsmith? Specify repository like "posit/open/r-builds" or leave empty to skip.
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - posit/open/r-builds
+      cloudsmith_dry_run:
+        description: |
+          Test Cloudsmith upload without actually publishing.
+        required: false
+        default: false
+        type: boolean
   workflow_call:
     inputs:
       platforms:
@@ -70,15 +92,36 @@ on:
         required: false
         default: ''
         type: string
+      package_version:
+        description: |
+          Package version for Cloudsmith publishing (e.g., "1", "2", or "20241014" for date-based).
+          Only used if publish_cloudsmith is set. Defaults to "1".
+        required: false
+        default: '1'
+        type: string
+      publish_cloudsmith:
+        description: |
+          Publish to Cloudsmith? Specify repository like "posit/open/r-builds" or leave empty to skip.
+        required: false
+        default: ''
+        type: string
+      cloudsmith_dry_run:
+        description: |
+          Test Cloudsmith upload without actually publishing.
+        required: false
+        default: false
+        type: boolean
     secrets:
       AWS_PUBLISH_ROLE:
-        required: true
+        required: false
       AWS_REGION:
-        required: true
+        required: false
       S3_BUCKET_STAGING:
-        required: true
+        required: false
       S3_BUCKET_PRODUCTION:
-        required: true
+        required: false
+      CLOUDSMITH_API_KEY:
+        required: false
 
 permissions:
   id-token: write
@@ -210,12 +253,25 @@ jobs:
 
       - name: Build R
         run: |
-          R_VERSION=${{ matrix.r_version }} make build-r-${{ matrix.platform }}
+          R_VERSION=${{ matrix.r_version }} \
+          PACKAGE_VERSION=${{ inputs.package_version }} \
+          make build-r-${{ matrix.platform }}
 
       - name: Test R
         run: |
           R_VERSION=${{ matrix.r_version }} make test-r-${{ matrix.platform }}
       
+      - name: Upload packages for Cloudsmith
+        if: ${{ inputs.publish_cloudsmith != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: r-${{ matrix.r_version }}-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            builder/integration/tmp/${{ matrix.platform }}/*.deb
+            builder/integration/tmp/${{ matrix.platform }}/*.rpm
+          retention-days: 7
+          if-no-files-found: warn
+
       - name: Configure AWS Credentials
         if: ${{ inputs.publish != '' }}
         uses: aws-actions/configure-aws-credentials@v4
@@ -223,7 +279,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Publish R
+      - name: Publish R to S3
         if: ${{ inputs.publish != '' }}
         run: |
           echo "Publishing R for ${{ inputs.publish }}"
@@ -259,3 +315,115 @@ jobs:
           s3_bucket=${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}
           versions=$(echo '${{ needs.setup-matrix.outputs.r_versions }}' | jq -r 'join(",")')
           python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"
+
+  cloudsmith-publish:
+    if: ${{ inputs.publish_cloudsmith != '' }}
+    needs: [build, setup-matrix]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+    name: Cloudsmith ${{ matrix.platform }}-${{ matrix.arch }} (R ${{ matrix.r_version }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cloudsmith-cli
+        run: pip install --upgrade cloudsmith-cli
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: r-${{ matrix.r_version }}-${{ matrix.platform }}-${{ matrix.arch }}
+          path: packages/
+
+      - name: Determine package type and Cloudsmith distro
+        id: pkg-info
+        run: |
+          case "${{ matrix.platform }}" in
+            ubuntu-2004)
+              echo "distro=ubuntu/focal" >> $GITHUB_OUTPUT
+              echo "pkg_type=deb" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
+              ;;
+            ubuntu-2204)
+              echo "distro=ubuntu/jammy" >> $GITHUB_OUTPUT
+              echo "pkg_type=deb" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
+              ;;
+            ubuntu-2404)
+              echo "distro=ubuntu/noble" >> $GITHUB_OUTPUT
+              echo "pkg_type=deb" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
+              ;;
+            debian-12)
+              echo "distro=debian/bookworm" >> $GITHUB_OUTPUT
+              echo "pkg_type=deb" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
+              ;;
+            centos-7)
+              echo "distro=el/7" >> $GITHUB_OUTPUT
+              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
+              ;;
+            centos-8)
+              echo "distro=el/8" >> $GITHUB_OUTPUT
+              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
+              ;;
+            rhel-9)
+              echo "distro=el/9" >> $GITHUB_OUTPUT
+              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
+              ;;
+            rhel-10)
+              echo "distro=el/10" >> $GITHUB_OUTPUT
+              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
+              ;;
+            opensuse-156)
+              echo "distro=opensuse/15.6" >> $GITHUB_OUTPUT
+              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
+              ;;
+            fedora-41)
+              echo "distro=fedora/41" >> $GITHUB_OUTPUT
+              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
+              ;;
+            fedora-42)
+              echo "distro=fedora/42" >> $GITHUB_OUTPUT
+              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "::error::Unknown platform: ${{ matrix.platform }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Find and publish package
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+        run: |
+          pkg_file=$(find packages/ -name "${{ steps.pkg-info.outputs.pkg_pattern }}" -type f | head -1)
+          
+          if [[ -z "$pkg_file" || ! -f "$pkg_file" ]]; then
+            echo "::warning::Package not found for ${{ matrix.platform }}, R ${{ matrix.r_version }}, ${{ matrix.arch }}"
+            exit 0
+          fi
+
+          DRY_RUN_FLAG=""
+          if [[ "${{ inputs.cloudsmith_dry_run }}" == "true" ]]; then
+            echo "Running in dry-run mode"
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          echo "Publishing $pkg_file to ${{ inputs.publish_cloudsmith }}/${{ steps.pkg-info.outputs.distro }}"
+          echo "Package version: ${{ inputs.package_version }}"
+          
+          cloudsmith push ${{ steps.pkg-info.outputs.pkg_type }} \
+            --republish \
+            --verbose \
+            $DRY_RUN_FLAG \
+            ${{ inputs.publish_cloudsmith }}/${{ steps.pkg-info.outputs.distro }} \
+            "$pkg_file"
