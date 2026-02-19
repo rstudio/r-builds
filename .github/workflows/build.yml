@@ -371,6 +371,11 @@ jobs:
               echo "pkg_type=deb" >> $GITHUB_OUTPUT
               echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
               ;;
+            debian-13)
+              echo "distro=debian/trixie" >> $GITHUB_OUTPUT
+              echo "pkg_type=deb" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
+              ;;
             centos-7)
               echo "distro=el/7" >> $GITHUB_OUTPUT
               echo "pkg_type=rpm" >> $GITHUB_OUTPUT
@@ -396,6 +401,11 @@ jobs:
               echo "pkg_type=rpm" >> $GITHUB_OUTPUT
               echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
               ;;
+            opensuse-160)
+              echo "distro=opensuse/16.0" >> $GITHUB_OUTPUT
+              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
+              ;;
             fedora-41)
               echo "distro=fedora/41" >> $GITHUB_OUTPUT
               echo "pkg_type=rpm" >> $GITHUB_OUTPUT
@@ -403,6 +413,11 @@ jobs:
               ;;
             fedora-42)
               echo "distro=fedora/42" >> $GITHUB_OUTPUT
+              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
+              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
+              ;;
+            fedora-43)
+              echo "distro=fedora/43" >> $GITHUB_OUTPUT
               echo "pkg_type=rpm" >> $GITHUB_OUTPUT
               echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
               ;;
