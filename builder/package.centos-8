@@ -23,7 +23,7 @@ fi
 #
 # However, as of R 4.2.3, EPEL 8's R no longer uses shared BLAS and now links to an
 # external OpenBLAS (OpenMP). This means EPEL R no longer has a swappable BLAS and
-# create post-install script required for openblas
+# is no longer compatible with these R builds.
 cat <<EOF >> /post-install.sh
 mv ${R_INSTALL_PATH}/lib/R/lib/libRblas.so ${R_INSTALL_PATH}/lib/R/lib/libRblas.so.keep
 ln -s /usr/lib64/libopenblasp.so.0 ${R_INSTALL_PATH}/lib/R/lib/libRblas.so

@@ -43,10 +43,10 @@ on:
           - production
       package_version:
         description: |
-          Package version for Cloudsmith publishing (e.g., "1", "2", or "20241014" for date-based).
-          Only used if publish_cloudsmith is set. Defaults to "1".
+          Package version override for Cloudsmith publishing (e.g., "2", or "20241014" for date-based).
+          If empty, reads per-platform versions from package-versions.json.
         required: false
-        default: '1'
+        default: ''
         type: string
       publish_cloudsmith:
         description: |
@@ -94,10 +94,10 @@ on:
         type: string
       package_version:
         description: |
-          Package version for Cloudsmith publishing (e.g., "1", "2", or "20241014" for date-based).
-          Only used if publish_cloudsmith is set. Defaults to "1".
+          Package version override for Cloudsmith publishing (e.g., "2", or "20241014" for date-based).
+          If empty, reads per-platform versions from package-versions.json.
         required: false
-        default: '1'
+        default: ''
         type: string
       publish_cloudsmith:
         description: |
@@ -251,10 +251,21 @@ jobs:
             --load \
             builder
 
+      - name: Resolve package version
+        id: pkg-version
+        run: |
+          if [[ -n "${{ inputs.package_version }}" ]]; then
+            echo "version=${{ inputs.package_version }}" >> $GITHUB_OUTPUT
+          else
+            version=$(jq -r '."${{ matrix.platform }}" // 1' package-versions.json)
+            echo "version=$version" >> $GITHUB_OUTPUT
+          fi
+          echo "Using package version: $(cat $GITHUB_OUTPUT | grep version= | cut -d= -f2)"
+
       - name: Build R
         run: |
           R_VERSION=${{ matrix.r_version }} \
-          PACKAGE_VERSION=${{ inputs.package_version }} \
+          PACKAGE_VERSION=${{ steps.pkg-version.outputs.version }} \
           make build-r-${{ matrix.platform }}
 
       - name: Test R
@@ -419,7 +430,6 @@ jobs:
           fi
 
           echo "Publishing $pkg_file to ${{ inputs.publish_cloudsmith }}/${{ steps.pkg-info.outputs.distro }}"
-          echo "Package version: ${{ inputs.package_version }}"
           
           cloudsmith push ${{ steps.pkg-info.outputs.pkg_type }} \
             --republish \
