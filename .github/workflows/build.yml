@@ -44,7 +44,7 @@ on:
       package_version:
         description: |
           Package version override for Cloudsmith publishing (e.g., "2", or "20241014" for date-based).
-          If empty, reads per-platform versions from package-versions.json.
+          If empty, reads per-platform/R-version versions from package-versions.json (defaulting to 1).
         required: false
         default: ''
         type: string
@@ -95,7 +95,7 @@ on:
       package_version:
         description: |
           Package version override for Cloudsmith publishing (e.g., "2", or "20241014" for date-based).
-          If empty, reads per-platform versions from package-versions.json.
+          If empty, reads per-platform/R-version versions from package-versions.json (defaulting to 1).
         required: false
         default: ''
         type: string
@@ -257,7 +257,7 @@ jobs:
           if [[ -n "${{ inputs.package_version }}" ]]; then
             echo "version=${{ inputs.package_version }}" >> $GITHUB_OUTPUT
           else
-            version=$(jq -r '."${{ matrix.platform }}" // 1' package-versions.json)
+            version=$(jq -r '."${{ matrix.platform }}"."${{ matrix.r_version }}" // 1' package-versions.json)
             echo "version=$version" >> $GITHUB_OUTPUT
           fi
           echo "Using package version: $(cat $GITHUB_OUTPUT | grep version= | cut -d= -f2)"

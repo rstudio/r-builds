@@ -194,7 +194,7 @@ https://cloudsmith.io/~posit/repos/open/setup/
 
 ### Package Versions
 
-- **Stable releases**: Packages are versioned per-platform, tracked in `package-versions.json` at the repo root. When packaging changes are made for a specific platform (e.g., dependency updates, post-install script fixes), only that platform's version is incremented.
+- **Stable releases**: Packages are versioned per-platform and per-R-version in `package-versions.json`. Only builds that need a version bump get an entry; everything else defaults to version `1`.
 - **Development builds**: Packages use date-based versions (e.g., `r-devel_20251027`)
 
 New development builds are published daily at 4 AM UTC and can be updated in place using your package manager.
@@ -393,9 +393,20 @@ R builds can be published to Cloudsmith repositories in addition to S3. To publi
 1. Set `publish_cloudsmith` to your Cloudsmith repository (e.g., `posit/open/r-builds`)
 2. Optionally set `cloudsmith_dry_run: true` for testing
 
-Package versions for stable releases are managed per-platform in `package-versions.json`.
-When making packaging changes to a specific platform, bump that platform's version in the file.
-The `package_version` workflow input can be used to override all platforms with a single version
+Package versions for stable releases are managed in `package-versions.json`, keyed by
+platform and R version. Builds without an entry default to version `1`. Only add entries
+when a version bump is needed (e.g., a packaging fix for a specific R version or platform).
+
+```json
+// Example: bump centos-8 R 4.2.3 to version 2 after a targeted fix
+{
+  "centos-8": {
+    "4.2.3": 2
+  }
+}
+```
+
+The `package_version` workflow input can override all versions with a single value
 (used by daily devel builds which pass a `YYYYMMDD` date string).
 
 **Example: Publishing a stable release to Cloudsmith**
@@ -405,7 +416,7 @@ r_versions: 4.4.2
 publish: production          # Also publish to S3
 publish_cloudsmith: posit/open/r-builds
 cloudsmith_dry_run: false
-# package_version is read from package-versions.json per platform
+# package_version is read from package-versions.json per platform/R-version
 ```
 
 **Example: Testing Cloudsmith publishing with a version override**
@@ -417,8 +428,8 @@ publish_cloudsmith: posit/open/r-builds-test
 cloudsmith_dry_run: true
 ```
 
-**Note**: Cloudsmith repositories have force-overwriting disabled. To republish the same R version
-for a platform, increment that platform's version in `package-versions.json`. Daily devel builds
+**Note**: Cloudsmith repositories have force-overwriting disabled. To republish a build,
+add or increment its entry in `package-versions.json`. Daily devel builds
 automatically use date-based versions to avoid conflicts.
 
 ## Testing
