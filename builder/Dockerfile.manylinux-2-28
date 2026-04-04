@@ -1,0 +1,30 @@
+FROM r-builds:centos-8
+
+ENV OS_IDENTIFIER manylinux-2-28
+
+# Install OpenBLAS (threaded) for bundling into the portable R build.
+# The centos-8 build uses R's internal reference BLAS and swaps it at RPM install time.
+# For manylinux, we install OpenBLAS at build time so auditwheel-r can bundle it.
+RUN dnf -y install openblas-threads && dnf clean all
+
+# Install Python 3.12 for auditwheel-r
+RUN dnf -y install python3.12 python3.12-pip && dnf clean all
+
+# Install patchelf 0.17.2 (avoid 0.18.0 per known issues)
+RUN if [ "$(arch)" == "aarch64" ]; then PATCHELF_ARCH=aarch64; else PATCHELF_ARCH=x86_64; fi && \
+    PATCHELF_VER=0.17.2 && \
+    curl -fsSL -o patchelf.tar.gz "https://github.com/NixOS/patchelf/releases/download/${PATCHELF_VER}/patchelf-${PATCHELF_VER}-${PATCHELF_ARCH}.tar.gz" && \
+    tar -xvf patchelf.tar.gz -C /usr/local && \
+    chmod +x /usr/local/bin/patchelf && \
+    rm patchelf.tar.gz
+
+# Install auditwheel-r. Build a wheel from the local source and copy it in.
+# To install from the private GitHub repo instead:
+#   RUN dnf -y install git && pip3.12 install auditwheel-r@git+https://github.com/rstudio/auditwheel-r.git
+COPY auditwheel_r-0.0.1-py3-none-any.whl /tmp/
+RUN pip3.12 install /tmp/auditwheel_r-0.0.1-py3-none-any.whl && rm /tmp/auditwheel_r-0.0.1-py3-none-any.whl
+
+COPY package.manylinux-2-28 /package.sh
+COPY build.sh .
+COPY patches /patches
+ENTRYPOINT ./build.sh

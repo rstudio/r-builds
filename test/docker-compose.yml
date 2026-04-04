@@ -64,6 +64,15 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
+  manylinux-2-28:
+    image: ubuntu:focal
+    command: /r-builds/test/test-manylinux.sh
+    environment:
+      - OS_IDENTIFIER=manylinux-2-28
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
   rhel-9:
     image: rockylinux:9
     command: /r-builds/test/test-yum.sh

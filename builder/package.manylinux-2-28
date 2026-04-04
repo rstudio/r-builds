@@ -1,0 +1,229 @@
+#!/bin/bash
+set -e
+
+# package.manylinux-2-28
+#
+# Post-build portability script for manylinux_2_28 R builds.
+# Called by build.sh after compile_r() installs R to $R_INSTALL_PATH.
+#
+# This script:
+# 1. Swaps reference BLAS with OpenBLAS (for performance)
+# 2. Runs auditwheel-r to bundle system library dependencies
+# 3. Makes R_HOME self-detecting for relocatability
+# 4. Adds RPATH entries so the exec binary can find libR.so
+
+if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
+  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
+fi
+
+R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
+
+echo ">>> Phase 1: BLAS setup"
+# Replace reference BLAS with OpenBLAS for performance.
+# The centos-8 build uses internal shared BLAS (--with-blas is not set).
+# Swap it with system OpenBLAS so auditwheel-r bundles a real BLAS.
+rm -f "${R_LIB_DIR}/libRblas.so"
+cp /usr/lib64/libopenblasp.so.0 "${R_LIB_DIR}/libRblas.so"
+
+echo ">>> Phase 2: auditwheel-r repair"
+# Bundle non-whitelisted system library dependencies into the R installation
+# and rewrite RPATHs to use $ORIGIN-relative paths.
+#
+# LD_LIBRARY_PATH must include R's lib dir so auditwheel-r can locate libRblas.so
+# and libRlapack.so (which are internal to the R installation).
+#
+# --no-update-tags: Don't write R package DESCRIPTION metadata (not applicable to R itself)
+# --no-strip: Preserve debug symbols (strip separately if desired)
+export LD_LIBRARY_PATH="${R_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+auditwheel-r repair "${R_INSTALL_PATH}/" --no-update-tags --no-strip
+
+echo ">>> Phase 3: Replace R installation with repaired version"
+rm -rf "${R_INSTALL_PATH}"
+mv wheelhouse "${R_INSTALL_PATH}"
+
+echo ">>> Phase 3b: Fix BLAS/LAPACK SONAMEs for package compilation"
+# After auditwheel-r repair, lib/R/lib/libRblas.so still has its original SONAME
+# (e.g., "libopenblasp.so.0"). When users compile R packages that link against
+# -lRblas (from Makeconf's BLAS_LIBS), the linker records this SONAME. At load time,
+# the dynamic linker then fails to find "libopenblasp.so.0" on the target system.
+#
+# Fix: set the SONAME to match the filename so packages record "libRblas.so" as their
+# dependency, which can always be found in R's lib dir via LD_LIBRARY_PATH.
+R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
+if [ -f "${R_LIB_DIR}/libRblas.so" ]; then
+  patchelf --set-soname libRblas.so "${R_LIB_DIR}/libRblas.so"
+  echo "  Fixed libRblas.so SONAME"
+fi
+if [ -f "${R_LIB_DIR}/libRlapack.so" ]; then
+  patchelf --set-soname libRlapack.so "${R_LIB_DIR}/libRlapack.so"
+  echo "  Fixed libRlapack.so SONAME"
+fi
+
+echo ">>> Phase 3c: Bundle Tcl/Tk library scripts"
+# The bundled libtcl8.6.so has hardcoded paths to Tcl scripts (e.g., /usr/share/tcl8.6
+# on CentOS 8). On a different distro, these paths may not exist or differ.
+# Bundle the Tcl/Tk library scripts into the R installation and set TCL_LIBRARY/TK_LIBRARY
+# in etc/ldpaths so R's tcltk package can always find them.
+TCL_SHARE="${R_INSTALL_PATH}/lib/R/share"
+if [ -d /usr/share/tcl8.6 ]; then
+  cp -a /usr/share/tcl8.6 "${TCL_SHARE}/tcl8.6"
+  echo "  Bundled tcl8.6 scripts"
+fi
+if [ -d /usr/share/tk8.6 ]; then
+  cp -a /usr/share/tk8.6 "${TCL_SHARE}/tk8.6"
+  echo "  Bundled tk8.6 scripts"
+fi
+# Add TCL_LIBRARY and TK_LIBRARY to etc/ldpaths so they're set when R starts
+if [ -f "${R_INSTALL_PATH}/lib/R/etc/ldpaths" ]; then
+  cat >> "${R_INSTALL_PATH}/lib/R/etc/ldpaths" <<'TCLEOF'
+
+# Tcl/Tk library paths (bundled for portability)
+: ${TCL_LIBRARY=${R_HOME}/share/tcl8.6}
+: ${TK_LIBRARY=${R_HOME}/share/tk8.6}
+export TCL_LIBRARY TK_LIBRARY
+
+# SSL CA certificate bundle (cross-distro portability)
+# CentOS/RHEL: /etc/pki/tls/certs/ca-bundle.crt
+# Debian/Ubuntu: /etc/ssl/certs/ca-certificates.crt
+# SUSE: /etc/ssl/ca-bundle.pem (or /var/lib/ca-certificates/ca-bundle.pem)
+if [ -z "${CURL_CA_BUNDLE:-}" ]; then
+  for _ca in /etc/ssl/certs/ca-certificates.crt \
+             /etc/pki/tls/certs/ca-bundle.crt \
+             /etc/ssl/ca-bundle.pem \
+             /var/lib/ca-certificates/ca-bundle.pem; do
+    if [ -f "$_ca" ]; then
+      CURL_CA_BUNDLE="$_ca"
+      export CURL_CA_BUNDLE
+      break
+    fi
+  done
+  unset _ca
+fi
+TCLEOF
+  echo "  Added TCL_LIBRARY/TK_LIBRARY to etc/ldpaths"
+fi
+
+echo ">>> Phase 4: Make bin/R relocatable"
+# The installed bin/R script has R_HOME_DIR hardcoded to the build-time prefix.
+# Replace it with self-detecting logic that derives R_HOME from the script's own
+# location, making R relocatable.
+#
+# This works across all R versions (3.0 through 4.5+) because the R_HOME_DIR
+# assignment has been structurally stable in R.sh.in since R 2.x.
+#
+# The original line looks like:
+#   R_HOME_DIR=/opt/R/4.4.2/lib/R
+# We replace it with logic that resolves symlinks and derives the path.
+sed -i '/^R_HOME_DIR=/,/^fi$/{
+  /^R_HOME_DIR=/c\
+R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"
+  /^if test/,/^fi$/d
+}' "${R_INSTALL_PATH}/bin/R"
+
+# Also fix Rscript if it has a hardcoded path
+if grep -q "^R_HOME_DIR=" "${R_INSTALL_PATH}/bin/Rscript" 2>/dev/null; then
+  sed -i 's|^R_HOME_DIR=.*|R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"|' \
+    "${R_INSTALL_PATH}/bin/Rscript"
+fi
+
+echo ">>> Phase 5: Verify library resolution"
+# auditwheel-r bundles non-whitelisted system libs into libs/.libs/ with $ORIGIN RPATHs.
+# libR.so and other R internal libs (libRblas.so, libRlapack.so) live in lib/R/lib/
+# and are found via LD_LIBRARY_PATH set by etc/ldpaths (sourced by bin/R before exec).
+#
+# We don't add libR.so RPATH entries because:
+# - The exec binary is non-PIE (EXEC type), and patchelf cannot expand its RPATH
+# - LD_LIBRARY_PATH from etc/ldpaths is the standard mechanism R uses
+echo "  auditwheel-r libs:"
+find "${R_INSTALL_PATH}" -name ".libs" -type d 2>/dev/null
+echo "  exec RPATH: $(patchelf --print-rpath "${R_INSTALL_PATH}/lib/R/bin/exec/R" 2>/dev/null)"
+
+echo ">>> Phase 6: Clean up"
+# Remove DESCRIPTION file created by auditwheel-r (R package metadata, not relevant here)
+rm -f "${R_INSTALL_PATH}/DESCRIPTION"
+
+echo ">>> Phase 7: Create DEB and RPM packages"
+# Create DEB and RPM packages from the portable R installation using nfpm.
+# Dependencies are minimal — only manylinux_2_28 whitelisted system libraries
+# that R expects but does not bundle (X11, cairo, pango, glib, Tcl/Tk runtime).
+# Build tools (gcc, gfortran, make) are listed so users can compile R packages.
+
+if [ "$(arch)" == "aarch64" ]; then NFPM_ARCH=arm64; else NFPM_ARCH=amd64; fi
+
+cat <<EOF > /tmp/nfpm-manylinux.yml
+name: r-${R_VERSION}
+version: 1
+version_schema: none
+arch: ${NFPM_ARCH}
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system (portable manylinux_2_28 build)
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPL-2
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+EOF
+
+# DEB package
+cat <<EOF > /tmp/nfpm-deb.yml
+$(cat /tmp/nfpm-manylinux.yml)
+section: universe/math
+priority: optional
+deb:
+  fields:
+    Bugs: https://github.com/rstudio/r-builds/issues
+depends:
+- ca-certificates
+- g++
+- gcc
+- gfortran
+- libc6
+- libcairo2
+- libglib2.0-0
+- libgomp1
+- libicu-dev
+- libpango-1.0-0
+- libpangocairo-1.0-0
+- libx11-6
+- libxt6
+- make
+- unzip
+- zip
+- zlib1g
+EOF
+
+echo "  Building DEB package..."
+nfpm package -f /tmp/nfpm-deb.yml -p deb -t "/tmp/output/${OS_IDENTIFIER}"
+
+# RPM package
+cat <<EOF > /tmp/nfpm-rpm.yml
+$(cat /tmp/nfpm-manylinux.yml)
+release: 1
+depends:
+- ca-certificates
+- gcc
+- gcc-c++
+- gcc-gfortran
+- glibc
+- libSM
+- libXt
+- libgomp
+- libicu
+- make
+- pango
+- unzip
+- which
+- zip
+- zlib
+EOF
+
+echo "  Building RPM package..."
+nfpm package -f /tmp/nfpm-rpm.yml -p rpm -t "/tmp/output/${OS_IDENTIFIER}"
+
+echo "  DEB/RPM packages:"
+ls -lh /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.deb /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.rpm 2>/dev/null || true
+ls -lh /tmp/output/${OS_IDENTIFIER}/R-${R_VERSION}*.rpm 2>/dev/null || true
+
+echo ">>> Done: R installation at ${R_INSTALL_PATH} is now manylinux_2_28 portable"
