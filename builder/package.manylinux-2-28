@@ -42,7 +42,6 @@ echo ">>> Phase 3: Fix BLAS/LAPACK SONAMEs for package compilation"
 #
 # Fix: set the SONAME to match the filename so packages record "libRblas.so" as their
 # dependency, which can always be found in R's lib dir via LD_LIBRARY_PATH.
-R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
 if [ -f "${R_LIB_DIR}/libRblas.so" ]; then
   patchelf --set-soname libRblas.so "${R_LIB_DIR}/libRblas.so"
   echo "  Fixed libRblas.so SONAME"
@@ -52,7 +51,7 @@ if [ -f "${R_LIB_DIR}/libRlapack.so" ]; then
   echo "  Fixed libRlapack.so SONAME"
 fi
 
-echo ">>> Phase 3c: Bundle Tcl/Tk library scripts"
+echo ">>> Phase 4: Bundle Tcl/Tk library scripts"
 # The bundled libtcl8.6.so has hardcoded paths to Tcl scripts (e.g., /usr/share/tcl8.6
 # on CentOS 8). On a different distro, these paths may not exist or differ.
 # Bundle the Tcl/Tk library scripts into the R installation and set TCL_LIBRARY/TK_LIBRARY
@@ -96,7 +95,7 @@ TCLEOF
   echo "  Added TCL_LIBRARY/TK_LIBRARY to etc/ldpaths"
 fi
 
-echo ">>> Phase 4: Make bin/R relocatable"
+echo ">>> Phase 5: Make bin/R relocatable"
 # The installed bin/R script has R_HOME_DIR hardcoded to the build-time prefix.
 # Replace it with self-detecting logic that derives R_HOME from the script's own
 # location, making R relocatable.
@@ -220,7 +219,7 @@ RSCRIPT_EOF
   echo "  Replaced $(basename "$(dirname "$rscript")")/Rscript with relocatable wrapper"
 done
 
-echo ">>> Phase 5: Verify library resolution"
+echo ">>> Phase 6: Verify library resolution"
 # delocate-r bundles non-allowed system libs into libs/.libs/ with $ORIGIN RPATHs.
 # libR.so and other R internal libs (libRblas.so, libRlapack.so) live in lib/R/lib/
 # and are found via LD_LIBRARY_PATH set by etc/ldpaths (sourced by bin/R before exec).
@@ -232,7 +231,7 @@ echo "  Bundled libs:"
 find "${R_INSTALL_PATH}" -name ".libs" -type d 2>/dev/null
 echo "  exec RPATH: $(patchelf --print-rpath "${R_INSTALL_PATH}/lib/R/bin/exec/R" 2>/dev/null)"
 
-echo ">>> Phase 6: Clean up"
+echo ">>> Phase 7: Clean up"
 # Remove DESCRIPTION file if created by delocate-r (shouldn't happen, but just in case)
 rm -f "${R_INSTALL_PATH}/DESCRIPTION"
 

@@ -101,8 +101,6 @@ while IFS= read -r dl_name; do
   dl_base=$(echo "$dl_name" | normalize)
   dl_hash=$(echo "$dl_name" | extract_hash)
   # Find matching lib in auditwheel output
-  aw_name=$(ls "${AW_DIR}" | normalize | grep -Fn "$dl_base" /tmp/aw-full.txt 2>/dev/null | head -1 || true)
-  # Use normalized names to find match
   aw_match=$(grep "^${dl_base}$" /tmp/aw.txt || true)
   if [ -n "$aw_match" ]; then
     # Find the auditwheel file with same normalized name

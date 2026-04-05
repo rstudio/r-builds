@@ -7,10 +7,105 @@ that builds R and then runs a post-build portability step: auditwheel-r + patche
 bundle system library dependencies into the R installation and rewrite RPATHs,
 producing portable R artifacts conforming to the manylinux_2_28 standard.
 
-Three distribution formats are produced from a single build:
-- **tar.gz** — for direct extraction to any path
-- **DEB** — for `apt install` on Debian/Ubuntu
-- **RPM** — for `dnf install` / `yum install` on RHEL/Fedora/SUSE
+A portable **tar.gz** is produced for direct extraction to any path on glibc 2.28+ systems.
+
+## Installation
+
+### Quick start
+
+```bash
+R_VERSION=4.4.2
+
+# Download (or copy from build output)
+# tar.gz is at: builder/integration/tmp/r/manylinux-2-28/R-${R_VERSION}-manylinux-2-28.tar.gz
+
+# Extract
+mkdir -p /opt/R
+tar xzf R-${R_VERSION}-manylinux-2-28.tar.gz -C /opt/R
+
+# Add to PATH
+export PATH=/opt/R/${R_VERSION}/bin:$PATH
+
+# Verify
+R --version
+```
+
+### System dependencies
+
+The manylinux build bundles most library dependencies (~65 shared libraries),
+but some system packages are still required. These fall into three categories:
+
+#### 1. Runtime: SSL/TLS certificates (required for HTTPS)
+
+R auto-detects the CA certificate bundle via `CURL_CA_BUNDLE` (set in
+`etc/ldpaths`), but the certificate files themselves must be installed.
+
+| Distro | Package | Cert path |
+|---|---|---|
+| Ubuntu/Debian | `ca-certificates` | `/etc/ssl/certs/ca-certificates.crt` |
+| RHEL/Fedora/Rocky | `ca-certificates` | `/etc/pki/tls/certs/ca-bundle.crt` |
+| openSUSE/SLES | `ca-certificates` | `/etc/ssl/ca-bundle.pem` |
+
+#### 2. Optional: build tools for `R CMD INSTALL` (for source packages)
+
+Only needed if you install R packages from source that contain C/C++/Fortran
+code. R's `Makeconf` links against `-lpcre2-8 -llzma -lbz2 -lz -licuuc -licui18n`,
+so the corresponding `-dev`/`-devel` packages must also be installed.
+
+**Ubuntu/Debian:**
+```bash
+apt-get install -y \
+  build-essential gfortran \
+  libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev
+```
+
+**RHEL/Fedora/Rocky:**
+```bash
+dnf install -y \
+  gcc gcc-c++ gcc-gfortran make \
+  pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
+```
+
+**openSUSE/SLES:**
+```bash
+zypper install -y \
+  gcc gcc-c++ gcc-fortran make \
+  pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
+```
+
+#### 3. Optional: graphics libraries (for cairo/pango plotting)
+
+These are **not bundled** (they depend on system font configuration and display
+drivers). Only needed if R plots use cairo-based graphics devices.
+
+| Distro | Packages |
+|---|---|
+| Ubuntu/Debian | `libcairo2 libpango-1.0-0 libpangocairo-1.0-0` |
+| RHEL/Fedora/Rocky | `cairo pango` |
+| openSUSE/SLES | `libcairo2 libpango-1_0-0` |
+
+### What's bundled (not needed on the system)
+
+The tarball bundles all of the following, no system packages required:
+
+- OpenBLAS (as libRblas.so), LAPACK (as libRlapack.so)
+- OpenSSL / libcurl / libssh2
+- readline, ncurses
+- libtiff, libjpeg, libpng, freetype, fontconfig, harfbuzz
+- X11 libs (libX11, libSM, libICE, libXt, libXext, libXrender, libXmu)
+- GLib, GObject
+- Tcl/Tk (shared libs + scripts)
+- ICU data/runtime libraries
+
+### Relocatability
+
+The tarball can be extracted to any path. R auto-detects its location at
+startup. The standard install path is `/opt/R/<version>/`, but any path works:
+
+```bash
+tar xzf R-4.4.2-manylinux-2-28.tar.gz -C /usr/local
+/usr/local/4.4.2/bin/R --version  # works
+```
 
 ## Background
 
@@ -62,8 +157,7 @@ base but adds portability tooling (patchelf, auditwheel-r) and a portability
 post-processing step. This gives us:
 
 - `Dockerfile.manylinux-2-28` — extends centos-8 with patchelf + auditwheel-r
-- `package.manylinux-2-28` — runs portability post-processing, then produces DEB and
-  RPM packages (via nfpm) alongside the tar.gz
+- `package.manylinux-2-28` — runs portability post-processing (delocate-r.py)
 - Standard Makefile/compose targets: `build-r-manylinux-2-28`, `test-r-manylinux-2-28`, etc.
 
 ### X11 support: Keep it (Option B)
@@ -145,11 +239,9 @@ Runs inside Docker after `build.sh` compiles and installs R:
 
 8. **Clean up artifacts**: Remove top-level `DESCRIPTION` file if created by auditwheel-r.
 
-9. **Create DEB and RPM packages**: Use nfpm (already in the centos-8 base image) to
-   package the portable R installation as both `.deb` and `.rpm`. Dependencies are
-   minimal — only manylinux_2_28 allowed libraries (X11, cairo, pango, glib) and
-   build tools (gcc, gfortran, make). The tar.gz is created separately by `archive_r`
-   in `build.sh`.
+The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are produced
+   because distro-specific package dependencies would defeat the purpose of a
+   universal build.
 
 ### Phase 3: Integration
 
@@ -168,7 +260,7 @@ Runs inside Docker after `build.sh` compiles and installs R:
 ## New Files
 
 - `builder/Dockerfile.manylinux-2-28` — Docker image extending centos-8 with portability tools
-- `builder/package.manylinux-2-28` — Post-build portability script (produces tar.gz, DEB, and RPM)
+- `builder/package.manylinux-2-28` — Post-build portability script
 
 ## Verification Checklist
 
@@ -179,8 +271,7 @@ Runs inside Docker after `build.sh` compiles and installs R:
    `LD_LIBRARY_PATH` from `etc/ldpaths` rather than RPATH)
 5. On Ubuntu 20.04: R starts, `capabilities()` shows TRUE for jpeg/png/tiff/tcltk/cairo/ICU/libcurl
 6. Relocatability: `mv /opt/R/<ver> /tmp/R-test && /tmp/R-test/bin/R -e 'cat("works\n")'`
-7. DEB install on Ubuntu 20.04: `apt install ./r-4.4.2_1_amd64.deb` → R works
-8. RPM install on Rocky 9: `dnf install ./r-4.4.2-1-1.x86_64.rpm` → R works
+7. Tarball install on clean Ubuntu/Rocky/openSUSE: extract, R works
 
 ## Future Enhancements (v2)
 
@@ -302,18 +393,15 @@ wheel build, the pyelftools dependency, and the `Path` vs `str` bug we had to fi
 A new `manylinux-2-28` platform producing three portable R 4.4.2 distribution formats
 from a single build on Rocky 8 (glibc 2.28):
 
-- **tar.gz** (~115MB) — direct extraction, tested on Ubuntu 20.04
-- **DEB** (~120MB) — `apt install`, tested on Ubuntu 20.04
-- **RPM** (~122MB) — `dnf install`, tested on Rocky 9
+- **tar.gz** (~106MB) — direct extraction, tested on Ubuntu Noble, Rocky 8, Rocky 10, openSUSE 15.6
 
-All standard tests pass across all three formats: R starts, sessionInfo works,
+All standard tests pass: R starts, sessionInfo works,
 capabilities (jpeg/png/tiff/tcltk/cairo/ICU/libcurl all TRUE), package compilation
 with C/C++/Fortran + BLAS/LAPACK linking, HTTPS downloads, and relocatability (move R
 to an arbitrary path, it still works).
 
-The DEB/RPM packages declare only minimal dependencies — manylinux_2_28 allowed
-system libraries (X11, cairo, pango, glib) and build tools (gcc/g++/gfortran/make).
-Everything else is bundled.
+No DEB/RPM packages are produced — distro-specific dependencies would defeat the
+purpose of a universal build.
 
 ### Files created/modified
 
@@ -352,8 +440,7 @@ Phases match the actual code in `package.manylinux-2-28`:
    self-detection
 5. **Verify library resolution**: print RPATH info (informational only)
 6. **Clean up**: remove DESCRIPTION artifact created by auditwheel-r
-7. **Create DEB and RPM packages**: nfpm packages from the portable R installation
-   with minimal dependencies (allowed system libs + build tools only)
+7. **Done**: tar.gz created by `archive_r` in `build.sh`
 
 ### Issues encountered and how they were resolved
 
@@ -511,8 +598,8 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
    requires cert files to exist on disk), and manylinux_2_28 allowed libs (X11,
    pango, cairo, glib for full capabilities). The DEB/RPM packages declare these as
    dependencies so they are installed automatically; the tarball requires them to be
-   installed manually. On minimal containers (e.g., Ubuntu Noble), `ca-certificates`
-   is notably absent by default.
+   installed manually (see [Installation](#installation) above). On minimal containers
+   (e.g., Ubuntu Noble), `ca-certificates` is notably absent by default.
 
 ### Testing commands
 
@@ -520,31 +607,15 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
 # Build the Docker image
 docker compose -f builder/docker-compose.yml build manylinux-2-28
 
-# Build R — produces tar.gz, DEB, and RPM (takes ~10 min)
+# Build R (takes ~10 min)
 R_VERSION=4.4.2 docker compose -f builder/docker-compose.yml run --rm manylinux-2-28
 
-# Run tarball cross-distro test on Ubuntu 20.04
-docker run --rm \
-  -e R_VERSION=4.4.2 \
-  -e OS_IDENTIFIER=manylinux-2-28 \
-  -v "$(pwd)":/r-builds \
-  ubuntu:focal /r-builds/test/test-manylinux.sh
-
-# Or via docker compose
+# Run e2e tests on all 4 distros
 R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux-2-28
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux-2-28-centos-8
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux-2-28-rhel-10
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux-2-28-opensuse-156
 
-# Test DEB install on Ubuntu 20.04
-docker run --rm \
-  -v "$(pwd)/builder/integration/tmp":/tmp/output \
-  ubuntu:focal bash -c '
-    apt-get update -qq && DEBIAN_FRONTEND=noninteractive \
-    apt-get install -y /tmp/output/manylinux-2-28/r-4.4.2_1_amd64.deb && \
-    /opt/R/4.4.2/bin/R --version'
-
-# Test RPM install on Rocky 9
-docker run --rm \
-  -v "$(pwd)/builder/integration/tmp":/tmp/output \
-  rockylinux:9 bash -c '
-    dnf install -y /tmp/output/manylinux-2-28/r-4.4.2-1-1.x86_64.rpm && \
-    /opt/R/4.4.2/bin/R --version'
+# Run unit tests for delocate-r.py
+cd builder && python3 -m pytest test_delocate_r.py -v
 ```

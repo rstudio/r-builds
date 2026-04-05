@@ -334,8 +334,6 @@ def verify_repair(
     # Verify patched ELF binaries can resolve all bundled deps
     r_lib_path = str(r_path / "lib" / "R" / "lib")
     for elf in elf_needs:
-        for soname, resolved in ldd(elf, extra_lib_path=r_lib_path):
-            pass  # ldd itself doesn't report "not found" via our parser
         # Check raw ldd output for "not found"
         env = os.environ.copy()
         env["LD_LIBRARY_PATH"] = r_lib_path + ":" + env.get("LD_LIBRARY_PATH", "")

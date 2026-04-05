@@ -179,6 +179,56 @@ Then install the package:
 sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
+#### Portable (manylinux) - any Linux distro with glibc >= 2.28
+
+A portable tar.gz build is available that works across all supported Linux
+distributions without distro-specific packages. Most library dependencies are
+bundled; R auto-detects its install location so it can be extracted to any path.
+
+Download and extract:
+```bash
+curl -O https://cdn.posit.co/r/manylinux-2-28/pkgs/R-${R_VERSION}-manylinux-2-28.tar.gz
+sudo mkdir -p /opt/R
+sudo tar xzf R-${R_VERSION}-manylinux-2-28.tar.gz -C /opt/R
+```
+
+Install system dependencies:
+```bash
+# All distros: SSL/TLS certificates (required for HTTPS)
+# Ubuntu/Debian
+sudo apt-get install -y ca-certificates
+# RHEL/Fedora/Rocky
+sudo dnf install -y ca-certificates
+# openSUSE/SLES
+sudo zypper install -y ca-certificates
+```
+
+Optional - for installing R packages from source (`R CMD INSTALL`):
+```bash
+# Ubuntu/Debian
+sudo apt-get install -y build-essential gfortran \
+  libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev
+
+# RHEL/Fedora/Rocky
+sudo dnf install -y gcc gcc-c++ gcc-gfortran make \
+  pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
+
+# openSUSE/SLES
+sudo zypper install -y gcc gcc-c++ gcc-fortran make \
+  pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
+```
+
+Optional - for cairo/pango graphics devices:
+```bash
+# Ubuntu/Debian
+sudo apt-get install -y libcairo2 libpango-1.0-0 libpangocairo-1.0-0
+
+# RHEL/Fedora/Rocky
+sudo dnf install -y cairo pango
+
+# openSUSE/SLES
+sudo zypper install -y libcairo2 libpango-1_0-0
+```
 
 
 ### Verify R installation
