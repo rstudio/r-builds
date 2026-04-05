@@ -257,24 +257,12 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 
 - [x] Test other R versions -- locally tested R 3.1.3, 3.6.3, 4.0.5, 4.3.3, 4.4.2
       on Ubuntu Noble (all pass). devel is tested by CI on every push.
-- [ ] Makeconf relocatability (hardcoded paths break at non-standard install paths)
+- [x] Makeconf relocatability -- verified not an issue. Makeconf uses `$(R_HOME)`
+      for include/lib paths, which R resolves at runtime. Tested R CMD INSTALL at
+      `/usr/local/custom-R/` (non-standard path) successfully.
 - [ ] ARM64 support
 
 ## Future Enhancements (v2)
-
-### Makeconf relocatability
-
-`lib/R/etc/Makeconf` contains hardcoded absolute paths set at configure time (`prefix`,
-`exec_prefix`, `libdir`, etc.). These paths are used by `R CMD INSTALL` when compiling
-packages. At the canonical install path `/opt/R/<version>/`, this works fine. But for
-fully relocatable R (install at arbitrary paths), Makeconf needs these paths made
-relative to `R_HOME` or dynamically resolved. This is the main blocker for true
-relocatability and should be addressed in v2.
-
-Approach options:
-- Post-install sed to replace absolute prefix paths with `$(R_HOME)/..` relative equivalents
-- Runtime-generated Makeconf (like R does for `R_HOME` in the shell script)
-- Upstream R changes (unlikely to be accepted near-term)
 
 ### ARM64 support
 
@@ -487,24 +475,19 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
 
 ### Known limitations
 
-1. **Makeconf has hardcoded paths**: `lib/R/etc/Makeconf` contains absolute paths from
-   configure time (e.g., `-I/opt/R/4.4.2/lib/R/include`). Package compilation works
-   because R sets these values at runtime, but some Makeconf variables may break at
-   non-standard install paths. This is a v2 enhancement.
-
-2. **No runtime BLAS swapping**: Unlike the standard centos-8 build where
+1. **No runtime BLAS swapping**: Unlike the standard centos-8 build where
    `libRblas.so` is a symlink to system BLAS (allowing swaps to MKL, etc.), the
    portable build bundles OpenBLAS directly. Users cannot swap BLAS without rebuilding.
 
-3. **Tcl/Tk hardcoded to 8.6**: The bundled Tcl/Tk scripts assume version 8.6.
+2. **Tcl/Tk hardcoded to 8.6**: The bundled Tcl/Tk scripts assume version 8.6.
    If the build system's Tcl version changes, the phase needs updating.
 
-4. **`libxml` capability is FALSE**: R reports `libxml = FALSE` in `capabilities()`.
+3. **`libxml` capability is FALSE**: R reports `libxml = FALSE` in `capabilities()`.
    This is because the test checks for `libxml2` headers at compile time via
    `xml2-config`, which is a compile-time concern, not a runtime portability issue.
    R's internal XML support is unaffected.
 
-5. **Target system needs basic runtime libs**: While the builds are portable, the
+4. **Target system needs basic runtime libs**: While the builds are portable, the
    target system still needs: glibc >= 2.28, `ca-certificates` (for HTTPS),
    and `fontconfig` (for font configuration in plots). Optionally, a C/C++/Fortran
    compiler and dev packages are needed for compiling R packages from source.
