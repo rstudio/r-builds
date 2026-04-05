@@ -70,19 +70,8 @@ RUN if [ "$(arch)" == "aarch64" ]; then PATCHELF_ARCH=aarch64; else PATCHELF_ARC
     chmod +x /usr/local/bin/patchelf && \
     rm patchelf.tar.gz
 
-# Install auditwheel-r (for comparison with delocate-r.py)
-RUN dnf -y install python3.12 python3.12-pip && dnf clean all
-COPY auditwheel_r-0.0.1-py3-none-any.whl /tmp/
-RUN pip3.12 install /tmp/auditwheel_r-0.0.1-py3-none-any.whl && rm /tmp/auditwheel_r-0.0.1-py3-none-any.whl
-
-COPY delocate-r.sh /delocate-r.sh
-RUN chmod +x /delocate-r.sh
 COPY delocate-r.py /delocate-r.py
 RUN chmod +x /delocate-r.py
-COPY auditwheel-r-repair.py /auditwheel-r-repair.py
-RUN chmod +x /auditwheel-r-repair.py
-COPY compare-tools.sh /compare-tools.sh
-RUN chmod +x /compare-tools.sh
 COPY package.manylinux-2-28 /package.sh
 COPY build.sh .
 COPY patches /patches

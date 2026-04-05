@@ -237,7 +237,7 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 
 - `builder/Dockerfile.manylinux-2-28` -- Docker image extending centos-8 with portability tools
 - `builder/package.manylinux-2-28` -- Post-build portability script
-- `builder/delocate-r.py` -- Library bundling script (replaces auditwheel-r)
+- `builder/delocate-r.py` -- Library bundling script
 - `builder/test_delocate_r.py` -- Unit tests for delocate-r.py (51 tests)
 
 ## Verification Checklist
@@ -248,6 +248,12 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 3. On Ubuntu Noble: R starts, `capabilities()` shows TRUE for jpeg/png/tiff/tcltk/cairo/ICU/libcurl
 4. Relocatability: `mv /opt/R/<ver> /tmp/R-test && /tmp/R-test/bin/R -e 'cat("works\n")'`
 5. Tarball install on clean Ubuntu/Rocky/openSUSE: extract, R works
+
+## TODO
+
+- [ ] Test other R versions (R 3.x, R 4.0-4.3, devel)
+- [ ] Makeconf relocatability (hardcoded paths break at non-standard install paths)
+- [ ] ARM64 support
 
 ## Future Enhancements (v2)
 
@@ -321,8 +327,7 @@ purpose of a universal build.
 New files:
 - `builder/Dockerfile.manylinux-2-28` -- extends centos-8 with patchelf 0.17.2
 - `builder/package.manylinux-2-28` -- post-build portability script
-- `builder/delocate-r.py` -- library bundling script (replaces auditwheel-r)
-- `builder/delocate-r.sh` -- bash backup alternative
+- `builder/delocate-r.py` -- library bundling script
 - `builder/test_delocate_r.py` -- 51 unit tests for delocate-r.py
 - `test/test-manylinux.sh` -- cross-distro e2e tests
 
