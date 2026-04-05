@@ -216,14 +216,17 @@ Optional - for installing R packages from source (`R CMD INSTALL`):
 # Ubuntu/Debian
 sudo apt-get install -y build-essential gfortran \
   libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev
+  # For R 3.x, also install: libpcre3-dev
 
 # RHEL/Fedora/Rocky
 sudo dnf install -y gcc gcc-c++ gcc-gfortran make \
   pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
+  # For R 3.x, also install: pcre-devel
 
 # openSUSE/SLES
 sudo zypper install -y gcc gcc-c++ gcc-fortran make \
   pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
+  # For R 3.x, also install: pcre-devel
 ```
 
 

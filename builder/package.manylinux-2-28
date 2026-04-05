@@ -200,18 +200,18 @@ done
 # r_opts contains collected --options (no spaces in individual options)
 if [ $# -eq 0 ]; then
   # No file or -e: just R options
-  exec "${R_HOME}/bin/R" --no-echo --no-restore $r_opts
+  exec "${R_HOME}/bin/R" --slave --no-restore $r_opts
 elif [ "$1" = "-e" ]; then
   # -e expressions: pass through directly (preserves quoting via "$@")
-  exec "${R_HOME}/bin/R" --no-echo --no-restore $r_opts "$@"
+  exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "$@"
 else
   # File argument: convert to --file=, remaining args become --args
   file="$1"
   shift
   if [ $# -gt 0 ]; then
-    exec "${R_HOME}/bin/R" --no-echo --no-restore $r_opts "--file=$file" --args "$@"
+    exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "--file=$file" --args "$@"
   else
-    exec "${R_HOME}/bin/R" --no-echo --no-restore $r_opts "--file=$file"
+    exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "--file=$file"
   fi
 fi
 RSCRIPT_EOF

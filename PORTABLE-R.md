@@ -51,7 +51,8 @@ The bundled fontconfig library needs system font configuration files
 #### 2. Optional: build tools for `R CMD INSTALL` (for source packages)
 
 Only needed if you install R packages from source that contain C/C++/Fortran
-code. R's `Makeconf` links against `-lpcre2-8 -llzma -lbz2 -lz -licuuc -licui18n`,
+code. R's `Makeconf` links against `-lpcre2-8 -llzma -lbz2 -lz -licuuc -licui18n`
+(R 4.x) or `-lpcre -llzma -lbz2 -lz -licuuc -licui18n` (R 3.x),
 so the corresponding `-dev`/`-devel` packages must also be installed.
 
 **Ubuntu/Debian:**
@@ -59,6 +60,7 @@ so the corresponding `-dev`/`-devel` packages must also be installed.
 apt-get install -y \
   build-essential gfortran \
   libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev
+  # For R 3.x, also install: libpcre3-dev
 ```
 
 **RHEL/Fedora/Rocky:**
@@ -66,6 +68,7 @@ apt-get install -y \
 dnf install -y \
   gcc gcc-c++ gcc-gfortran make \
   pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
+  # For R 3.x, also install: pcre-devel
 ```
 
 **openSUSE/SLES:**
@@ -73,6 +76,7 @@ dnf install -y \
 zypper install -y \
   gcc gcc-c++ gcc-fortran make \
   pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
+  # For R 3.x, also install: pcre-devel
 ```
 
 ### What's bundled (not needed on the system)
@@ -251,7 +255,8 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 
 ## TODO
 
-- [ ] Test other R versions (R 3.x, R 4.0-4.3, devel)
+- [x] Test other R versions -- locally tested R 3.1.3, 3.6.3, 4.0.5, 4.3.3, 4.4.2
+      on Ubuntu Noble (all pass). devel is tested by CI on every push.
 - [ ] Makeconf relocatability (hardcoded paths break at non-standard install paths)
 - [ ] ARM64 support
 
