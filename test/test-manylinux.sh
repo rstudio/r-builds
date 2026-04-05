@@ -34,15 +34,17 @@ if command -v apt-get &>/dev/null; then
   apt-get install -y --no-install-recommends \
     build-essential gfortran ca-certificates less tar gzip \
     libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev \
-    tcl tk
+    fontconfig tcl tk
 elif command -v dnf &>/dev/null; then
   dnf install -y \
     gcc gcc-c++ gcc-gfortran make ca-certificates less which tar gzip \
-    pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
+    pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel \
+    fontconfig
 elif command -v zypper &>/dev/null; then
   zypper --non-interactive install \
     gcc gcc-c++ gcc-fortran make ca-certificates less which tar gzip \
-    pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
+    pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel \
+    fontconfig
 else
   echo "ERROR: No supported package manager found"
   exit 1
@@ -145,7 +147,7 @@ fi
 echo "  libRblas.so SONAME: $RBLAS_SONAME (OK)"
 
 # libRblas must NOT be in .libs/ (it lives in lib/R/lib/ and is loaded via LD_LIBRARY_PATH)
-if ls "${R_PREFIX}"/libs/.libs/*Rblas* 2>/dev/null; then
+if ls "${R_PREFIX}"/lib/R/lib/.libs/*Rblas* 2>/dev/null; then
   echo "FAIL: libRblas.so should not be bundled in .libs/"
   exit 1
 fi

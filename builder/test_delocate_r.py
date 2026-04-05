@@ -150,32 +150,32 @@ class TestFileHash:
 
 class TestRelpathFrom:
     def test_sibling_dirs(self):
-        target = Path("/opt/R/4.4.2/libs/.libs")
+        target = Path("/opt/R/4.4.2/lib/R/lib/.libs")
         base = Path("/opt/R/4.4.2/lib/R/lib")
         result = delocate_r.relpath_from(target, base)
-        assert result == "../../../libs/.libs"
+        assert result == ".libs"
 
     def test_deep_to_top(self):
-        target = Path("/opt/R/4.4.2/libs/.libs")
+        target = Path("/opt/R/4.4.2/lib/R/lib/.libs")
         base = Path("/opt/R/4.4.2/lib/R/bin/exec")
         result = delocate_r.relpath_from(target, base)
-        assert result == "../../../../libs/.libs"
+        assert result == "../../lib/.libs"
 
     def test_same_dir(self):
-        target = Path("/opt/R/libs/.libs")
-        base = Path("/opt/R/libs/.libs")
+        target = Path("/opt/R/lib/R/lib/.libs")
+        base = Path("/opt/R/lib/R/lib/.libs")
         result = delocate_r.relpath_from(target, base)
         assert result == "."
 
     def test_child_dir(self):
-        target = Path("/opt/R/libs/.libs/sub")
-        base = Path("/opt/R/libs/.libs")
+        target = Path("/opt/R/lib/R/lib/.libs/sub")
+        base = Path("/opt/R/lib/R/lib/.libs")
         result = delocate_r.relpath_from(target, base)
         assert result == "sub"
 
     def test_parent_dir(self):
-        target = Path("/opt/R/libs")
-        base = Path("/opt/R/libs/.libs")
+        target = Path("/opt/R/lib/R/lib")
+        base = Path("/opt/R/lib/R/lib/.libs")
         result = delocate_r.relpath_from(target, base)
         assert result == ".."
 
@@ -338,7 +338,7 @@ class TestGraftLibraries:
         src_lib = src_dir / "libfoo.so.1"
         src_lib.write_bytes(b"fake ELF content for libfoo")
 
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         external_libs = {"libfoo.so.1": str(src_lib)}
 
         with mock.patch.object(delocate_r, "patchelf"):
@@ -362,7 +362,7 @@ class TestGraftLibraries:
         src_lib = src_dir / "libbar.so.2"
         src_lib.write_bytes(b"fake ELF for libbar")
 
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         external_libs = {"libbar.so.2": str(src_lib)}
 
         with mock.patch.object(delocate_r, "patchelf") as mock_patchelf:
@@ -389,7 +389,7 @@ class TestGraftLibraries:
         src_lib = src_dir / "libfoo.so.1"
         src_lib.write_bytes(b"fake ELF content for libfoo")
 
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         dest_dir.mkdir(parents=True)
 
         # Pre-create the destination file
@@ -414,7 +414,7 @@ class TestGraftLibraries:
             p.write_bytes(f"content for {name}".encode())
             libs[name] = str(p)
 
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
 
         with mock.patch.object(delocate_r, "patchelf"):
             soname_map, soname_path = delocate_r.graft_libraries(libs, dest_dir)
@@ -434,7 +434,7 @@ class TestGraftLibraries:
         src_lib = src_dir / "libICE.so.6.3.0"
         src_lib.write_bytes(b"fake ELF content for libICE")
 
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         # ldd reports soname "libICE.so.6" -> resolved path ".../libICE.so.6.3.0"
         external_libs = {"libICE.so.6": str(src_lib)}
 
@@ -457,7 +457,7 @@ class TestFixInterLibraryRefs:
             "libreadline.so.7": "libreadline-dead1234.so.7",
         }
         soname_path = {
-            "libreadline.so.7": Path("/opt/R/libs/.libs/libreadline-dead1234.so.7"),
+            "libreadline.so.7": Path("/opt/R/lib/R/lib/.libs/libreadline-dead1234.so.7"),
         }
 
         with mock.patch.object(delocate_r, "patchelf_try", return_value="libtinfo.so.6\nlibc.so.6") as mock_try, \
@@ -473,7 +473,7 @@ class TestFixInterLibraryRefs:
     def test_no_replacements_needed(self):
         soname_map = {"libtinfo.so.6": "libtinfo-abcd1234.so.6"}
         soname_path = {
-            "libtinfo.so.6": Path("/opt/R/libs/.libs/libtinfo-abcd1234.so.6"),
+            "libtinfo.so.6": Path("/opt/R/lib/R/lib/.libs/libtinfo-abcd1234.so.6"),
         }
 
         # libtinfo only depends on libc (which is not in soname_map)
@@ -489,7 +489,7 @@ class TestFixInterLibraryRefs:
 
 class TestVerifyRepair:
     def test_passes_on_good_state(self, tmp_path):
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         dest_dir.mkdir(parents=True)
 
         # Create fake grafted lib
@@ -519,7 +519,7 @@ class TestVerifyRepair:
             delocate_r.verify_repair(soname_map, soname_path, {}, dest_dir, r_path)
 
     def test_fails_on_missing_origin_rpath(self, tmp_path):
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         dest_dir.mkdir(parents=True)
 
         grafted = dest_dir / "libfoo-abcd1234.so.1"
@@ -543,7 +543,7 @@ class TestVerifyRepair:
             delocate_r.verify_repair(soname_map, soname_path, {}, dest_dir, r_path)
 
     def test_fails_on_wrong_soname(self, tmp_path):
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         dest_dir.mkdir(parents=True)
 
         grafted = dest_dir / "libfoo-abcd1234.so.1"
@@ -567,7 +567,7 @@ class TestVerifyRepair:
             delocate_r.verify_repair(soname_map, soname_path, {}, dest_dir, r_path)
 
     def test_fails_on_unresolved_needed(self, tmp_path):
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         dest_dir.mkdir(parents=True)
 
         grafted = dest_dir / "libfoo-abcd1234.so.1"
@@ -608,7 +608,7 @@ class TestDiscoverElfFiles:
         assert so_file in result
 
     def test_finds_versioned_so(self, tmp_path):
-        so_file = tmp_path / "libs" / ".libs" / "libfoo.so.1"
+        so_file = tmp_path / "lib" / "R" / "lib" / ".libs" / "libfoo.so.1"
         so_file.parent.mkdir(parents=True)
         so_file.write_bytes(b"fake")
 
@@ -656,12 +656,12 @@ class TestPatchElfBinaries:
     def test_rpath_computation(self, tmp_path):
         """Verify the RPATH is correctly computed for different ELF locations."""
         r_path = tmp_path
-        dest_dir = tmp_path / "libs" / ".libs"
+        dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         dest_dir.mkdir(parents=True)
 
         # Create fake ELF at lib/R/lib/libR.so
         elf = tmp_path / "lib" / "R" / "lib" / "libR.so"
-        elf.parent.mkdir(parents=True)
+        elf.parent.mkdir(parents=True, exist_ok=True)
         elf.write_bytes(b"fake")
 
         elf_needs = {elf: ["libfoo.so.1"]}
@@ -688,4 +688,4 @@ class TestPatchElfBinaries:
                        if c.args[0][1] == "--set-rpath"]
         assert len(rpath_calls) == 1
         rpath_value = rpath_calls[0].args[0][2]
-        assert rpath_value == "$ORIGIN/../../../libs/.libs"
+        assert rpath_value == "$ORIGIN/.libs"

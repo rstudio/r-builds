@@ -5,7 +5,7 @@ set -euo pipefail
 #
 # Replaces auditwheel-r with a simple shell script using ldd + patchelf.
 # Discovers non-allowed shared library dependencies, copies them into
-# libs/.libs/ with hash-renamed filenames, rewrites RPATHs and DT_NEEDED
+# lib/R/lib/.libs/ with hash-renamed filenames, rewrites RPATHs and DT_NEEDED
 # entries so the R installation is self-contained and portable.
 #
 # Operates in-place on the R installation directory.
@@ -103,7 +103,7 @@ fi
 # Strip trailing slash and resolve to absolute path
 R_PATH="${R_PATH%/}"
 R_PATH="$(cd "$R_PATH" && pwd)"
-LIBS_SDIR="libs/.libs"
+LIBS_SDIR="lib/R/lib/.libs"
 DEST_DIR="${R_PATH}/${LIBS_SDIR}"
 
 echo "delocate-r: repairing $R_PATH (in-place)"
@@ -266,7 +266,7 @@ for elf in "${!ELF_NEEDS[@]}"; do
     patchelf --replace-needed "$soname" "$new_soname" "$elf" 2>/dev/null || true
   done
 
-  # Add RPATH to libs/.libs/ relative to this binary's location
+  # Add RPATH to lib/R/lib/.libs/ relative to this binary's location
   elf_dir="$(dirname "$elf")"
   rel_path="$(relpath "$DEST_DIR" "$elf_dir")"
   new_rpath="\$ORIGIN/${rel_path}"
@@ -331,7 +331,7 @@ for soname in "${!SONAME_PATH[@]}"; do
     verify_ok=false
   fi
 
-  # Check all DT_NEEDED entries resolve within libs/.libs/ or the allowlist
+  # Check all DT_NEEDED entries resolve within lib/R/lib/.libs/ or the allowlist
   while IFS= read -r needed; do
     [ -z "$needed" ] && continue
     if is_allowed "$needed"; then

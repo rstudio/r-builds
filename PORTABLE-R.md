@@ -35,16 +35,18 @@ R --version
 The manylinux build bundles most library dependencies (~65 shared libraries),
 but some system packages are still required. These fall into three categories:
 
-#### 1. Runtime: SSL/TLS certificates (required for HTTPS)
+#### 1. Runtime: SSL/TLS certificates and font configuration (required)
 
 R auto-detects the CA certificate bundle via `CURL_CA_BUNDLE` (set in
 `etc/ldpaths`), but the certificate files themselves must be installed.
+The bundled fontconfig library needs system font configuration files
+(`/etc/fonts/fonts.conf`) for text rendering in plots.
 
-| Distro | Package | Cert path |
+| Distro | Package | Notes |
 |---|---|---|
-| Ubuntu/Debian | `ca-certificates` | `/etc/ssl/certs/ca-certificates.crt` |
-| RHEL/Fedora/Rocky | `ca-certificates` | `/etc/pki/tls/certs/ca-bundle.crt` |
-| openSUSE/SLES | `ca-certificates` | `/etc/ssl/ca-bundle.pem` |
+| Ubuntu/Debian | `ca-certificates fontconfig` | SSL certs + font config |
+| RHEL/Fedora/Rocky | `ca-certificates fontconfig` | SSL certs + font config |
+| openSUSE/SLES | `ca-certificates fontconfig` | SSL certs + font config |
 
 #### 2. Optional: build tools for `R CMD INSTALL` (for source packages)
 
@@ -135,7 +137,7 @@ Three issues were found in the original POC:
 
 3. **System libs in lsof output**: Was observed on the build machine (which has all
    system libs). After the `bin/R` script fix, bundled libs loaded correctly from
-   `libs/.libs/`.
+   `lib/R/lib/.libs/`.
 
 ## Design Decisions
 
@@ -207,8 +209,8 @@ Runs inside Docker after `build.sh` compiles and installs R:
    ```
    - `--no-update-tags`: Skip R package DESCRIPTION/rds metadata (not applicable to R itself)
    - `--no-strip`: Preserve symbols for now
-   - Bundles ~20 external libs into `libs/.libs/` with hashed filenames
-   - Rewrites RPATHs on all ELF binaries to `$ORIGIN/<relative-path-to-libs/.libs>`
+   - Bundles ~20 external libs into `lib/R/lib/.libs/` with hashed filenames
+   - Rewrites RPATHs on all ELF binaries to `$ORIGIN/<relative-path-to-lib/R/lib/.libs>`
    - Output to `wheelhouse/`
 
 3. **Replace R installation**: `rm -rf /opt/R/${R_VERSION} && mv wheelhouse /opt/R/${R_VERSION}`
@@ -255,7 +257,7 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 ## Verification Checklist
 
 1. `auditwheel-r show /opt/R/<version>/` — manylinux_2_28 compliant
-2. `ldd lib/R/lib/libR.so` — bundled deps resolve to `libs/.libs/` paths
+2. `ldd lib/R/lib/libR.so` -- bundled deps resolve to `lib/R/lib/.libs/` paths
 3. `ldd lib/R/modules/R_X11.so` — allowed X11 libs show as system deps (expected)
 4. `readelf -d lib/R/bin/exec/R` — may have limited RPATH (non-PIE binary; relies on
    `LD_LIBRARY_PATH` from `etc/ldpaths` rather than RPATH)
@@ -319,10 +321,10 @@ by hiding symbols), but hash-renamed shared libs avoid it entirely.
    bash script can replicate what auditwheel-r does:
    - Walk all ELF files (find + file command)
    - Run `ldd` on each, filter against a hardcoded allowlist
-   - Copy non-allowed libs to `libs/.libs/` with SHA256-hash-renamed filenames
+   - Copy non-allowed libs to `lib/R/lib/.libs/` with SHA256-hash-renamed filenames
    - `patchelf --set-soname` on each copied lib
    - `patchelf --replace-needed` on every ELF that references the old soname
-   - `patchelf --set-rpath` to add `$ORIGIN`-relative path to `libs/.libs/`
+   - `patchelf --set-rpath` to add `$ORIGIN`-relative path to `lib/R/lib/.libs/`
    - Fix inter-library DT_NEEDED references (grafted libs referencing each other)
 
    Pros: no Python dependency, full control over the allowlist (just a bash array),
@@ -345,12 +347,12 @@ operations:
 4. Compare each needed lib against the policy allowlist. Non-allowed = "external"
 5. For each external lib:
    a. Compute SHA256 hash of the source file, take first 8 chars
-   b. Copy to `libs/.libs/` as `libfoo-<hash>.so.N`
+   b. Copy to `lib/R/lib/.libs/` as `libfoo-<hash>.so.N`
    c. `patchelf --set-soname <new-name>` on the copy
    d. If the copy has any RPATH/RUNPATH, set to `$ORIGIN`
 6. For each ELF that had external deps:
    a. `patchelf --replace-needed <old-soname> <new-soname>` for each
-   b. `patchelf --set-rpath` with `$ORIGIN`-relative path to `libs/.libs/`, preserving
+   b. `patchelf --set-rpath` with `$ORIGIN`-relative path to `lib/R/lib/.libs/`, preserving
       existing within-package RPATHs
 7. Fix inter-library references: grafted libs may DT_NEED each other, update those
    from old sonames to new hash-renamed sonames
@@ -526,7 +528,7 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
 - **auditwheel-r handles R's complex library layout well**. Despite R having libs in
   `lib/R/lib/`, modules in `lib/R/modules/`, and package `.so` files in
   `lib/R/library/*/libs/`, auditwheel-r correctly traced and bundled all dependencies
-  into a single `libs/.libs/` directory with `$ORIGIN`-relative RPATHs.
+  into a single `lib/R/lib/.libs/` directory with `$ORIGIN`-relative RPATHs.
 
 - **The SONAME issue was subtle**: the linker records the SONAME (not the filename) in
   NEEDED entries. When you copy `libopenblasp.so.0` to `libRblas.so`, the SONAME is

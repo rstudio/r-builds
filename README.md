@@ -194,13 +194,21 @@ sudo tar xzf R-${R_VERSION}-manylinux-2-28.tar.gz -C /opt/R
 
 Install system dependencies:
 ```bash
-# All distros: SSL/TLS certificates (required for HTTPS)
+# SSL/TLS certificates (for HTTPS, e.g. install.packages)
 # Ubuntu/Debian
 sudo apt-get install -y ca-certificates
 # RHEL/Fedora/Rocky
 sudo dnf install -y ca-certificates
 # openSUSE/SLES
 sudo zypper install -y ca-certificates
+
+# Font configuration (for plotting with cairo graphics devices)
+# Ubuntu/Debian
+sudo apt-get install -y fontconfig
+# RHEL/Fedora/Rocky
+sudo dnf install -y fontconfig
+# openSUSE/SLES
+sudo zypper install -y fontconfig
 ```
 
 Optional - for installing R packages from source (`R CMD INSTALL`):

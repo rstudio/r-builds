@@ -3,7 +3,7 @@
 
 Replaces auditwheel-r with a standalone script using ldd + patchelf.
 Discovers non-allowed shared library dependencies, copies them into
-libs/.libs/ with hash-renamed filenames, rewrites RPATHs and DT_NEEDED
+lib/R/lib/.libs/ with hash-renamed filenames, rewrites RPATHs and DT_NEEDED
 entries so the R installation is self-contained and portable.
 
 Operates in-place on the R installation directory.
@@ -166,7 +166,7 @@ def discover_external_deps(
         elf_needs: {elf_path: [sonames...]} for ELF files that need patching
     """
     r_lib_path = str(r_path / "lib" / "R" / "lib")
-    libs_dir = str(r_path / "libs" / ".libs")
+    libs_dir = str(r_path / "lib" / "R" / "lib" / ".libs")
     extra_path = r_lib_path + ":" + libs_dir
     external_libs: dict[str, str] = {}
     elf_needs: dict[Path, list[str]] = {}
@@ -258,7 +258,7 @@ def patch_elf_binaries(
                 continue
             patchelf_try("--replace-needed", soname, new_soname, str(elf))
 
-        # Compute RPATH to libs/.libs/ relative to this binary
+        # Compute RPATH to lib/R/lib/.libs/ relative to this binary
         elf_dir = elf.parent
         rel = relpath_from(dest_dir, elf_dir)
         new_rpath = f"$ORIGIN/{rel}"
@@ -329,7 +329,7 @@ def verify_repair(
                 if is_allowed(needed):
                     continue
                 if not (dest_dir / needed).exists():
-                    errors.append(f"{new_soname} needs '{needed}' but not found in libs/.libs/")
+                    errors.append(f"{new_soname} needs '{needed}' but not found in lib/R/lib/.libs/")
 
     # Verify patched ELF binaries can resolve all bundled deps
     r_lib_path = str(r_path / "lib" / "R" / "lib")
@@ -364,7 +364,7 @@ def main() -> None:
         print(f"ERROR: R installation not found at {r_path}", file=sys.stderr)
         sys.exit(1)
 
-    libs_sdir = "libs/.libs"
+    libs_sdir = "lib/R/lib/.libs"
     dest_dir = r_path / libs_sdir
 
     print(f"delocate-r: repairing {r_path} (in-place)")

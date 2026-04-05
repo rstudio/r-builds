@@ -220,7 +220,7 @@ RSCRIPT_EOF
 done
 
 echo ">>> Phase 6: Verify library resolution"
-# delocate-r bundles non-allowed system libs into libs/.libs/ with $ORIGIN RPATHs.
+# delocate-r bundles non-allowed system libs into lib/R/lib/.libs/ with $ORIGIN RPATHs.
 # libR.so and other R internal libs (libRblas.so, libRlapack.so) live in lib/R/lib/
 # and are found via LD_LIBRARY_PATH set by etc/ldpaths (sourced by bin/R before exec).
 #
