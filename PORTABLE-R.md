@@ -3,7 +3,7 @@
 ## TL;DR
 
 Add a new `manylinux-2-28` platform to r-builds (reusing the centos-8 Docker image)
-that builds R and then runs a post-build portability step: auditwheel-r + patchelf
+that builds R and then runs a post-build portability step: `delocate-r.py` + patchelf
 bundle system library dependencies into the R installation and rewrite RPATHs,
 producing portable R artifacts conforming to the manylinux_2_28 standard.
 
@@ -130,10 +130,10 @@ Three issues were found in the original POC:
    When moved, it tries to source a nonexistent `ldpaths` file, so `LD_LIBRARY_PATH`
    is never set, and the exec binary can't find `libR.so`.
 
-2. **libSM.so.6 / libICE.so.6 missing on Ubuntu**: These are in the manylinux_2_28
-   allowlist (expected on the target system). auditwheel-r correctly didn't bundle
-   them. On minimal Ubuntu without X11 packages, `R_X11.so` fails to load — but this
-   is non-fatal.
+2. **libSM.so.6 / libICE.so.6 missing on Ubuntu**: These were originally in the
+   manylinux_2_28 allowlist (not bundled). Now resolved: delocate-r.py uses a
+   narrower allowlist that bundles X11, cairo, pango, GLib, and all other non-glibc
+   dependencies (~65 libraries total).
 
 3. **System libs in lsof output**: Was observed on the build machine (which has all
    system libs). After the `bin/R` script fix, bundled libs loaded correctly from
@@ -145,34 +145,27 @@ Three issues were found in the original POC:
 
 Following the existing r-builds pattern (and the rspm-builder-images convention),
 `manylinux-2-28` is a new platform that **reuses the centos-8 Docker image** as a
-base but adds portability tooling (patchelf, auditwheel-r) and a portability
+base but adds portability tooling (patchelf, delocate-r.py) and a portability
 post-processing step. This gives us:
 
-- `Dockerfile.manylinux-2-28` — extends centos-8 with patchelf + auditwheel-r
-- `package.manylinux-2-28` — runs portability post-processing (delocate-r.py)
+- `Dockerfile.manylinux-2-28` -- extends centos-8 with patchelf
+- `package.manylinux-2-28` -- runs portability post-processing (delocate-r.py)
 - Standard Makefile/compose targets: `build-r-manylinux-2-28`, `test-r-manylinux-2-28`, etc.
 
-### X11 support: Keep it (Option B)
+### X11 support: bundled
 
-R is built `--with-x` (same as centos-8). The X11 libraries (`libSM.so.6`,
-`libICE.so.6`, `libX11.so.6`, `libXt.so.6`) are **in the manylinux_2_28 allowlist**
-and are NOT bundled. This means:
-
-- On systems with X11 libs installed (most desktop/server systems): full X11 graphics
-  support works.
-- On minimal/container systems without X11: `R_X11.so` won't load, but R still works
-  (Cairo, png, pdf graphics are unaffected). R already handles this gracefully with a
-  warning.
-- If X11-free builds are ever needed, a `--without-x` configure option can be added
-  as a future variant.
+R is built `--with-x` (same as centos-8). X11 libraries (`libX11.so.6`, `libSM.so.6`,
+`libICE.so.6`, `libXt.so.6`, `libXext.so.6`, `libXrender.so.1`, `libXmu.so.6`) are
+**bundled** by delocate-r.py despite being on the official manylinux_2_28 allowlist.
+This ensures X11 graphics work even on minimal containers without system X11 packages.
 
 ### BLAS handling
 
 The standard centos-8 build swaps `libRblas.so` to a symlink pointing at system
 OpenBLAS (for runtime BLAS swapping). For portable builds, we **bundle OpenBLAS
-directly** via auditwheel-r. Users lose runtime BLAS swapping but gain cross-distro
+directly** as `libRblas.so`. Users lose runtime BLAS swapping but gain cross-distro
 portability. The `libRblas.so.keep` (original reference BLAS) is removed before repair
-so auditwheel-r resolves the OpenBLAS dependency cleanly.
+so delocate-r.py resolves the OpenBLAS dependency cleanly.
 
 ### Patch scripts for R_HOME portability
 
@@ -188,34 +181,27 @@ since R 2.x, so a single sed replacement works across all supported versions.
 
 Create `Dockerfile.manylinux-2-28` that extends the centos-8 image and installs:
 
-- OpenBLAS (`openblas-threads`) — needed at package time so auditwheel-r can bundle it
-- patchelf 0.17.2 (from GitHub releases — avoid 0.18.0 per known issues, same version
+- OpenBLAS (`openblas-threads`) -- needed at package time so delocate-r.py can bundle it
+- patchelf 0.17.2 (from GitHub releases -- avoid 0.18.0 per known issues, same version
   as rspm-builder-images)
-- Python 3.12 (`dnf install python3.12 python3.12-pip`)
-- auditwheel-r (installed from a pre-built wheel copied into the image; the wheel is
-  built from a local checkout of `rstudio/auditwheel-r` with the `Path` bug fix)
 
 ### Phase 2: Portability script (`package.manylinux-2-28`)
 
 Runs inside Docker after `build.sh` compiles and installs R:
 
 1. **BLAS setup**: Remove the existing `libRblas.so` and copy system OpenBLAS
-   (`libopenblasp.so.0`) in its place, so auditwheel-r can trace and bundle
+   (`libopenblasp.so.0`) in its place, so delocate-r.py can trace and bundle
    a real BLAS library.
 
-2. **Run auditwheel-r repair**:
+2. **Run delocate-r.py repair**:
    ```
-   auditwheel-r repair /opt/R/${R_VERSION}/ --no-update-tags --no-strip
+   python3 /delocate-r.py /opt/R/${R_VERSION}/
    ```
-   - `--no-update-tags`: Skip R package DESCRIPTION/rds metadata (not applicable to R itself)
-   - `--no-strip`: Preserve symbols for now
-   - Bundles ~20 external libs into `lib/R/lib/.libs/` with hashed filenames
+   - Bundles ~65 external libs into `lib/R/lib/.libs/` with hash-renamed filenames
    - Rewrites RPATHs on all ELF binaries to `$ORIGIN/<relative-path-to-lib/R/lib/.libs>`
-   - Output to `wheelhouse/`
+   - Operates in-place (no wheelhouse copy step)
 
-3. **Replace R installation**: `rm -rf /opt/R/${R_VERSION} && mv wheelhouse /opt/R/${R_VERSION}`
-
-4. **Fix BLAS/LAPACK SONAMEs**: Use `patchelf --set-soname` to ensure libRblas.so and
+3. **Fix BLAS/LAPACK SONAMEs**: Use `patchelf --set-soname` to ensure libRblas.so and
    libRlapack.so have correct SONAMEs matching their filenames, so compiled R packages
    record the right dependency names.
 
@@ -228,8 +214,6 @@ Runs inside Docker after `build.sh` compiles and installs R:
    location using `readlink -f`, making it fully relocatable.
 
 7. **Verify library resolution**: Print RPATH and bundled lib info (informational).
-
-8. **Clean up artifacts**: Remove top-level `DESCRIPTION` file if created by auditwheel-r.
 
 The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are produced
    because distro-specific package dependencies would defeat the purpose of a
@@ -251,19 +235,19 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 
 ## New Files
 
-- `builder/Dockerfile.manylinux-2-28` — Docker image extending centos-8 with portability tools
-- `builder/package.manylinux-2-28` — Post-build portability script
+- `builder/Dockerfile.manylinux-2-28` -- Docker image extending centos-8 with portability tools
+- `builder/package.manylinux-2-28` -- Post-build portability script
+- `builder/delocate-r.py` -- Library bundling script (replaces auditwheel-r)
+- `builder/test_delocate_r.py` -- Unit tests for delocate-r.py (51 tests)
 
 ## Verification Checklist
 
-1. `auditwheel-r show /opt/R/<version>/` — manylinux_2_28 compliant
-2. `ldd lib/R/lib/libR.so` -- bundled deps resolve to `lib/R/lib/.libs/` paths
-3. `ldd lib/R/modules/R_X11.so` — allowed X11 libs show as system deps (expected)
-4. `readelf -d lib/R/bin/exec/R` — may have limited RPATH (non-PIE binary; relies on
+1. `ldd lib/R/lib/libR.so` -- bundled deps resolve to `lib/R/lib/.libs/` paths
+2. `readelf -d lib/R/bin/exec/R` -- may have limited RPATH (non-PIE binary; relies on
    `LD_LIBRARY_PATH` from `etc/ldpaths` rather than RPATH)
-5. On Ubuntu 20.04: R starts, `capabilities()` shows TRUE for jpeg/png/tiff/tcltk/cairo/ICU/libcurl
-6. Relocatability: `mv /opt/R/<ver> /tmp/R-test && /tmp/R-test/bin/R -e 'cat("works\n")'`
-7. Tarball install on clean Ubuntu/Rocky/openSUSE: extract, R works
+3. On Ubuntu Noble: R starts, `capabilities()` shows TRUE for jpeg/png/tiff/tcltk/cairo/ICU/libcurl
+4. Relocatability: `mv /opt/R/<ver> /tmp/R-test && /tmp/R-test/bin/R -e 'cat("works\n")'`
+5. Tarball install on clean Ubuntu/Rocky/openSUSE: extract, R works
 
 ## Future Enhancements (v2)
 
@@ -284,97 +268,34 @@ Approach options:
 ### ARM64 support
 
 The centos-8 Docker image supports ARM64. The manylinux-2-28 platform should work on
-ARM64 with minimal changes (patchelf and auditwheel-r support it).
+ARM64 with minimal changes (patchelf and delocate-r.py support it).
 
 ### Other base distros
 
 Could add manylinux_2_31 (Debian 11 / Ubuntu 20.04 glibc) or manylinux_2_34 (RHEL 9
 glibc) variants if needed.
 
-### X11-free variant
+### Why delocate-r.py instead of auditwheel-r
 
-If minimal/container deployments need guaranteed X11-free R, add a
-`manylinux-2-28-nox11` variant built with `--without-x`.
+The initial POC used `auditwheel-r` (Posit's fork of auditwheel for R packages).
+We replaced it with a standalone `delocate-r.py` script (~450 lines, Python 3 stdlib
++ patchelf) for several reasons:
 
-### Bundle X11 libraries
+- **No external dependencies**: auditwheel-r requires Python 3.12, pyelftools, and a
+  pre-built wheel. delocate-r.py uses only Python 3 stdlib + patchelf.
+- **Full control over the allowlist**: auditwheel-r uses the manylinux_2_28 allowlist,
+  which includes X11, GLib, and other libs we want to bundle. delocate-r.py uses a
+  narrower allowlist (glibc core + compiler runtime only).
+- **No fork maintenance**: auditwheel-r had a `Path` vs `str` bug we had to fix.
+  delocate-r.py is self-contained.
+- **Simpler workflow**: delocate-r.py operates in-place (no wheelhouse copy step).
+- **Well-scoped**: we're bundling one R installation, not arbitrary R packages, so
+  the edge cases are limited.
 
-Currently, X11 libs (`libX11.so.6`, `libSM.so.6`, `libICE.so.6`, `libXt.so.6`,
-`libXext.so.6`, `libXrender.so.1`) are on the manylinux_2_28 allowlist and NOT
-bundled. On minimal containers without X11 packages, `R_X11.so` fails to load (with a
-non-fatal warning). Bundling these would make R fully self-contained.
-
-**Symbol conflict risk:** Low. auditwheel-r hash-renames bundled libs (e.g.,
-`libX11-a1b2c3d4.so.6`), so the dynamic linker treats them as different libraries from
-any system-installed libX11. Both can coexist in the same process without symbol
-conflicts. python-build-standalone had this issue with statically-linked libX11 (fixed
-by hiding symbols), but hash-renamed shared libs avoid it entirely.
-
-**Options:**
-
-1. **Patch auditwheel-r's allowlist** (~10 lines). In `r_abi.py`, subtract X11 libs
-   from the allowlist in `r_wheel_policies()`. Rebuild the wheel. Everything else works
-   as-is — auditwheel-r will discover, copy, hash-rename, and RPATH-fix the X11 libs
-   automatically. Pros: minimal change. Cons: still depends on auditwheel-r and its
-   Python 3.12 + pyelftools dependency chain.
-
-2. **Replace auditwheel-r with a shell script** using `ldd` + `patchelf`. A ~150-line
-   bash script can replicate what auditwheel-r does:
-   - Walk all ELF files (find + file command)
-   - Run `ldd` on each, filter against a hardcoded allowlist
-   - Copy non-allowed libs to `lib/R/lib/.libs/` with SHA256-hash-renamed filenames
-   - `patchelf --set-soname` on each copied lib
-   - `patchelf --replace-needed` on every ELF that references the old soname
-   - `patchelf --set-rpath` to add `$ORIGIN`-relative path to `lib/R/lib/.libs/`
-   - Fix inter-library DT_NEEDED references (grafted libs referencing each other)
-
-   Pros: no Python dependency, full control over the allowlist (just a bash array),
-   no need to maintain an auditwheel-r fork. Cons: we own the maintenance of edge
-   cases that auditwheel-r handles (though for a single R installation rather than
-   arbitrary R packages, the edge cases are limited).
-
-3. **Hybrid approach**: keep auditwheel-r for the main repair, then use patchelf in a
-   post-step to manually bundle X11 libs. This is the least clean option.
-
-**What auditwheel-r actually does (full analysis):**
-
-The repair pipeline has these steps, all of which are straightforward patchelf/ldd
-operations:
-
-1. Copy the input directory to a temp dir
-2. Walk all files, identify ELF binaries (check magic bytes via pyelftools)
-3. For each ELF, run upstream auditwheel's `ldd()` (a pure-Python ldd reimplementation
-   that parses DT_NEEDED, resolves via RPATH/RUNPATH/LD_LIBRARY_PATH/ldconfig)
-4. Compare each needed lib against the policy allowlist. Non-allowed = "external"
-5. For each external lib:
-   a. Compute SHA256 hash of the source file, take first 8 chars
-   b. Copy to `lib/R/lib/.libs/` as `libfoo-<hash>.so.N`
-   c. `patchelf --set-soname <new-name>` on the copy
-   d. If the copy has any RPATH/RUNPATH, set to `$ORIGIN`
-6. For each ELF that had external deps:
-   a. `patchelf --replace-needed <old-soname> <new-soname>` for each
-   b. `patchelf --set-rpath` with `$ORIGIN`-relative path to `lib/R/lib/.libs/`, preserving
-      existing within-package RPATHs
-7. Fix inter-library references: grafted libs may DT_NEED each other, update those
-   from old sonames to new hash-renamed sonames
-8. Optionally: strip symbols, update DESCRIPTION/Meta platform tags
-9. Copy result to output directory
-
-**Edge cases handled by auditwheel-r that a shell script must also handle:**
-- Libraries that can't be found (src_path is None): auditwheel-r raises an error for
-  libRblas/libRlapack, warns+skips for internal package libs. For R itself, all libs
-  should be findable via LD_LIBRARY_PATH.
-- RPATH token resolution ($ORIGIN, $LIB, $PLATFORM): the ldd implementation handles
-  these. System `ldd` handles them natively.
-- Non-ELF files (R scripts, data files): skipped by checking ELF magic bytes. `file`
-  command or checking for `.so` suffix works.
-- Duplicate libs: copylib() is idempotent (skips if dest already exists).
-- Preserving in-package RPATHs: the RPATH setter keeps existing entries pointing within
-  the package tree.
-
-**Recommendation:** Option 2 (shell script) is cleanest for this use case. We're
-repairing a single R installation (not arbitrary R packages), so the scope is well
-defined. The shell script eliminates the Python 3.12 dependency, the auditwheel-r
-wheel build, the pyelftools dependency, and the `Path` vs `str` bug we had to fix.
+delocate-r.py replicates the core auditwheel-r pipeline: discover ELF files, run `ldd`
+to find external deps, copy them with SHA256-hash-renamed filenames, rewrite SONAMEs
+and RPATHs with patchelf, and fix inter-library DT_NEEDED references. A fixpoint loop
+handles transitive dependencies.
 
 ---
 
@@ -382,36 +303,33 @@ wheel build, the pyelftools dependency, and the `Path` vs `str` bug we had to fi
 
 ### What was built
 
-A new `manylinux-2-28` platform producing three portable R 4.4.2 distribution formats
+A new `manylinux-2-28` platform producing a portable R 4.4.2 tar.gz
 from a single build on Rocky 8 (glibc 2.28):
 
-- **tar.gz** (~106MB) — direct extraction, tested on Ubuntu Noble, Rocky 8, Rocky 10, openSUSE 15.6
+- **tar.gz** (~106MB) -- direct extraction, tested on Ubuntu Noble, Rocky 8, RHEL 10, openSUSE 15.6
 
 All standard tests pass: R starts, sessionInfo works,
 capabilities (jpeg/png/tiff/tcltk/cairo/ICU/libcurl all TRUE), package compilation
 with C/C++/Fortran + BLAS/LAPACK linking, HTTPS downloads, and relocatability (move R
 to an arbitrary path, it still works).
 
-No DEB/RPM packages are produced — distro-specific dependencies would defeat the
+No DEB/RPM packages are produced -- distro-specific dependencies would defeat the
 purpose of a universal build.
 
 ### Files created/modified
 
 New files:
-- `builder/Dockerfile.manylinux-2-28` — extends centos-8 with patchelf 0.17.2,
-  Python 3.12, auditwheel-r
-- `builder/package.manylinux-2-28` — post-build portability + packaging script
-- `test/test-manylinux.sh` — cross-distro test on Ubuntu 20.04
+- `builder/Dockerfile.manylinux-2-28` -- extends centos-8 with patchelf 0.17.2
+- `builder/package.manylinux-2-28` -- post-build portability script
+- `builder/delocate-r.py` -- library bundling script (replaces auditwheel-r)
+- `builder/delocate-r.sh` -- bash backup alternative
+- `builder/test_delocate_r.py` -- 51 unit tests for delocate-r.py
+- `test/test-manylinux.sh` -- cross-distro e2e tests
 
 Modified files:
-- `Makefile` — added `manylinux-2-28` to PLATFORMS
-- `builder/docker-compose.yml` — added manylinux-2-28 build service
-- `test/docker-compose.yml` — added manylinux-2-28 test service (ubuntu:focal)
-
-External fix:
-- `~/auditwheel-r/src/auditwheel_r/rtools.py` — fixed `Path` vs `str` bug in
-  `InRPackageDirCtx.iter_files()` (directory mode returned strings but
-  `elf_file_filter` expected Path objects with `.suffix`).
+- `Makefile` -- added `manylinux-2-28` to PLATFORMS
+- `builder/docker-compose.yml` -- added manylinux-2-28 build service
+- `test/docker-compose.yml` -- added manylinux-2-28 test services (4 distros)
 
 ### Post-build phases (package.manylinux-2-28)
 
@@ -419,33 +337,30 @@ Phases match the actual code in `package.manylinux-2-28`:
 
 1. **BLAS setup**: remove existing `libRblas.so`, copy system OpenBLAS
    (`libopenblasp.so.0`) as `lib/R/lib/libRblas.so`
-2. **auditwheel-r repair**: bundle non-allowed system libs, rewrite RPATHs.
-   `LD_LIBRARY_PATH` includes R's lib dir so auditwheel-r can find libRblas.so.
-3. **Replace R installation** with repaired output from wheelhouse
-3b. **Fix BLAS/LAPACK SONAMEs**: `patchelf --set-soname` on libRblas.so and
+2. **delocate-r.py repair**: bundle non-allowed system libs (~65), rewrite RPATHs.
+   `LD_LIBRARY_PATH` includes R's lib dir so delocate-r.py can find libRblas.so.
+   Operates in-place (no wheelhouse copy step).
+3. **Fix BLAS/LAPACK SONAMEs**: `patchelf --set-soname` on libRblas.so and
     libRlapack.so so compiled packages record the correct dependency names
-3c. **Bundle Tcl/Tk scripts + SSL CA detection**: copy `/usr/share/tcl8.6` and
+4. **Bundle Tcl/Tk scripts + SSL CA detection**: copy `/usr/share/tcl8.6` and
     `/usr/share/tk8.6` into `lib/R/share/`, then append to `etc/ldpaths`:
     `TCL_LIBRARY`/`TK_LIBRARY` env vars and `CURL_CA_BUNDLE` auto-detection
     (probes Debian, RHEL, SUSE cert paths)
-4. **Make bin/R relocatable**: sed-replace hardcoded `R_HOME_DIR` with `readlink -f`
+5. **Make bin/R relocatable**: sed-replace hardcoded `R_HOME_DIR` with `readlink -f`
    self-detection
-5. **Verify library resolution**: print RPATH info (informational only)
-6. **Clean up**: remove DESCRIPTION artifact created by auditwheel-r
-7. **Done**: tar.gz created by `archive_r` in `build.sh`
+6. **Verify library resolution**: print RPATH info (informational only)
+7. **Clean up**: remove DESCRIPTION artifact if present
 
 ### Issues encountered and how they were resolved
 
-#### 1. auditwheel-r `str` vs `Path` bug
-**Problem**: auditwheel-r's directory repair mode (`InRPackageDirCtx.iter_files()`)
-yielded plain strings, but downstream `elf_file_filter()` called `.suffix` on them,
-which is a `Path` attribute. Crashed with `AttributeError`.
-**Fix**: Wrapped yields in `rtools.py` with `Path()`. Rebuilt the wheel.
+#### 1. auditwheel-r `str` vs `Path` bug (historical, no longer applicable)
+**Problem**: auditwheel-r's directory repair mode yielded plain strings where Path
+objects were expected. This was one reason we replaced auditwheel-r with delocate-r.py.
 
-#### 2. auditwheel-r couldn't find libRblas.so
-**Problem**: During repair, auditwheel-r uses `ldd` to trace dependencies but couldn't
+#### 2. delocate-r.py couldn't find libRblas.so
+**Problem**: During repair, delocate-r.py uses `ldd` to trace dependencies but couldn't
 resolve `libRblas.so` because it's not in standard library paths.
-**Fix**: Export `LD_LIBRARY_PATH="${R_LIB_DIR}"` before running `auditwheel-r repair`.
+**Fix**: Export `LD_LIBRARY_PATH` with R's lib dir before running delocate-r.py.
 
 #### 3. patchelf `--add-rpath` crashes on non-PIE executables
 **Problem**: R's `lib/R/bin/exec/R` is a non-PIE EXEC type binary (not PIE/DYN).
@@ -457,9 +372,9 @@ is `etc/ldpaths` (sourced by `bin/R` shell script before exec), which sets
 `etc/ldpaths` uses `${R_HOME}` (relative, not hardcoded).
 
 #### 4. OpenBLAS not installed in Docker image
-**Problem**: The centos-8 base image doesn't install OpenBLAS at build time — the
+**Problem**: The centos-8 base image doesn't install OpenBLAS at build time -- the
 centos-8 platform swaps in OpenBLAS at RPM install time. The manylinux-2-28 build
-needs OpenBLAS present at package time so auditwheel-r can bundle it.
+needs OpenBLAS present at package time so delocate-r.py can bundle it.
 **Fix**: Added `openblas-threads` to the manylinux-2-28 Dockerfile.
 
 #### 5. BLAS SONAME mismatch breaks package compilation on target
@@ -491,7 +406,7 @@ set.
 
 #### 8. SSL fails on minimal containers without `ca-certificates`
 **Problem**: On Ubuntu Noble (24.04) minimal containers, `install.packages()` fails
-with SSL cert errors. Investigation showed `/etc/ssl/` doesn't even exist — the
+with SSL cert errors. Investigation showed `/etc/ssl/` doesn't even exist -- the
 `ca-certificates` package is not installed.
 **Resolution**: Not a code bug. The `CURL_CA_BUNDLE` detection in `etc/ldpaths` works
 correctly but has nothing to find when no CA certs are installed on the system. The DEB
@@ -506,7 +421,7 @@ containers, `less` is not installed and `help()` fails silently.
 declare `less` as a dependency (it's optional), but users should be aware that help
 display requires a pager.
 
-#### 10. `lib/R/bin/R` not patched — `R CMD INSTALL` fails when relocated
+#### 10. `lib/R/bin/R` not patched -- `R CMD INSTALL` fails when relocated
 **Problem**: R installs two copies of the `R` shell script: `bin/R` (at the prefix
 level) and `lib/R/bin/R` (inside R_HOME). Only `bin/R` was patched with the
 `readlink -f` self-detection logic. When `R CMD INSTALL` runs (e.g., during
@@ -515,7 +430,7 @@ script still had `R_HOME_DIR=/opt/R/4.4.2/lib/R` hardcoded, so at a relocated pa
 it fails with: `. /opt/R/4.4.2/lib/R/etc/ldpaths: No such file`.
 **Fix**: Patch both scripts, with different formulas since they're at different depths:
 - `bin/R` (at `<prefix>/bin/R`): `R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"`
-- `lib/R/bin/R` (at `<R_HOME>/bin/R`): `R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"` (no `/lib/R` suffix — two levels up is already R_HOME)
+- `lib/R/bin/R` (at `<R_HOME>/bin/R`): `R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"` (no `/lib/R` suffix -- two levels up is already R_HOME)
 Same treatment for `Rscript`. Symlinks are skipped (only regular files are patched).
 
 ### Surprising things
@@ -523,11 +438,11 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
 - **`etc/ldpaths` is the key integration point**. It's sourced by `bin/R` before
   exec'ing the real binary, and it's the natural place to set environment variables for
   portability (LD_LIBRARY_PATH, TCL_LIBRARY, TK_LIBRARY, CURL_CA_BUNDLE). R already
-  designed this for relocatability — we just needed to extend it.
+  designed this for relocatability -- we just needed to extend it.
 
-- **auditwheel-r handles R's complex library layout well**. Despite R having libs in
+- **delocate-r.py handles R's complex library layout well**. Despite R having libs in
   `lib/R/lib/`, modules in `lib/R/modules/`, and package `.so` files in
-  `lib/R/library/*/libs/`, auditwheel-r correctly traced and bundled all dependencies
+  `lib/R/library/*/libs/`, delocate-r.py correctly traced and bundled all dependencies
   into a single `lib/R/lib/.libs/` directory with `$ORIGIN`-relative RPATHs.
 
 - **The SONAME issue was subtle**: the linker records the SONAME (not the filename) in
@@ -543,7 +458,7 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
 
 - **R's `bin/R` is a shell script, not a binary**. The real binary is at
   `lib/R/bin/exec/R`. This two-layer design (shell wrapper → exec binary) is what makes
-  relocatability possible — the shell script can compute paths dynamically before
+  relocatability possible -- the shell script can compute paths dynamically before
   handing off to the binary.
 
 - **R installs TWO copies of the `R` shell script**: `bin/R` (at prefix level) and
@@ -567,30 +482,23 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
    because R sets these values at runtime, but some Makeconf variables may break at
    non-standard install paths. This is a v2 enhancement.
 
-2. **X11 requires system packages**: `libX11.so.6`, `libXt.so.6`, etc. are
-   manylinux_2_28 allowed (not bundled). On minimal containers without X11 libs,
-   `capabilities("X11")` returns FALSE and `R_X11.so` won't load. R handles this
-   gracefully — all other graphics backends (cairo, png, pdf, svg) work.
-
-3. **No runtime BLAS swapping**: Unlike the standard centos-8 build where
+2. **No runtime BLAS swapping**: Unlike the standard centos-8 build where
    `libRblas.so` is a symlink to system BLAS (allowing swaps to MKL, etc.), the
    portable build bundles OpenBLAS directly. Users cannot swap BLAS without rebuilding.
 
-4. **Tcl/Tk hardcoded to 8.6**: The bundled Tcl/Tk scripts assume version 8.6.
+3. **Tcl/Tk hardcoded to 8.6**: The bundled Tcl/Tk scripts assume version 8.6.
    If the build system's Tcl version changes, the phase needs updating.
 
-5. **`libxml` capability is FALSE**: R reports `libxml = FALSE` in `capabilities()`.
+4. **`libxml` capability is FALSE**: R reports `libxml = FALSE` in `capabilities()`.
    This is because the test checks for `libxml2` headers at compile time via
    `xml2-config`, which is a compile-time concern, not a runtime portability issue.
    R's internal XML support is unaffected.
 
-6. **Target system needs basic runtime libs**: While the builds are portable, the
-   target system still needs: glibc >= 2.28, a C/C++/Fortran compiler (for package
-   compilation), `ca-certificates` (for HTTPS — the SSL cert detection in `ldpaths`
-   requires cert files to exist on disk), and manylinux_2_28 allowed libs (X11,
-   pango, cairo, glib for full capabilities). The DEB/RPM packages declare these as
-   dependencies so they are installed automatically; the tarball requires them to be
-   installed manually (see [Installation](#installation) above). On minimal containers
+5. **Target system needs basic runtime libs**: While the builds are portable, the
+   target system still needs: glibc >= 2.28, `ca-certificates` (for HTTPS),
+   and `fontconfig` (for font configuration in plots). Optionally, a C/C++/Fortran
+   compiler and dev packages are needed for compiling R packages from source.
+   See [Installation](#installation) above. On minimal containers
    (e.g., Ubuntu Noble), `ca-certificates` is notably absent by default.
 
 ### Testing commands
