@@ -65,6 +65,9 @@ for (dev_name in devices) {
 # For example, "Pango-WARNING **: failed to choose a font, expect ugly output"
 # messages when rendering text without any system fonts installed.
 output <- system2(R.home("bin/Rscript"), "-e 'png(tempfile()); plot(1)'", stdout = TRUE, stderr = TRUE)
+# Ignore harmless fontconfig warnings (e.g. older bundled fontconfig not
+# recognizing newer system config directives like "reset-dirs")
+output <- output[!grepl("^Fontconfig warning:", output)]
 if (length(output) > 0) {
   stop(sprintf("unexpected output returned from plotting:\n%s", paste(output, collapse = "\n")))
 }

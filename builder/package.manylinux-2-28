@@ -8,41 +8,34 @@ set -e
 #
 # This script:
 # 1. Swaps reference BLAS with OpenBLAS (for performance)
-# 2. Runs auditwheel-r to bundle system library dependencies
+# 2. Runs delocate-r.py to bundle system library dependencies
 # 3. Makes R_HOME self-detecting for relocatability
 # 4. Adds RPATH entries so the exec binary can find libR.so
-
-if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
-  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
-fi
+#
+# Output: a portable tarball (created by build.sh). No DEB/RPM packages are
+# produced because the manylinux build is distro-agnostic — distro-specific
+# package dependencies would defeat the purpose of a universal build.
 
 R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
 
 echo ">>> Phase 1: BLAS setup"
 # Replace reference BLAS with OpenBLAS for performance.
 # The centos-8 build uses internal shared BLAS (--with-blas is not set).
-# Swap it with system OpenBLAS so auditwheel-r bundles a real BLAS.
+# Swap it with system OpenBLAS so delocate-r bundles a real BLAS.
 rm -f "${R_LIB_DIR}/libRblas.so"
 cp /usr/lib64/libopenblasp.so.0 "${R_LIB_DIR}/libRblas.so"
 
-echo ">>> Phase 2: auditwheel-r repair"
-# Bundle non-whitelisted system library dependencies into the R installation
+echo ">>> Phase 2: delocate-r repair"
+# Bundle non-allowed system library dependencies into the R installation
 # and rewrite RPATHs to use $ORIGIN-relative paths.
 #
-# LD_LIBRARY_PATH must include R's lib dir so auditwheel-r can locate libRblas.so
+# LD_LIBRARY_PATH must include R's lib dir so ldd can locate libRblas.so
 # and libRlapack.so (which are internal to the R installation).
-#
-# --no-update-tags: Don't write R package DESCRIPTION metadata (not applicable to R itself)
-# --no-strip: Preserve debug symbols (strip separately if desired)
 export LD_LIBRARY_PATH="${R_LIB_DIR}:${LD_LIBRARY_PATH:-}"
-auditwheel-r repair "${R_INSTALL_PATH}/" --no-update-tags --no-strip
+python3 /delocate-r.py "${R_INSTALL_PATH}"
 
-echo ">>> Phase 3: Replace R installation with repaired version"
-rm -rf "${R_INSTALL_PATH}"
-mv wheelhouse "${R_INSTALL_PATH}"
-
-echo ">>> Phase 3b: Fix BLAS/LAPACK SONAMEs for package compilation"
-# After auditwheel-r repair, lib/R/lib/libRblas.so still has its original SONAME
+echo ">>> Phase 3: Fix BLAS/LAPACK SONAMEs for package compilation"
+# After delocate-r repair, lib/R/lib/libRblas.so still has its original SONAME
 # (e.g., "libopenblasp.so.0"). When users compile R packages that link against
 # -lRblas (from Makeconf's BLAS_LIBS), the linker records this SONAME. At load time,
 # the dynamic linker then fails to find "libopenblasp.so.0" on the target system.
@@ -114,116 +107,133 @@ echo ">>> Phase 4: Make bin/R relocatable"
 # The original line looks like:
 #   R_HOME_DIR=/opt/R/4.4.2/lib/R
 # We replace it with logic that resolves symlinks and derives the path.
+#
+# Two scripts need patching with DIFFERENT formulas:
+#   bin/R        → dirname(dirname(readlink -f $0))/lib/R   (script is at <prefix>/bin/R)
+#   lib/R/bin/R  → dirname(dirname(readlink -f $0))         (script is at <R_HOME>/bin/R)
+# R CMD INSTALL and other subprocesses invoke lib/R/bin/R directly, so both must work.
 sed -i '/^R_HOME_DIR=/,/^fi$/{
   /^R_HOME_DIR=/c\
 R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"
   /^if test/,/^fi$/d
 }' "${R_INSTALL_PATH}/bin/R"
 
-# Also fix Rscript if it has a hardcoded path
-if grep -q "^R_HOME_DIR=" "${R_INSTALL_PATH}/bin/Rscript" 2>/dev/null; then
-  sed -i 's|^R_HOME_DIR=.*|R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"|' \
-    "${R_INSTALL_PATH}/bin/Rscript"
+# Fix R_SHARE_DIR, R_INCLUDE_DIR, R_DOC_DIR — these are hardcoded to the
+# build-time prefix by configure. Replace them with ${R_HOME}-relative paths.
+for r_script in "${R_INSTALL_PATH}/bin/R" "${R_INSTALL_PATH}/lib/R/bin/R"; do
+  [ -f "$r_script" ] || continue
+  sed -i 's|^R_SHARE_DIR=.*|R_SHARE_DIR=${R_HOME}/share|' "$r_script"
+  sed -i 's|^R_INCLUDE_DIR=.*|R_INCLUDE_DIR=${R_HOME}/include|' "$r_script"
+  sed -i 's|^R_DOC_DIR=.*|R_DOC_DIR=${R_HOME}/doc|' "$r_script"
+done
+
+# Patch lib/R/bin/R (the copy inside R_HOME, invoked by R CMD INSTALL etc.)
+# Only patch if it's a regular file (not a symlink to bin/R).
+R_HOME_BIN_R="${R_INSTALL_PATH}/lib/R/bin/R"
+if [ -f "${R_HOME_BIN_R}" ] && [ ! -L "${R_HOME_BIN_R}" ]; then
+  sed -i '/^R_HOME_DIR=/,/^fi$/{
+    /^R_HOME_DIR=/c\
+R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
+    /^if test/,/^fi$/d
+  }' "${R_HOME_BIN_R}"
+  echo "  Patched lib/R/bin/R"
 fi
 
+# Replace compiled Rscript binary with a relocatable shell wrapper.
+# The compiled Rscript has R_HOME hardcoded at compile time and doesn't check
+# the R_HOME env var, so it can't find bin/R after relocation.
+# The wrapper replicates Rscript's argument handling: options like --verbose,
+# --default-packages are processed; -e expressions pass through; the first
+# positional arg becomes --file=arg; remaining positional args use --args.
+for rscript in "${R_INSTALL_PATH}/bin/Rscript" "${R_INSTALL_PATH}/lib/R/bin/Rscript"; do
+  [ -f "$rscript" ] || continue
+  # Determine R_HOME formula based on location (same logic as bin/R vs lib/R/bin/R)
+  if [[ "$rscript" == */lib/R/bin/Rscript ]]; then
+    r_home_formula='R_HOME="$(dirname "$(dirname "$(readlink -f "$0")")")"'
+  else
+    r_home_formula='R_HOME="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"'
+  fi
+  cat > "$rscript" <<'RSCRIPT_OUTER'
+#!/bin/sh
+# Relocatable Rscript wrapper (replaces compiled binary for portability)
+RSCRIPT_OUTER
+  echo "${r_home_formula}" >> "$rscript"
+  cat >> "$rscript" <<'RSCRIPT_EOF'
+export R_HOME
+
+# Process Rscript-specific options, collect pass-through R options.
+# R understands --verbose, --vanilla, --no-environ, --no-site-file, etc.
+# directly, so we only need to handle --default-packages (env var conversion)
+# and file argument conversion (first positional arg → --file=).
+r_opts=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --help|-h)
+      echo "Usage: Rscript [options] [-e expr [-e expr2 ...] | file] [args]"
+      exit 0
+      ;;
+    --version)
+      echo "Rscript front-end (shell wrapper)"
+      exit 0
+      ;;
+    --default-packages=*)
+      R_DEFAULT_PACKAGES="${1#--default-packages=}"
+      export R_DEFAULT_PACKAGES
+      shift
+      ;;
+    -e)
+      # -e starts expressions — stop processing options, pass rest to R
+      break
+      ;;
+    --*)
+      # Collect R options (--verbose, --vanilla, --no-environ, etc.)
+      r_opts="$r_opts $1"
+      shift
+      ;;
+    *)
+      # First positional arg is the script file
+      break
+      ;;
+  esac
+done
+
+# $@ now contains: [-e expr ...] or [file [args...]] or nothing
+# r_opts contains collected --options (no spaces in individual options)
+if [ $# -eq 0 ]; then
+  # No file or -e: just R options
+  exec "${R_HOME}/bin/R" --no-echo --no-restore $r_opts
+elif [ "$1" = "-e" ]; then
+  # -e expressions: pass through directly (preserves quoting via "$@")
+  exec "${R_HOME}/bin/R" --no-echo --no-restore $r_opts "$@"
+else
+  # File argument: convert to --file=, remaining args become --args
+  file="$1"
+  shift
+  if [ $# -gt 0 ]; then
+    exec "${R_HOME}/bin/R" --no-echo --no-restore $r_opts "--file=$file" --args "$@"
+  else
+    exec "${R_HOME}/bin/R" --no-echo --no-restore $r_opts "--file=$file"
+  fi
+fi
+RSCRIPT_EOF
+  chmod +x "$rscript"
+  echo "  Replaced $(basename "$(dirname "$rscript")")/Rscript with relocatable wrapper"
+done
+
 echo ">>> Phase 5: Verify library resolution"
-# auditwheel-r bundles non-whitelisted system libs into libs/.libs/ with $ORIGIN RPATHs.
+# delocate-r bundles non-allowed system libs into libs/.libs/ with $ORIGIN RPATHs.
 # libR.so and other R internal libs (libRblas.so, libRlapack.so) live in lib/R/lib/
 # and are found via LD_LIBRARY_PATH set by etc/ldpaths (sourced by bin/R before exec).
 #
 # We don't add libR.so RPATH entries because:
 # - The exec binary is non-PIE (EXEC type), and patchelf cannot expand its RPATH
 # - LD_LIBRARY_PATH from etc/ldpaths is the standard mechanism R uses
-echo "  auditwheel-r libs:"
+echo "  Bundled libs:"
 find "${R_INSTALL_PATH}" -name ".libs" -type d 2>/dev/null
 echo "  exec RPATH: $(patchelf --print-rpath "${R_INSTALL_PATH}/lib/R/bin/exec/R" 2>/dev/null)"
 
 echo ">>> Phase 6: Clean up"
-# Remove DESCRIPTION file created by auditwheel-r (R package metadata, not relevant here)
+# Remove DESCRIPTION file if created by delocate-r (shouldn't happen, but just in case)
 rm -f "${R_INSTALL_PATH}/DESCRIPTION"
-
-echo ">>> Phase 7: Create DEB and RPM packages"
-# Create DEB and RPM packages from the portable R installation using nfpm.
-# Dependencies are minimal — only manylinux_2_28 whitelisted system libraries
-# that R expects but does not bundle (X11, cairo, pango, glib, Tcl/Tk runtime).
-# Build tools (gcc, gfortran, make) are listed so users can compile R packages.
-
-if [ "$(arch)" == "aarch64" ]; then NFPM_ARCH=arm64; else NFPM_ARCH=amd64; fi
-
-cat <<EOF > /tmp/nfpm-manylinux.yml
-name: r-${R_VERSION}
-version: 1
-version_schema: none
-arch: ${NFPM_ARCH}
-maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
-description: |
-  GNU R statistical computation and graphics system (portable manylinux_2_28 build)
-vendor: Posit Software, PBC
-homepage: https://www.r-project.org
-license: GPL-2
-contents:
-- src: ${R_INSTALL_PATH}
-  dst: ${R_INSTALL_PATH}
-EOF
-
-# DEB package
-cat <<EOF > /tmp/nfpm-deb.yml
-$(cat /tmp/nfpm-manylinux.yml)
-section: universe/math
-priority: optional
-deb:
-  fields:
-    Bugs: https://github.com/rstudio/r-builds/issues
-depends:
-- ca-certificates
-- g++
-- gcc
-- gfortran
-- libc6
-- libcairo2
-- libglib2.0-0
-- libgomp1
-- libicu-dev
-- libpango-1.0-0
-- libpangocairo-1.0-0
-- libx11-6
-- libxt6
-- make
-- unzip
-- zip
-- zlib1g
-EOF
-
-echo "  Building DEB package..."
-nfpm package -f /tmp/nfpm-deb.yml -p deb -t "/tmp/output/${OS_IDENTIFIER}"
-
-# RPM package
-cat <<EOF > /tmp/nfpm-rpm.yml
-$(cat /tmp/nfpm-manylinux.yml)
-release: 1
-depends:
-- ca-certificates
-- gcc
-- gcc-c++
-- gcc-gfortran
-- glibc
-- libSM
-- libXt
-- libgomp
-- libicu
-- make
-- pango
-- unzip
-- which
-- zip
-- zlib
-EOF
-
-echo "  Building RPM package..."
-nfpm package -f /tmp/nfpm-rpm.yml -p rpm -t "/tmp/output/${OS_IDENTIFIER}"
-
-echo "  DEB/RPM packages:"
-ls -lh /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.deb /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.rpm 2>/dev/null || true
-ls -lh /tmp/output/${OS_IDENTIFIER}/R-${R_VERSION}*.rpm 2>/dev/null || true
 
 echo ">>> Done: R installation at ${R_INSTALL_PATH} is now manylinux_2_28 portable"
