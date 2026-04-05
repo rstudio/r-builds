@@ -73,17 +73,6 @@ zypper install -y \
   pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
 ```
 
-#### 3. Optional: graphics libraries (for cairo/pango plotting)
-
-These are **not bundled** (they depend on system font configuration and display
-drivers). Only needed if R plots use cairo-based graphics devices.
-
-| Distro | Packages |
-|---|---|
-| Ubuntu/Debian | `libcairo2 libpango-1.0-0 libpangocairo-1.0-0` |
-| RHEL/Fedora/Rocky | `cairo pango` |
-| openSUSE/SLES | `libcairo2 libpango-1_0-0` |
-
 ### What's bundled (not needed on the system)
 
 The tarball bundles all of the following, no system packages required:
@@ -93,6 +82,7 @@ The tarball bundles all of the following, no system packages required:
 - readline, ncurses
 - libtiff, libjpeg, libpng, freetype, fontconfig, harfbuzz
 - X11 libs (libX11, libSM, libICE, libXt, libXext, libXrender, libXmu)
+- cairo, pango, pixman, fontconfig
 - GLib, GObject
 - Tcl/Tk (shared libs + scripts)
 - ICU data/runtime libraries

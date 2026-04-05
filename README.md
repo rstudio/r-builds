@@ -218,18 +218,6 @@ sudo zypper install -y gcc gcc-c++ gcc-fortran make \
   pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
 ```
 
-Optional - for cairo/pango graphics devices:
-```bash
-# Ubuntu/Debian
-sudo apt-get install -y libcairo2 libpango-1.0-0 libpangocairo-1.0-0
-
-# RHEL/Fedora/Rocky
-sudo dnf install -y cairo pango
-
-# openSUSE/SLES
-sudo zypper install -y libcairo2 libpango-1_0-0
-```
-
 
 ### Verify R installation
 

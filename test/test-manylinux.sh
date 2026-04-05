@@ -34,18 +34,15 @@ if command -v apt-get &>/dev/null; then
   apt-get install -y --no-install-recommends \
     build-essential gfortran ca-certificates less tar gzip \
     libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev \
-    tcl tk \
-    libcairo2 libpango-1.0-0 libpangocairo-1.0-0
+    tcl tk
 elif command -v dnf &>/dev/null; then
   dnf install -y \
     gcc gcc-c++ gcc-gfortran make ca-certificates less which tar gzip \
-    pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel \
-    cairo pango
+    pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
 elif command -v zypper &>/dev/null; then
   zypper --non-interactive install \
     gcc gcc-c++ gcc-fortran make ca-certificates less which tar gzip \
-    pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel \
-    cairo-tools pango-tools libcairo2 libpango-1_0-0
+    pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
 else
   echo "ERROR: No supported package manager found"
   exit 1
