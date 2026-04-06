@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-# Test script for manylinux-2-28 portable R builds.
+# Test script for manylinux_2_28 portable R builds.
 # Runs on various distros to validate cross-distro portability.
 #
 # Tested distros: Ubuntu Noble, Rocky Linux 8, Rocky Linux 10, openSUSE 15.6
@@ -14,8 +14,8 @@ set -ex
 
 SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
-# Install R from the manylinux-2-28 tarball.
-TARBALL_DIR="${SCRIPT_DIR}/../builder/integration/tmp/r/manylinux-2-28"
+# Install R from the manylinux_2_28 tarball.
+TARBALL_DIR="${SCRIPT_DIR}/../builder/integration/tmp/r/manylinux_2_28"
 TARBALL=$(ls "${TARBALL_DIR}"/R-${R_VERSION}*.tar.gz 2>/dev/null | head -1)
 
 if [ -z "$TARBALL" ]; then
@@ -163,4 +163,4 @@ if [ -n "$TESTPKG_SO" ]; then
   echo "  testpkg.so DT_NEEDED: OK (no libopenblasp reference)"
 fi
 
-echo "=== All manylinux-2-28 tests passed ==="
+echo "=== All manylinux_2_28 tests passed ==="

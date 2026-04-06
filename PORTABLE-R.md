@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Add a new `manylinux-2-28` platform to r-builds (reusing the centos-8 Docker image)
+Add a new `manylinux_2_28` platform to r-builds (reusing the centos-8 Docker image)
 that builds R and then runs a post-build portability step: `delocate-r.py` + patchelf
 bundle system library dependencies into the R installation and rewrite RPATHs,
 producing portable R artifacts conforming to the manylinux_2_28 standard.
@@ -17,11 +17,11 @@ A portable **tar.gz** is produced for direct extraction to any path on glibc 2.2
 R_VERSION=4.4.2
 
 # Download (or copy from build output)
-# tar.gz is at: builder/integration/tmp/r/manylinux-2-28/R-${R_VERSION}-manylinux-2-28.tar.gz
+# tar.gz is at: builder/integration/tmp/r/manylinux_2_28/R-${R_VERSION}-manylinux_2_28.tar.gz
 
 # Extract
 mkdir -p /opt/R
-tar xzf R-${R_VERSION}-manylinux-2-28.tar.gz -C /opt/R
+tar xzf R-${R_VERSION}-manylinux_2_28.tar.gz -C /opt/R
 
 # Add to PATH
 export PATH=/opt/R/${R_VERSION}/bin:$PATH
@@ -99,7 +99,7 @@ The tarball can be extracted to any path. R auto-detects its location at
 startup. The standard install path is `/opt/R/<version>/`, but any path works:
 
 ```bash
-tar xzf R-4.4.2-manylinux-2-28.tar.gz -C /usr/local
+tar xzf R-4.4.2-manylinux_2_28.tar.gz -C /usr/local
 /usr/local/4.4.2/bin/R --version  # works
 ```
 
@@ -145,16 +145,16 @@ Three issues were found in the original POC:
 
 ## Design Decisions
 
-### New platform: `manylinux-2-28`
+### New platform: `manylinux_2_28`
 
 Following the existing r-builds pattern (and the rspm-builder-images convention),
-`manylinux-2-28` is a new platform that **reuses the centos-8 Docker image** as a
+`manylinux_2_28` is a new platform that **reuses the centos-8 Docker image** as a
 base but adds portability tooling (patchelf, delocate-r.py) and a portability
 post-processing step. This gives us:
 
-- `Dockerfile.manylinux-2-28` -- extends centos-8 with patchelf
-- `package.manylinux-2-28` -- runs portability post-processing (delocate-r.py)
-- Standard Makefile/compose targets: `build-r-manylinux-2-28`, `test-r-manylinux-2-28`, etc.
+- `Dockerfile.manylinux_2_28` -- extends centos-8 with patchelf
+- `package.manylinux_2_28` -- runs portability post-processing (delocate-r.py)
+- Standard Makefile/compose targets: `build-r-manylinux_2_28`, `test-r-manylinux_2_28`, etc.
 
 ### X11 support: bundled
 
@@ -175,21 +175,21 @@ so delocate-r.py resolves the OpenBLAS dependency cleanly.
 
 The `bin/R` shell script fix must work across R 3.0 through 4.5+. Rather than
 maintaining per-version `.patch` files, use a **post-install sed script** (in
-`package.manylinux-2-28`) that modifies the installed `bin/R` script after
+`package.manylinux_2_28`) that modifies the installed `bin/R` script after
 `make install`. The `R_HOME_DIR=` assignment in `R.sh.in` has been structurally stable
 since R 2.x, so a single sed replacement works across all supported versions.
 
 ## Implementation
 
-### Phase 1: Docker image (`Dockerfile.manylinux-2-28`)
+### Phase 1: Docker image (`Dockerfile.manylinux_2_28`)
 
-Create `Dockerfile.manylinux-2-28` that extends the centos-8 image and installs:
+Create `Dockerfile.manylinux_2_28` that extends the centos-8 image and installs:
 
 - OpenBLAS (`openblas-threads`) -- needed at package time so delocate-r.py can bundle it
 - patchelf 0.17.2 (from GitHub releases -- avoid 0.18.0 per known issues, same version
   as rspm-builder-images)
 
-### Phase 2: Portability script (`package.manylinux-2-28`)
+### Phase 2: Portability script (`package.manylinux_2_28`)
 
 Runs inside Docker after `build.sh` compiles and installs R:
 
@@ -225,8 +225,8 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 
 ### Phase 3: Integration
 
-- Add docker-compose service for `manylinux-2-28` in `builder/docker-compose.yml`.
-- Add `manylinux-2-28` to `PLATFORMS` in `Makefile`.
+- Add docker-compose service for `manylinux_2_28` in `builder/docker-compose.yml`.
+- Add `manylinux_2_28` to `PLATFORMS` in `Makefile`.
 - Add test service in `test/docker-compose.yml` using a different base image
   (e.g., Ubuntu 20.04) to validate cross-distro portability.
 
@@ -239,8 +239,8 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 
 ## New Files
 
-- `builder/Dockerfile.manylinux-2-28` -- Docker image extending centos-8 with portability tools
-- `builder/package.manylinux-2-28` -- Post-build portability script
+- `builder/Dockerfile.manylinux_2_28` -- Docker image extending centos-8 with portability tools
+- `builder/package.manylinux_2_28` -- Post-build portability script
 - `builder/delocate-r.py` -- Library bundling script
 - `builder/test_delocate_r.py` -- Unit tests for delocate-r.py (51 tests)
 
@@ -304,7 +304,7 @@ handles transitive dependencies.
 
 ### What was built
 
-A new `manylinux-2-28` platform producing a portable R 4.4.2 tar.gz
+A new `manylinux_2_28` platform producing a portable R 4.4.2 tar.gz
 from a single build on Rocky 8 (glibc 2.28):
 
 - **tar.gz** (~106MB) -- direct extraction, tested on Ubuntu Noble, Rocky 8, RHEL 10, openSUSE 15.6
@@ -320,20 +320,20 @@ purpose of a universal build.
 ### Files created/modified
 
 New files:
-- `builder/Dockerfile.manylinux-2-28` -- extends centos-8 with patchelf 0.17.2
-- `builder/package.manylinux-2-28` -- post-build portability script
+- `builder/Dockerfile.manylinux_2_28` -- extends centos-8 with patchelf 0.17.2
+- `builder/package.manylinux_2_28` -- post-build portability script
 - `builder/delocate-r.py` -- library bundling script
 - `builder/test_delocate_r.py` -- 51 unit tests for delocate-r.py
 - `test/test-manylinux.sh` -- cross-distro e2e tests
 
 Modified files:
-- `Makefile` -- added `manylinux-2-28` to PLATFORMS
-- `builder/docker-compose.yml` -- added manylinux-2-28 build service
-- `test/docker-compose.yml` -- added manylinux-2-28 test services (4 distros)
+- `Makefile` -- added `manylinux_2_28` to PLATFORMS
+- `builder/docker-compose.yml` -- added manylinux_2_28 build service
+- `test/docker-compose.yml` -- added manylinux_2_28 test services (4 distros)
 
-### Post-build phases (package.manylinux-2-28)
+### Post-build phases (package.manylinux_2_28)
 
-Phases match the actual code in `package.manylinux-2-28`:
+Phases match the actual code in `package.manylinux_2_28`:
 
 1. **BLAS setup**: remove existing `libRblas.so`, copy system OpenBLAS
    (`libopenblasp.so.0`) as `lib/R/lib/libRblas.so`
@@ -373,9 +373,9 @@ is `etc/ldpaths` (sourced by `bin/R` shell script before exec), which sets
 
 #### 4. OpenBLAS not installed in Docker image
 **Problem**: The centos-8 base image doesn't install OpenBLAS at build time -- the
-centos-8 platform swaps in OpenBLAS at RPM install time. The manylinux-2-28 build
+centos-8 platform swaps in OpenBLAS at RPM install time. The manylinux_2_28 build
 needs OpenBLAS present at package time so delocate-r.py can bundle it.
-**Fix**: Added `openblas-threads` to the manylinux-2-28 Dockerfile.
+**Fix**: Added `openblas-threads` to the manylinux_2_28 Dockerfile.
 
 #### 5. BLAS SONAME mismatch breaks package compilation on target
 **Problem**: `lib/R/lib/libRblas.so` (copied from system OpenBLAS) retained its
@@ -500,16 +500,16 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
 
 ```bash
 # Build the Docker image
-docker compose -f builder/docker-compose.yml build manylinux-2-28
+docker compose -f builder/docker-compose.yml build manylinux_2_28
 
 # Build R (takes ~10 min)
-R_VERSION=4.4.2 docker compose -f builder/docker-compose.yml run --rm manylinux-2-28
+R_VERSION=4.4.2 docker compose -f builder/docker-compose.yml run --rm manylinux_2_28
 
 # Run e2e tests on all 4 distros
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux-2-28
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux-2-28-centos-8
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux-2-28-rhel-10
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux-2-28-opensuse-156
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28-centos-8
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28-rhel-10
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28-opensuse-156
 
 # Run unit tests for delocate-r.py
 cd builder && python3 -m pytest test_delocate_r.py -v

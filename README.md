@@ -179,7 +179,7 @@ Then install the package:
 sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
-#### Portable (manylinux) - any Linux distro with glibc >= 2.28
+#### Portable (manylinux_2_28) - any Linux distro with glibc >= 2.28
 
 A portable tar.gz build is available that works across all supported Linux
 distributions without distro-specific packages. Most library dependencies are
@@ -187,9 +187,9 @@ bundled; R auto-detects its install location so it can be extracted to any path.
 
 Download and extract:
 ```bash
-curl -O https://cdn.posit.co/r/manylinux-2-28/pkgs/R-${R_VERSION}-manylinux-2-28.tar.gz
+curl -O https://cdn.posit.co/r/manylinux_2_28/pkgs/R-${R_VERSION}-manylinux_2_28.tar.gz
 sudo mkdir -p /opt/R
-sudo tar xzf R-${R_VERSION}-manylinux-2-28.tar.gz -C /opt/R
+sudo tar xzf R-${R_VERSION}-manylinux_2_28.tar.gz -C /opt/R
 ```
 
 Install system dependencies:

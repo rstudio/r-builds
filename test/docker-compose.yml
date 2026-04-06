@@ -64,38 +64,38 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
-  manylinux-2-28:
+  manylinux_2_28:
     image: ubuntu:noble
     command: /r-builds/test/test-manylinux.sh
     environment:
-      - OS_IDENTIFIER=manylinux-2-28
+      - OS_IDENTIFIER=manylinux_2_28
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
-  manylinux-2-28-centos-8:
+  manylinux_2_28-centos-8:
     image: rockylinux:8
     command: /r-builds/test/test-manylinux.sh
     environment:
-      - OS_IDENTIFIER=manylinux-2-28
+      - OS_IDENTIFIER=manylinux_2_28
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
-  manylinux-2-28-rhel-10:
+  manylinux_2_28-rhel-10:
     image: rockylinux/rockylinux:10
     command: /r-builds/test/test-manylinux.sh
     environment:
-      - OS_IDENTIFIER=manylinux-2-28
+      - OS_IDENTIFIER=manylinux_2_28
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
-  manylinux-2-28-opensuse-156:
+  manylinux_2_28-opensuse-156:
     image: opensuse/leap:15.6
     command: /r-builds/test/test-manylinux.sh
     environment:
-      - OS_IDENTIFIER=manylinux-2-28
+      - OS_IDENTIFIER=manylinux_2_28
       - R_VERSION=${R_VERSION}
     volumes:
       - ../:/r-builds
