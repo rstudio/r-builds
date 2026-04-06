@@ -70,8 +70,8 @@ RUN if [ "$(arch)" == "aarch64" ]; then PATCHELF_ARCH=aarch64; else PATCHELF_ARC
     chmod +x /usr/local/bin/patchelf && \
     rm patchelf.tar.gz
 
-COPY delocate-r.py /delocate-r.py
-RUN chmod +x /delocate-r.py
+COPY delocate_r.py /delocate_r.py
+RUN chmod +x /delocate_r.py
 COPY package.manylinux_2_28 /package.sh
 COPY build.sh .
 COPY patches /patches

@@ -3,7 +3,7 @@
 ## TL;DR
 
 Add a new `manylinux_2_28` platform to r-builds (reusing the centos-8 Docker image)
-that builds R and then runs a post-build portability step: `delocate-r.py` + patchelf
+that builds R and then runs a post-build portability step: `delocate_r.py` + patchelf
 bundle system library dependencies into the R installation and rewrite RPATHs,
 producing portable R artifacts conforming to the manylinux_2_28 standard.
 
@@ -135,7 +135,7 @@ Three issues were found in the original POC:
    is never set, and the exec binary can't find `libR.so`.
 
 2. **libSM.so.6 / libICE.so.6 missing on Ubuntu**: These were originally in the
-   manylinux_2_28 allowlist (not bundled). Now resolved: delocate-r.py uses a
+   manylinux_2_28 allowlist (not bundled). Now resolved: delocate_r.py uses a
    narrower allowlist that bundles X11, cairo, pango, GLib, and all other non-glibc
    dependencies (~65 libraries total).
 
@@ -149,18 +149,18 @@ Three issues were found in the original POC:
 
 Following the existing r-builds pattern (and the rspm-builder-images convention),
 `manylinux_2_28` is a new platform that **reuses the centos-8 Docker image** as a
-base but adds portability tooling (patchelf, delocate-r.py) and a portability
+base but adds portability tooling (patchelf, delocate_r.py) and a portability
 post-processing step. This gives us:
 
 - `Dockerfile.manylinux_2_28` -- extends centos-8 with patchelf
-- `package.manylinux_2_28` -- runs portability post-processing (delocate-r.py)
+- `package.manylinux_2_28` -- runs portability post-processing (delocate_r.py)
 - Standard Makefile/compose targets: `build-r-manylinux_2_28`, `test-r-manylinux_2_28`, etc.
 
 ### X11 support: bundled
 
 R is built `--with-x` (same as centos-8). X11 libraries (`libX11.so.6`, `libSM.so.6`,
 `libICE.so.6`, `libXt.so.6`, `libXext.so.6`, `libXrender.so.1`, `libXmu.so.6`) are
-**bundled** by delocate-r.py despite being on the official manylinux_2_28 allowlist.
+**bundled** by delocate_r.py despite being on the official manylinux_2_28 allowlist.
 This ensures X11 graphics work even on minimal containers without system X11 packages.
 
 ### BLAS handling
@@ -169,7 +169,7 @@ The standard centos-8 build swaps `libRblas.so` to a symlink pointing at system
 OpenBLAS (for runtime BLAS swapping). For portable builds, we **bundle OpenBLAS
 directly** as `libRblas.so`. Users lose runtime BLAS swapping but gain cross-distro
 portability. The `libRblas.so.keep` (original reference BLAS) is removed before repair
-so delocate-r.py resolves the OpenBLAS dependency cleanly.
+so delocate_r.py resolves the OpenBLAS dependency cleanly.
 
 ### Patch scripts for R_HOME portability
 
@@ -185,7 +185,7 @@ since R 2.x, so a single sed replacement works across all supported versions.
 
 Create `Dockerfile.manylinux_2_28` that extends the centos-8 image and installs:
 
-- OpenBLAS (`openblas-threads`) -- needed at package time so delocate-r.py can bundle it
+- OpenBLAS (`openblas-threads`) -- needed at package time so delocate_r.py can bundle it
 - patchelf 0.17.2 (from GitHub releases -- avoid 0.18.0 per known issues, same version
   as rspm-builder-images)
 
@@ -194,12 +194,12 @@ Create `Dockerfile.manylinux_2_28` that extends the centos-8 image and installs:
 Runs inside Docker after `build.sh` compiles and installs R:
 
 1. **BLAS setup**: Remove the existing `libRblas.so` and copy system OpenBLAS
-   (`libopenblasp.so.0`) in its place, so delocate-r.py can trace and bundle
+   (`libopenblasp.so.0`) in its place, so delocate_r.py can trace and bundle
    a real BLAS library.
 
-2. **Run delocate-r.py repair**:
+2. **Run delocate_r.py repair**:
    ```
-   python3 /delocate-r.py /opt/R/${R_VERSION}/
+   python3 /delocate_r.py /opt/R/${R_VERSION}/
    ```
    - Bundles ~65 external libs into `lib/R/lib/.libs/` with hash-renamed filenames
    - Rewrites RPATHs on all ELF binaries to `$ORIGIN/<relative-path-to-lib/R/lib/.libs>`
@@ -241,8 +241,8 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 
 - `builder/Dockerfile.manylinux_2_28` -- Docker image extending centos-8 with portability tools
 - `builder/package.manylinux_2_28` -- Post-build portability script
-- `builder/delocate-r.py` -- Library bundling script
-- `builder/test_delocate_r.py` -- Unit tests for delocate-r.py (51 tests)
+- `builder/delocate_r.py` -- Library bundling script
+- `builder/test_delocate_r.py` -- Unit tests for delocate_r.py (51 tests)
 
 ## Verification Checklist
 
@@ -268,7 +268,7 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 ### ARM64 support
 
 Verified working. Built and tested R 4.4.2 on ARM64 (aarch64) via QEMU emulation.
-The Dockerfile, delocate-r.py, and tarball naming all handle ARM64 natively -- no
+The Dockerfile, delocate_r.py, and tarball naming all handle ARM64 natively -- no
 code changes were needed. CI uses native ARM64 runners (`ubuntu-24.04-arm`).
 
 ### Other base distros
@@ -276,24 +276,24 @@ code changes were needed. CI uses native ARM64 runners (`ubuntu-24.04-arm`).
 Could add manylinux_2_31 (Debian 11 / Ubuntu 20.04 glibc) or manylinux_2_34 (RHEL 9
 glibc) variants if needed.
 
-### Why delocate-r.py instead of auditwheel-r
+### Why delocate_r.py instead of auditwheel-r
 
 The initial POC used `auditwheel-r` (Posit's fork of auditwheel for R packages).
-We replaced it with a standalone `delocate-r.py` script (~450 lines, Python 3 stdlib
+We replaced it with a standalone `delocate_r.py` script (~450 lines, Python 3 stdlib
 + patchelf) for several reasons:
 
 - **No external dependencies**: auditwheel-r requires Python 3.12, pyelftools, and a
-  pre-built wheel. delocate-r.py uses only Python 3 stdlib + patchelf.
+  pre-built wheel. delocate_r.py uses only Python 3 stdlib + patchelf.
 - **Full control over the allowlist**: auditwheel-r uses the manylinux_2_28 allowlist,
-  which includes X11, GLib, and other libs we want to bundle. delocate-r.py uses a
+  which includes X11, GLib, and other libs we want to bundle. delocate_r.py uses a
   narrower allowlist (glibc core + compiler runtime only).
 - **No fork maintenance**: auditwheel-r had a `Path` vs `str` bug we had to fix.
-  delocate-r.py is self-contained.
-- **Simpler workflow**: delocate-r.py operates in-place (no wheelhouse copy step).
+  delocate_r.py is self-contained.
+- **Simpler workflow**: delocate_r.py operates in-place (no wheelhouse copy step).
 - **Well-scoped**: we're bundling one R installation, not arbitrary R packages, so
   the edge cases are limited.
 
-delocate-r.py replicates the core auditwheel-r pipeline: discover ELF files, run `ldd`
+delocate_r.py replicates the core auditwheel-r pipeline: discover ELF files, run `ldd`
 to find external deps, copy them with SHA256-hash-renamed filenames, rewrite SONAMEs
 and RPATHs with patchelf, and fix inter-library DT_NEEDED references. A fixpoint loop
 handles transitive dependencies.
@@ -322,8 +322,8 @@ purpose of a universal build.
 New files:
 - `builder/Dockerfile.manylinux_2_28` -- extends centos-8 with patchelf 0.17.2
 - `builder/package.manylinux_2_28` -- post-build portability script
-- `builder/delocate-r.py` -- library bundling script
-- `builder/test_delocate_r.py` -- 51 unit tests for delocate-r.py
+- `builder/delocate_r.py` -- library bundling script
+- `builder/test_delocate_r.py` -- 51 unit tests for delocate_r.py
 - `test/test-manylinux.sh` -- cross-distro e2e tests
 
 Modified files:
@@ -337,8 +337,8 @@ Phases match the actual code in `package.manylinux_2_28`:
 
 1. **BLAS setup**: remove existing `libRblas.so`, copy system OpenBLAS
    (`libopenblasp.so.0`) as `lib/R/lib/libRblas.so`
-2. **delocate-r.py repair**: bundle non-allowed system libs (~65), rewrite RPATHs.
-   `LD_LIBRARY_PATH` includes R's lib dir so delocate-r.py can find libRblas.so.
+2. **delocate_r.py repair**: bundle non-allowed system libs (~65), rewrite RPATHs.
+   `LD_LIBRARY_PATH` includes R's lib dir so delocate_r.py can find libRblas.so.
    Operates in-place (no wheelhouse copy step).
 3. **Fix BLAS/LAPACK SONAMEs**: `patchelf --set-soname` on libRblas.so and
     libRlapack.so so compiled packages record the correct dependency names
@@ -355,12 +355,12 @@ Phases match the actual code in `package.manylinux_2_28`:
 
 #### 1. auditwheel-r `str` vs `Path` bug (historical, no longer applicable)
 **Problem**: auditwheel-r's directory repair mode yielded plain strings where Path
-objects were expected. This was one reason we replaced auditwheel-r with delocate-r.py.
+objects were expected. This was one reason we replaced auditwheel-r with delocate_r.py.
 
-#### 2. delocate-r.py couldn't find libRblas.so
-**Problem**: During repair, delocate-r.py uses `ldd` to trace dependencies but couldn't
+#### 2. delocate_r.py couldn't find libRblas.so
+**Problem**: During repair, delocate_r.py uses `ldd` to trace dependencies but couldn't
 resolve `libRblas.so` because it's not in standard library paths.
-**Fix**: Export `LD_LIBRARY_PATH` with R's lib dir before running delocate-r.py.
+**Fix**: Export `LD_LIBRARY_PATH` with R's lib dir before running delocate_r.py.
 
 #### 3. patchelf `--add-rpath` crashes on non-PIE executables
 **Problem**: R's `lib/R/bin/exec/R` is a non-PIE EXEC type binary (not PIE/DYN).
@@ -374,7 +374,7 @@ is `etc/ldpaths` (sourced by `bin/R` shell script before exec), which sets
 #### 4. OpenBLAS not installed in Docker image
 **Problem**: The centos-8 base image doesn't install OpenBLAS at build time -- the
 centos-8 platform swaps in OpenBLAS at RPM install time. The manylinux_2_28 build
-needs OpenBLAS present at package time so delocate-r.py can bundle it.
+needs OpenBLAS present at package time so delocate_r.py can bundle it.
 **Fix**: Added `openblas-threads` to the manylinux_2_28 Dockerfile.
 
 #### 5. BLAS SONAME mismatch breaks package compilation on target
@@ -440,9 +440,9 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
   portability (LD_LIBRARY_PATH, TCL_LIBRARY, TK_LIBRARY, CURL_CA_BUNDLE). R already
   designed this for relocatability -- we just needed to extend it.
 
-- **delocate-r.py handles R's complex library layout well**. Despite R having libs in
+- **delocate_r.py handles R's complex library layout well**. Despite R having libs in
   `lib/R/lib/`, modules in `lib/R/modules/`, and package `.so` files in
-  `lib/R/library/*/libs/`, delocate-r.py correctly traced and bundled all dependencies
+  `lib/R/library/*/libs/`, delocate_r.py correctly traced and bundled all dependencies
   into a single `lib/R/lib/.libs/` directory with `$ORIGIN`-relative RPATHs.
 
 - **The SONAME issue was subtle**: the linker records the SONAME (not the filename) in
@@ -511,6 +511,6 @@ R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_2
 R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28-rhel-10
 R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28-opensuse-156
 
-# Run unit tests for delocate-r.py
+# Run unit tests for delocate_r.py
 cd builder && python3 -m pytest test_delocate_r.py -v
 ```

@@ -8,7 +8,7 @@ set -e
 #
 # This script:
 # 1. Swaps reference BLAS with OpenBLAS (for performance)
-# 2. Runs delocate-r.py to bundle system library dependencies
+# 2. Runs delocate_r.py to bundle system library dependencies
 # 3. Makes R_HOME self-detecting for relocatability
 # 4. Adds RPATH entries so the exec binary can find libR.so
 #
@@ -21,21 +21,21 @@ R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
 echo ">>> Phase 1: BLAS setup"
 # Replace reference BLAS with OpenBLAS for performance.
 # The centos-8 build uses internal shared BLAS (--with-blas is not set).
-# Swap it with system OpenBLAS so delocate-r bundles a real BLAS.
+# Swap it with system OpenBLAS so delocate_r bundles a real BLAS.
 rm -f "${R_LIB_DIR}/libRblas.so"
 cp /usr/lib64/libopenblasp.so.0 "${R_LIB_DIR}/libRblas.so"
 
-echo ">>> Phase 2: delocate-r repair"
+echo ">>> Phase 2: delocate_r repair"
 # Bundle non-allowed system library dependencies into the R installation
 # and rewrite RPATHs to use $ORIGIN-relative paths.
 #
 # LD_LIBRARY_PATH must include R's lib dir so ldd can locate libRblas.so
 # and libRlapack.so (which are internal to the R installation).
 export LD_LIBRARY_PATH="${R_LIB_DIR}:${LD_LIBRARY_PATH:-}"
-python3 /delocate-r.py "${R_INSTALL_PATH}"
+python3 /delocate_r.py "${R_INSTALL_PATH}"
 
 echo ">>> Phase 3: Fix BLAS/LAPACK SONAMEs for package compilation"
-# After delocate-r repair, lib/R/lib/libRblas.so still has its original SONAME
+# After delocate_r repair, lib/R/lib/libRblas.so still has its original SONAME
 # (e.g., "libopenblasp.so.0"). When users compile R packages that link against
 # -lRblas (from Makeconf's BLAS_LIBS), the linker records this SONAME. At load time,
 # the dynamic linker then fails to find "libopenblasp.so.0" on the target system.
@@ -220,7 +220,7 @@ RSCRIPT_EOF
 done
 
 echo ">>> Phase 6: Verify library resolution"
-# delocate-r bundles non-allowed system libs into lib/R/lib/.libs/ with $ORIGIN RPATHs.
+# delocate_r bundles non-allowed system libs into lib/R/lib/.libs/ with $ORIGIN RPATHs.
 # libR.so and other R internal libs (libRblas.so, libRlapack.so) live in lib/R/lib/
 # and are found via LD_LIBRARY_PATH set by etc/ldpaths (sourced by bin/R before exec).
 #
@@ -232,7 +232,7 @@ find "${R_INSTALL_PATH}" -name ".libs" -type d 2>/dev/null
 echo "  exec RPATH: $(patchelf --print-rpath "${R_INSTALL_PATH}/lib/R/bin/exec/R" 2>/dev/null)"
 
 echo ">>> Phase 7: Clean up"
-# Remove DESCRIPTION file if created by delocate-r (shouldn't happen, but just in case)
+# Remove DESCRIPTION file if created by delocate_r (shouldn't happen, but just in case)
 rm -f "${R_INSTALL_PATH}/DESCRIPTION"
 
 echo ">>> Done: R installation at ${R_INSTALL_PATH} is now manylinux_2_28 portable"

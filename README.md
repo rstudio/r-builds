@@ -187,9 +187,14 @@ bundled; R auto-detects its install location so it can be extracted to any path.
 
 Download and extract:
 ```bash
+# x86_64
 curl -O https://cdn.posit.co/r/manylinux_2_28/pkgs/R-${R_VERSION}-manylinux_2_28.tar.gz
+
+# arm64
+curl -O https://cdn.posit.co/r/manylinux_2_28/pkgs/R-${R_VERSION}-manylinux_2_28-arm64.tar.gz
+
 sudo mkdir -p /opt/R
-sudo tar xzf R-${R_VERSION}-manylinux_2_28.tar.gz -C /opt/R
+sudo tar xzf R-${R_VERSION}-manylinux_2_28*.tar.gz -C /opt/R
 ```
 
 Install system dependencies:

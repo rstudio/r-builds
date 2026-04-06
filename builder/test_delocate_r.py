@@ -1,4 +1,4 @@
-"""Unit tests for delocate-r.py."""
+"""Unit tests for delocate_r.py."""
 
 import hashlib
 import os
@@ -8,12 +8,12 @@ from unittest import mock
 
 import pytest
 
-# Import the module under test. Since delocate-r.py has a hyphen, use importlib.
+# Import the module under test. Since delocate_r.py has a hyphen, use importlib.
 import importlib.util
 
 spec = importlib.util.spec_from_file_location(
     "delocate_r",
-    Path(__file__).parent / "delocate-r.py",
+    Path(__file__).parent / "delocate_r.py",
 )
 delocate_r = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(delocate_r)

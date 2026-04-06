@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""delocate-r.py — Bundle system library dependencies into an R installation.
+"""delocate_r.py — Bundle system library dependencies into an R installation.
 
 Replaces auditwheel-r with a standalone script using ldd + patchelf.
 Discovers non-allowed shared library dependencies, copies them into
@@ -8,7 +8,7 @@ entries so the R installation is self-contained and portable.
 
 Operates in-place on the R installation directory.
 
-Usage: delocate-r.py <r-install-path>
+Usage: delocate_r.py <r-install-path>
 """
 
 import hashlib
@@ -356,7 +356,7 @@ def verify_repair(
 
 def main() -> None:
     if len(sys.argv) != 2:
-        print("Usage: delocate-r.py <r-install-path>", file=sys.stderr)
+        print("Usage: delocate_r.py <r-install-path>", file=sys.stderr)
         sys.exit(1)
 
     r_path = Path(sys.argv[1]).resolve()
@@ -367,7 +367,7 @@ def main() -> None:
     libs_sdir = "lib/R/lib/.libs"
     dest_dir = r_path / libs_sdir
 
-    print(f"delocate-r: repairing {r_path} (in-place)")
+    print(f"delocate_r: repairing {r_path} (in-place)")
 
     # Phase 1: Discover ELF files
     print("  Discovering ELF files...")
@@ -426,7 +426,7 @@ def main() -> None:
     print("  Verifying repair...")
     verify_repair(all_soname_map, all_soname_path, all_elf_needs, dest_dir, r_path)
 
-    print(f"delocate-r: done. Bundled {total} libraries into {libs_sdir}/")
+    print(f"delocate_r: done. Bundled {total} libraries into {libs_sdir}/")
 
 
 if __name__ == "__main__":
