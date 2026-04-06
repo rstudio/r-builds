@@ -260,14 +260,16 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
 - [x] Makeconf relocatability -- verified not an issue. Makeconf uses `$(R_HOME)`
       for include/lib paths, which R resolves at runtime. Tested R CMD INSTALL at
       `/usr/local/custom-R/` (non-standard path) successfully.
-- [ ] ARM64 support
+- [x] ARM64 support -- built and tested R 4.4.2 on ARM64 (aarch64) via
+      QEMU emulation. All integration tests pass. No code changes needed.
 
 ## Future Enhancements (v2)
 
 ### ARM64 support
 
-The centos-8 Docker image supports ARM64. The manylinux-2-28 platform should work on
-ARM64 with minimal changes (patchelf and delocate-r.py support it).
+Verified working. Built and tested R 4.4.2 on ARM64 (aarch64) via QEMU emulation.
+The Dockerfile, delocate-r.py, and tarball naming all handle ARM64 natively -- no
+code changes were needed. CI uses native ARM64 runners (`ubuntu-24.04-arm`).
 
 ### Other base distros
 
