@@ -262,6 +262,8 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
       `/usr/local/custom-R/` (non-standard path) successfully.
 - [x] ARM64 support -- built and tested R 4.4.2 on ARM64 (aarch64) via
       QEMU emulation. All integration tests pass. No code changes needed.
+- [ ] Fontconfig version mismatch warning -- bundled fontconfig 2.13 warns on
+      distros with fontconfig 2.14+ configs. See known limitation #5 for options.
 
 ## Future Enhancements (v2)
 
@@ -496,6 +498,32 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
    See [Installation](#installation) above. On minimal containers
    (e.g., Ubuntu Noble), `ca-certificates` is notably absent by default.
 
+5. **Fontconfig warning on newer distros**: The bundled fontconfig (2.13.x from
+   Rocky 8) may print `unknown element "reset-dirs"` warnings on distros with
+   fontconfig 2.14+ config files (e.g., Arch, Fedora 38+). This is cosmetic —
+   fonts and plotting still work correctly. Options to fix:
+
+   - **A. Don't bundle fontconfig** (recommended): Add `libfontconfig.so` to the
+     delocate_r.py allowlist. We already require `fontconfig` as a system dep, so
+     use the system library that matches its own config files. The system fontconfig
+     links against system freetype; our bundled cairo also bundles freetype, but
+     they don't share `FT_Face` objects across the boundary so two instances coexist.
+   - **B. Ship a minimal `fonts.conf`**: Create `lib/R/etc/fonts.conf` with just
+     `<dir>/usr/share/fonts</dir>` and set `FONTCONFIG_FILE` in `etc/ldpaths`.
+     The bundled fontconfig never sees problematic system configs. Downside: loses
+     system font customizations (substitution rules, hinting, etc.).
+   - **C. Build fontconfig 2.15 from source**: Compile a newer fontconfig in the
+     Rocky 8 Docker image so the bundled version understands `<reset-dirs/>`.
+     Adds build complexity and maintenance burden.
+   - **D. Ship minimal `fonts.conf` + bundled fallback font** (inspired by
+     [r-glibc #19](https://github.com/r-hub/r-glibc/issues/19)): Combine option B
+     with bundling a fallback font like [GNU Unifont](https://unifoundry.com/unifont/)
+     (~14MB TTF). Set `FONTCONFIG_FILE` to a self-contained config that points at both
+     system font dirs and the bundled font. The bundled fontconfig never sees
+     problematic system configs, and text rendering works even on containers without
+     any system fonts installed. Tradeoff: adds ~14MB to tarball, loses system font
+     customizations.
+
 ### Testing commands
 
 ```bash
@@ -514,3 +542,104 @@ R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_2
 # Run unit tests for delocate_r.py
 cd builder && python3 -m pytest test_delocate_r.py -v
 ```
+
+---
+
+## Related Projects
+
+- **[r-hub/r-glibc](https://github.com/r-hub/r-glibc)** — Portable R binaries for
+  Linux using static linking. Builds dependencies (OpenSSL, libcurl, cairo) from source
+  as static libraries. Not relocatable (hardcoded `/opt/R/` paths). Bundles CA certs
+  and static tool binaries. See [detailed comparison](#comparison-manylinux_2_28-vs-r-hubr-glibc) below.
+- **[astral-sh/python-build-standalone](https://github.com/astral-sh/python-build-standalone)** —
+  Portable Python binaries for Linux/macOS/Windows. Statically links most dependencies
+  (only glibc core libs as runtime deps). Targets glibc 2.17+. Doesn't bundle
+  fontconfig — font rendering isn't a core Python dependency (only relevant for
+  Tkinter/Xft, tracked as [issue #740](https://github.com/indygreg/python-build-standalone/issues/740),
+  still open/unresolved). Effectively uses our Option A approach by not bundling
+  fontconfig at all. Uses `uv`/`sysconfigpatcher` to fix build-time absolute paths at
+  install time (similar to our `bin/R` relocation). Bundles a terminfo database as a
+  fallback (similar to our Tcl/Tk script bundling).
+
+---
+
+## Comparison: manylinux_2_28 vs. r-hub/r-glibc
+
+[r-hub/r-glibc](https://github.com/r-hub/r-glibc) is another project that produces
+portable R binaries for Linux. Both solve the same problem — cross-distro R — but
+take fundamentally different approaches.
+
+### Build approach
+
+| | **r-glibc** | **manylinux_2_28** |
+|---|---|---|
+| Base image | Ubuntu 18.04 (Bionic, glibc 2.27) | Rocky 8 (glibc 2.28) |
+| Linking strategy | **Static linking** — builds OpenSSL, libcurl, etc. from source with `-fPIC`, collects `.a` files, R links statically | **Dynamic + post-build bundling** — standard shared-lib R build, then `delocate_r.py` copies `.so` files and rewrites RPATHs with patchelf |
+| R configure | `--with-static-cairo --enable-BLAS-shlib=no` | Standard shared-lib build (same as centos-8) |
+
+### Relocatability
+
+| | **r-glibc** | **manylinux_2_28** |
+|---|---|---|
+| Relocatable? | **No** — hardcoded `/opt/R/${VERSION}-glibc/` in `bin/R`, Renviron, and configure-time paths (`PAGER=`, `R_ZIPCMD=`). Tarball must extract to `/` | **Yes** — `bin/R` uses `readlink -f` self-detection, all paths relative to `R_HOME` |
+
+### Fontconfig
+
+Both projects have the **same issue**. Bundled fontconfig (2.12 in r-glibc, 2.13 in
+manylinux_2_28) doesn't understand `<reset-dirs/>` from fontconfig 2.14+ config files
+on newer distros (Arch, Fedora 38+). r-glibc tracks this as
+[issue #19](https://github.com/r-hub/r-glibc/issues/19) (open, unresolved — plan is
+to bundle GNU Unifont as fallback). Our limitation #5 documents options including
+not bundling fontconfig at all.
+
+### Library versions
+
+| Library | **r-glibc** (Ubuntu 18.04) | **manylinux_2_28** (Rocky 8) |
+|---|---|---|
+| glibc min | 2.27 | 2.28 |
+| OpenSSL | **3.4.1** (built from source) | 1.1.1k (system) |
+| libcurl | **8.11.0** (built from source) | 7.61 (system) |
+| ICU | 60.2 | 60.3 |
+| fontconfig | 2.12.6 | 2.13.1 |
+| OpenBLAS | 0.2.20 | 0.3.15 |
+
+r-glibc's system libs are generally **older** (Ubuntu 18.04 vintage) but OpenSSL and
+libcurl are explicitly rebuilt from newer source for security
+([issue #20](https://github.com/r-hub/r-glibc/issues/20)). manylinux_2_28 uses Rocky 8
+system libs which are newer across the board except OpenSSL/libcurl.
+
+### Certificates (HTTPS)
+
+| | **r-glibc** | **manylinux_2_28** |
+|---|---|---|
+| Approach | **Bundles Mozilla CA certs** — downloads `curl.se/ca/cacert.pem` into the R installation, sets `CURL_CA_BUNDLE` in Renviron. Zero system deps for HTTPS | **Uses system certs** — `etc/ldpaths` probes known cert paths. Requires `ca-certificates` package |
+
+Bundling certs has significant downsides: the bundle becomes stale (revoked CAs remain
+trusted, new CAs are missing), enterprise/corporate CAs in the system trust store are
+ignored, and distro security updates to the CA store don't apply. The `CURL_CA_BUNDLE`
+env var also leaks to child processes. Requiring `ca-certificates` (a single, universally
+available package) avoids all of these issues.
+
+### Static tool bundling
+
+r-glibc bundles static Alpine binaries for `which`, `less`, `zip`, and `unzip` (from
+[r-hub/r-musl](https://github.com/r-hub/r-musl)) into `lib/R/tools/`, plus `terminfo`
+files. This makes R work on truly minimal containers that lack these tools.
+manylinux_2_28 relies on system tools. This is an interesting idea worth considering
+for our builds — on minimal Docker images, `less` may be absent (R falls back to `cat`).
+
+### Maintenance burden
+
+| | **r-glibc** | **manylinux_2_28** |
+|---|---|---|
+| Per-version patches | **~30 patch files** — one per R version for X11 static linking. Every new R release needs a new patch | **Zero patches** — X11 is dynamically bundled by delocate_r.py |
+| Build complexity | High — builds OpenSSL, libcurl, libdeflate from source; downloads ~30 pre-built `.deb` packages for ARM64; manually collects ~40 `.a` files | Moderate — standard R build, then delocate_r.py post-build |
+| Base image EOL | Ubuntu 18.04 EOL (April 2023) | Rocky 8 supported until May 2029 |
+| Dockerfile size | ~300+ lines, complex arch-specific branching | ~80 lines |
+
+### Summary
+
+- **r-glibc**: Static linking. More self-contained (bundles certs, tools), but not
+  relocatable, older base, per-version patches for X11, higher maintenance.
+- **manylinux_2_28**: Dynamic linking + RPATH rewriting. Relocatable, no per-version
+  patches, simpler build, but requires `ca-certificates` and `fontconfig` system packages.
