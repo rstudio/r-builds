@@ -89,7 +89,13 @@ RUN FC_VERSION=$(rpm -q --qf '%{VERSION}' fontconfig 2>/dev/null || echo "0") &&
       cd .. && rm -rf fontconfig-2.15.0 fontconfig-2.15.0.tar.gz; \
     fi
 
-# Configure flags matching centos-8
+# Configure flags matching centos-8.
+# --with-2025blas: Required for R >= 4.5.0. LAPACK 3.12.1 (Jan 2025) added new
+# BLAS routines (dgemmtr/zgemmtr). This flag compiles them into libRlapack
+# instead of libRblas, preserving the ability to swap BLAS implementations.
+# For manylinux_2_28, BLAS swapping is not supported (OpenBLAS is bundled
+# directly), but we keep this for consistency with centos-8.
+# Harmlessly ignored on older R versions.
 ENV CONFIGURE_OPTIONS="\
     --enable-R-shlib \
     --with-tcltk \
