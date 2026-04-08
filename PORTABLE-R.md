@@ -39,8 +39,9 @@ but some system packages are still required. These fall into three categories:
 
 R auto-detects the CA certificate bundle via `CURL_CA_BUNDLE` (set in
 `etc/ldpaths`), but the certificate files themselves must be installed.
-The bundled fontconfig library needs system font configuration files
-(`/etc/fonts/fonts.conf`) for text rendering in plots.
+Fontconfig is bundled, but it reads `/etc/fonts/fonts.conf` for font
+discovery. The system `fontconfig` package provides both the config files
+and the fonts needed for text rendering in plots.
 
 | Distro | Package | Notes |
 |---|---|---|
@@ -86,9 +87,9 @@ The tarball bundles all of the following, no system packages required:
 - OpenBLAS (as libRblas.so), LAPACK (as libRlapack.so)
 - OpenSSL / libcurl / libssh2
 - readline, ncurses
-- libtiff, libjpeg, libpng, freetype, fontconfig, harfbuzz
+- libtiff, libjpeg, libpng, freetype, fontconfig (2.15.0, built from source), harfbuzz
 - X11 libs (libX11, libSM, libICE, libXt, libXext, libXrender, libXmu)
-- cairo, pango, pixman, fontconfig
+- cairo, pango, pixman
 - GLib, GObject
 - Tcl/Tk (shared libs + scripts)
 - ICU data/runtime libraries
@@ -188,6 +189,11 @@ Create `Dockerfile.manylinux_2_28` that extends the centos-8 image and installs:
 - OpenBLAS (`openblas-threads`) -- needed at package time so delocate_r.py can bundle it
 - patchelf 0.17.2 (from GitHub releases -- avoid 0.18.0 per known issues, same version
   as rspm-builder-images)
+- fontconfig 2.15.0 (built from source) -- Rocky 8's 2.13.1 doesn't understand config
+  directives from fontconfig 2.14+ (e.g. `<reset-dirs/>`), causing warnings on modern
+  distros. The build is conditional: skipped if the system fontconfig is already >= 2.14.
+  Version 2.15.0 was chosen because it's the latest release that still uses autotools
+  (2.16+ requires meson) and matches what Ubuntu 24.04/RHEL 10/Debian 13 ship.
 
 ### Phase 2: Portability script (`package.manylinux_2_28`)
 
@@ -262,8 +268,10 @@ The tar.gz is created by `archive_r` in `build.sh`. No DEB/RPM packages are prod
       `/usr/local/custom-R/` (non-standard path) successfully.
 - [x] ARM64 support -- built and tested R 4.4.2 on ARM64 (aarch64) via
       QEMU emulation. All integration tests pass. No code changes needed.
-- [ ] Fontconfig version mismatch warning -- bundled fontconfig 2.13 warns on
-      distros with fontconfig 2.14+ configs. See known limitation #5 for options.
+- [x] Fontconfig version mismatch warning -- resolved by building fontconfig
+      2.15.0 from source in the Docker image (Option C). The bundled fontconfig
+      understands all modern config directives. Build is conditional: skipped if
+      system fontconfig >= 2.14.
 
 ## Future Enhancements (v2)
 
@@ -498,31 +506,14 @@ Same treatment for `Rscript`. Symlinks are skipped (only regular files are patch
    See [Installation](#installation) above. On minimal containers
    (e.g., Ubuntu Noble), `ca-certificates` is notably absent by default.
 
-5. **Fontconfig warning on newer distros**: The bundled fontconfig (2.13.x from
-   Rocky 8) may print `unknown element "reset-dirs"` warnings on distros with
-   fontconfig 2.14+ config files (e.g., Arch, Fedora 38+). This is cosmetic —
-   fonts and plotting still work correctly. Options to fix:
-
-   - **A. Don't bundle fontconfig** (recommended): Add `libfontconfig.so` to the
-     delocate_r.py allowlist. We already require `fontconfig` as a system dep, so
-     use the system library that matches its own config files. The system fontconfig
-     links against system freetype; our bundled cairo also bundles freetype, but
-     they don't share `FT_Face` objects across the boundary so two instances coexist.
-   - **B. Ship a minimal `fonts.conf`**: Create `lib/R/etc/fonts.conf` with just
-     `<dir>/usr/share/fonts</dir>` and set `FONTCONFIG_FILE` in `etc/ldpaths`.
-     The bundled fontconfig never sees problematic system configs. Downside: loses
-     system font customizations (substitution rules, hinting, etc.).
-   - **C. Build fontconfig 2.15 from source**: Compile a newer fontconfig in the
-     Rocky 8 Docker image so the bundled version understands `<reset-dirs/>`.
-     Adds build complexity and maintenance burden.
-   - **D. Ship minimal `fonts.conf` + bundled fallback font** (inspired by
-     [r-glibc #19](https://github.com/r-hub/r-glibc/issues/19)): Combine option B
-     with bundling a fallback font like [GNU Unifont](https://unifoundry.com/unifont/)
-     (~14MB TTF). Set `FONTCONFIG_FILE` to a self-contained config that points at both
-     system font dirs and the bundled font. The bundled fontconfig never sees
-     problematic system configs, and text rendering works even on containers without
-     any system fonts installed. Tradeoff: adds ~14MB to tarball, loses system font
-     customizations.
+5. **Fontconfig built from source** (resolved): The Docker image builds
+   fontconfig 2.15.0 from source to replace Rocky 8's system 2.13.1. This
+   ensures the bundled fontconfig understands config directives from 2.14+
+   (e.g. `<reset-dirs/>`) and avoids `Fontconfig warning: unknown element
+   "reset-dirs"` on modern distros. The build is conditional -- on base images
+   with fontconfig >= 2.14 (e.g. Rocky 9), the source build is skipped
+   automatically. Version 2.15.0 was chosen as the latest autotools-based
+   release (2.16+ requires meson), matching Ubuntu 24.04/RHEL 10/Debian 13.
 
 ### Testing commands
 
@@ -585,12 +576,12 @@ take fundamentally different approaches.
 
 ### Fontconfig
 
-Both projects have the **same issue**. Bundled fontconfig (2.12 in r-glibc, 2.13 in
-manylinux_2_28) doesn't understand `<reset-dirs/>` from fontconfig 2.14+ config files
-on newer distros (Arch, Fedora 38+). r-glibc tracks this as
-[issue #19](https://github.com/r-hub/r-glibc/issues/19) (open, unresolved — plan is
-to bundle GNU Unifont as fallback). Our limitation #5 documents options including
-not bundling fontconfig at all.
+r-glibc bundles fontconfig 2.12 (Ubuntu 18.04) which doesn't understand
+`<reset-dirs/>` from fontconfig 2.14+ config files on newer distros (Arch,
+Fedora 38+). This is tracked as [issue #19](https://github.com/r-hub/r-glibc/issues/19)
+(open, unresolved -- plan is to bundle GNU Unifont as fallback).
+manylinux_2_28 resolves this by building fontconfig 2.15.0 from source, so
+the bundled version understands all modern config directives.
 
 ### Library versions
 
@@ -600,7 +591,7 @@ not bundling fontconfig at all.
 | OpenSSL | **3.4.1** (built from source) | 1.1.1k (system) |
 | libcurl | **8.11.0** (built from source) | 7.61 (system) |
 | ICU | 60.2 | 60.3 |
-| fontconfig | 2.12.6 | 2.13.1 |
+| fontconfig | 2.12.6 | **2.15.0** (built from source) |
 | OpenBLAS | 0.2.20 | 0.3.15 |
 
 r-glibc's system libs are generally **older** (Ubuntu 18.04 vintage) but OpenSSL and

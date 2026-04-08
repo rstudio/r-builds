@@ -47,6 +47,48 @@ RUN dnf -y upgrade \
 
 RUN chmod 0777 /opt
 
+# Build fontconfig from source if the system version is too old.
+#
+# Rocky 8 ships fontconfig 2.13.1, which doesn't understand config directives
+# added in 2.14+ (e.g. <reset-dirs/>). When the bundled fontconfig parses
+# /etc/fonts/fonts.conf on a newer target distro, it prints warnings like:
+#
+#   Fontconfig warning: unknown element "reset-dirs"
+#
+# This affects any target with fontconfig >= 2.14 configs: Ubuntu 24.04+,
+# RHEL 9+, Fedora 38+, Debian 12+, Arch, openSUSE Tumbleweed, etc.
+#
+# We build 2.15.0 because:
+#   - It understands all config directives through <reset-dirs/> (added in 2.14)
+#   - It's the latest version that still uses autotools (./configure && make).
+#     Fontconfig 2.16+ switched to meson-only, adding build complexity.
+#   - It matches what Ubuntu 24.04, RHEL 10, and Debian 13 ship.
+#   - It includes security fixes over 2.13.x.
+#
+# The built library is installed to /usr/lib64, overwriting the system copy,
+# so delocate_r.py will bundle it automatically.
+#
+# On base images with fontconfig >= 2.14 (e.g. Rocky 9+), this step can be
+# removed -- the system fontconfig is new enough.
+ENV FONTCONFIG_MIN_VERSION=2.14
+RUN FC_VERSION=$(rpm -q --qf '%{VERSION}' fontconfig 2>/dev/null || echo "0") && \
+    if printf '%s\n%s\n' "$FONTCONFIG_MIN_VERSION" "$FC_VERSION" | sort -V | head -1 | grep -qx "$FONTCONFIG_MIN_VERSION"; then \
+      echo "System fontconfig $FC_VERSION >= $FONTCONFIG_MIN_VERSION, skipping source build"; \
+    else \
+      echo "System fontconfig $FC_VERSION < $FONTCONFIG_MIN_VERSION, building 2.15.0 from source" && \
+      dnf -y install freetype-devel expat-devel gperf && \
+      curl -fsSL -o fontconfig-2.15.0.tar.gz \
+        "https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.15.0.tar.gz" && \
+      tar xzf fontconfig-2.15.0.tar.gz && \
+      cd fontconfig-2.15.0 && \
+      ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var \
+        --disable-docs --disable-static && \
+      make -j"$(nproc)" && \
+      make install && \
+      ldconfig && \
+      cd .. && rm -rf fontconfig-2.15.0 fontconfig-2.15.0.tar.gz; \
+    fi
+
 # Configure flags matching centos-8
 ENV CONFIGURE_OPTIONS="\
     --enable-R-shlib \
