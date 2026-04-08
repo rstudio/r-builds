@@ -179,22 +179,32 @@ Then install the package:
 sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
-#### Portable (manylinux_2_28) - any Linux distro with glibc >= 2.28
+#### Portable (manylinux) - any Linux distro with glibc >= 2.28
 
-A portable tar.gz build is available that works across all supported Linux
-distributions without distro-specific packages. Most library dependencies are
-bundled; R auto-detects its install location so it can be extracted to any path.
+Portable tar.gz builds are available that work across Linux distributions
+without distro-specific packages. Most library dependencies are bundled;
+R auto-detects its install location so it can be extracted to any path.
+
+Two variants are available:
+
+- **manylinux_2_28** - requires glibc >= 2.28 (RHEL 8+, Ubuntu 20.04+, Debian 10+, etc.)
+- **manylinux_2_34** - requires glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+, etc.)
+
+Use the variant that matches the oldest glibc version on your target systems.
 
 Download and extract:
 ```bash
+# Set the manylinux variant
+MANYLINUX=manylinux_2_28  # or manylinux_2_34
+
 # x86_64
-curl -O https://cdn.posit.co/r/manylinux_2_28/pkgs/R-${R_VERSION}-manylinux_2_28.tar.gz
+curl -O https://cdn.posit.co/r/${MANYLINUX}/pkgs/R-${R_VERSION}-${MANYLINUX}.tar.gz
 
 # arm64
-curl -O https://cdn.posit.co/r/manylinux_2_28/pkgs/R-${R_VERSION}-manylinux_2_28-arm64.tar.gz
+curl -O https://cdn.posit.co/r/${MANYLINUX}/pkgs/R-${R_VERSION}-${MANYLINUX}-arm64.tar.gz
 
 sudo mkdir -p /opt/R
-sudo tar xzf R-${R_VERSION}-manylinux_2_28*.tar.gz -C /opt/R
+sudo tar xzf R-${R_VERSION}-${MANYLINUX}*.tar.gz -C /opt/R
 ```
 
 Install system dependencies:

@@ -1,0 +1,90 @@
+FROM rockylinux:9
+
+ENV OS_IDENTIFIER manylinux_2_34
+
+RUN dnf -y upgrade \
+    && dnf -y install dnf-plugins-core \
+    && dnf config-manager --set-enabled crb \
+    && dnf -y install \
+    autoconf \
+    automake \
+    bzip2-devel \
+    cairo-devel \
+    gcc-c++ \
+    gcc-gfortran \
+    java-11-openjdk-devel \
+    java-11-openjdk-headless \
+    libICE-devel \
+    libSM-devel \
+    libX11-devel \
+    libXmu-devel \
+    libXt-devel \
+    libcurl-devel \
+    libicu-devel \
+    libjpeg-devel \
+    libpng-devel \
+    libtiff-devel \
+    libtool \
+    make \
+    ncurses-devel \
+    openblas-threads \
+    pango-devel \
+    pcre-devel \
+    pcre2-devel \
+    readline-devel \
+    rpm-build \
+    tcl-devel \
+    tex \
+    texinfo-tex \
+    texlive-collection-latexrecommended \
+    tk-devel \
+    valgrind-devel \
+    which \
+    wget \
+    xz-devel \
+    zlib-devel \
+    && dnf clean all
+
+RUN chmod 0777 /opt
+
+# Rocky 9 ships fontconfig 2.14.0, which understands <reset-dirs/> and other
+# modern config directives. No source build needed (unlike Rocky 8).
+
+# Configure flags matching rhel-9.
+# --with-2025blas: Required for R >= 4.5.0. LAPACK 3.12.1 (Jan 2025) added new
+# BLAS routines (dgemmtr/zgemmtr). This flag compiles them into libRlapack
+# instead of libRblas, preserving the ability to swap BLAS implementations.
+# For manylinux_2_34, BLAS swapping is not supported (OpenBLAS is bundled
+# directly), but we keep this for consistency.
+# Harmlessly ignored on older R versions.
+ENV CONFIGURE_OPTIONS="\
+    --enable-R-shlib \
+    --with-tcltk \
+    --enable-memory-profiling \
+    --with-x \
+    --with-system-valgrind-headers \
+    --with-tcl-config=/usr/lib64/tclConfig.sh \
+    --with-tk-config=/usr/lib64/tkConfig.sh \
+    --enable-prebuilt-html \
+    --with-2025blas"
+
+# RHEL 9 doesn't have the inconsolata font
+ENV R_RD4PDF="times,hyper"
+
+# R 3.x requires PCRE2 for Pango support on RHEL 9
+ENV INCLUDE_PCRE2_IN_R_3 yes
+
+# Install patchelf 0.17.2 (avoid 0.18.0 per known issues)
+RUN if [ "$(arch)" == "aarch64" ]; then PATCHELF_ARCH=aarch64; else PATCHELF_ARCH=x86_64; fi && \
+    PATCHELF_VER=0.17.2 && \
+    curl -fsSL -o patchelf.tar.gz "https://github.com/NixOS/patchelf/releases/download/${PATCHELF_VER}/patchelf-${PATCHELF_VER}-${PATCHELF_ARCH}.tar.gz" && \
+    tar -xvf patchelf.tar.gz -C /usr/local && \
+    chmod +x /usr/local/bin/patchelf && \
+    rm patchelf.tar.gz
+
+COPY delocate_r.py /delocate_r.py
+RUN chmod +x /delocate_r.py
+COPY package.manylinux_2_34 /package.sh
+COPY build.sh .
+COPY patches /patches
+ENTRYPOINT ./build.sh

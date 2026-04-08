@@ -1,0 +1,238 @@
+#!/bin/bash
+set -e
+
+# package.manylinux_2_34
+#
+# Post-build portability script for manylinux_2_34 R builds.
+# Called by build.sh after compile_r() installs R to $R_INSTALL_PATH.
+#
+# This script:
+# 1. Swaps reference BLAS with OpenBLAS (for performance)
+# 2. Runs delocate_r.py to bundle system library dependencies
+# 3. Makes R_HOME self-detecting for relocatability
+# 4. Adds RPATH entries so the exec binary can find libR.so
+#
+# Output: a portable tarball (created by build.sh). No DEB/RPM packages are
+# produced because the manylinux build is distro-agnostic — distro-specific
+# package dependencies would defeat the purpose of a universal build.
+
+R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
+
+echo ">>> Phase 1: BLAS setup"
+# Replace reference BLAS with OpenBLAS for performance.
+# The centos-8 build uses internal shared BLAS (--with-blas is not set).
+# Swap it with system OpenBLAS so delocate_r bundles a real BLAS.
+rm -f "${R_LIB_DIR}/libRblas.so"
+cp /usr/lib64/libopenblasp.so.0 "${R_LIB_DIR}/libRblas.so"
+
+echo ">>> Phase 2: delocate_r repair"
+# Bundle non-allowed system library dependencies into the R installation
+# and rewrite RPATHs to use $ORIGIN-relative paths.
+#
+# LD_LIBRARY_PATH must include R's lib dir so ldd can locate libRblas.so
+# and libRlapack.so (which are internal to the R installation).
+export LD_LIBRARY_PATH="${R_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+python3 /delocate_r.py "${R_INSTALL_PATH}"
+
+echo ">>> Phase 3: Fix BLAS/LAPACK SONAMEs for package compilation"
+# After delocate_r repair, lib/R/lib/libRblas.so still has its original SONAME
+# (e.g., "libopenblasp.so.0"). When users compile R packages that link against
+# -lRblas (from Makeconf's BLAS_LIBS), the linker records this SONAME. At load time,
+# the dynamic linker then fails to find "libopenblasp.so.0" on the target system.
+#
+# Fix: set the SONAME to match the filename so packages record "libRblas.so" as their
+# dependency, which can always be found in R's lib dir via LD_LIBRARY_PATH.
+if [ -f "${R_LIB_DIR}/libRblas.so" ]; then
+  patchelf --set-soname libRblas.so "${R_LIB_DIR}/libRblas.so"
+  echo "  Fixed libRblas.so SONAME"
+fi
+if [ -f "${R_LIB_DIR}/libRlapack.so" ]; then
+  patchelf --set-soname libRlapack.so "${R_LIB_DIR}/libRlapack.so"
+  echo "  Fixed libRlapack.so SONAME"
+fi
+
+echo ">>> Phase 4: Bundle Tcl/Tk library scripts"
+# The bundled libtcl8.6.so has hardcoded paths to Tcl scripts (e.g., /usr/share/tcl8.6
+# on CentOS 8). On a different distro, these paths may not exist or differ.
+# Bundle the Tcl/Tk library scripts into the R installation and set TCL_LIBRARY/TK_LIBRARY
+# in etc/ldpaths so R's tcltk package can always find them.
+TCL_SHARE="${R_INSTALL_PATH}/lib/R/share"
+if [ -d /usr/share/tcl8.6 ]; then
+  cp -a /usr/share/tcl8.6 "${TCL_SHARE}/tcl8.6"
+  echo "  Bundled tcl8.6 scripts"
+fi
+if [ -d /usr/share/tk8.6 ]; then
+  cp -a /usr/share/tk8.6 "${TCL_SHARE}/tk8.6"
+  echo "  Bundled tk8.6 scripts"
+fi
+# Add TCL_LIBRARY and TK_LIBRARY to etc/ldpaths so they're set when R starts
+if [ -f "${R_INSTALL_PATH}/lib/R/etc/ldpaths" ]; then
+  cat >> "${R_INSTALL_PATH}/lib/R/etc/ldpaths" <<'TCLEOF'
+
+# Tcl/Tk library paths (bundled for portability)
+: ${TCL_LIBRARY=${R_HOME}/share/tcl8.6}
+: ${TK_LIBRARY=${R_HOME}/share/tk8.6}
+export TCL_LIBRARY TK_LIBRARY
+
+# SSL CA certificate bundle (cross-distro portability)
+# CentOS/RHEL: /etc/pki/tls/certs/ca-bundle.crt
+# Debian/Ubuntu: /etc/ssl/certs/ca-certificates.crt
+# SUSE: /etc/ssl/ca-bundle.pem (or /var/lib/ca-certificates/ca-bundle.pem)
+if [ -z "${CURL_CA_BUNDLE:-}" ]; then
+  for _ca in /etc/ssl/certs/ca-certificates.crt \
+             /etc/pki/tls/certs/ca-bundle.crt \
+             /etc/ssl/ca-bundle.pem \
+             /var/lib/ca-certificates/ca-bundle.pem; do
+    if [ -f "$_ca" ]; then
+      CURL_CA_BUNDLE="$_ca"
+      export CURL_CA_BUNDLE
+      break
+    fi
+  done
+  unset _ca
+fi
+TCLEOF
+  echo "  Added TCL_LIBRARY/TK_LIBRARY to etc/ldpaths"
+fi
+
+echo ">>> Phase 5: Make bin/R relocatable"
+# The installed bin/R script has R_HOME_DIR hardcoded to the build-time prefix.
+# Replace it with self-detecting logic that derives R_HOME from the script's own
+# location, making R relocatable.
+#
+# This works across all R versions (3.0 through 4.5+) because the R_HOME_DIR
+# assignment has been structurally stable in R.sh.in since R 2.x.
+#
+# The original line looks like:
+#   R_HOME_DIR=/opt/R/4.4.2/lib/R
+# We replace it with logic that resolves symlinks and derives the path.
+#
+# Two scripts need patching with DIFFERENT formulas:
+#   bin/R        → dirname(dirname(readlink -f $0))/lib/R   (script is at <prefix>/bin/R)
+#   lib/R/bin/R  → dirname(dirname(readlink -f $0))         (script is at <R_HOME>/bin/R)
+# R CMD INSTALL and other subprocesses invoke lib/R/bin/R directly, so both must work.
+sed -i '/^R_HOME_DIR=/,/^fi$/{
+  /^R_HOME_DIR=/c\
+R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"
+  /^if test/,/^fi$/d
+}' "${R_INSTALL_PATH}/bin/R"
+
+# Fix R_SHARE_DIR, R_INCLUDE_DIR, R_DOC_DIR — these are hardcoded to the
+# build-time prefix by configure. Replace them with ${R_HOME}-relative paths.
+for r_script in "${R_INSTALL_PATH}/bin/R" "${R_INSTALL_PATH}/lib/R/bin/R"; do
+  [ -f "$r_script" ] || continue
+  sed -i 's|^R_SHARE_DIR=.*|R_SHARE_DIR=${R_HOME}/share|' "$r_script"
+  sed -i 's|^R_INCLUDE_DIR=.*|R_INCLUDE_DIR=${R_HOME}/include|' "$r_script"
+  sed -i 's|^R_DOC_DIR=.*|R_DOC_DIR=${R_HOME}/doc|' "$r_script"
+done
+
+# Patch lib/R/bin/R (the copy inside R_HOME, invoked by R CMD INSTALL etc.)
+# Only patch if it's a regular file (not a symlink to bin/R).
+R_HOME_BIN_R="${R_INSTALL_PATH}/lib/R/bin/R"
+if [ -f "${R_HOME_BIN_R}" ] && [ ! -L "${R_HOME_BIN_R}" ]; then
+  sed -i '/^R_HOME_DIR=/,/^fi$/{
+    /^R_HOME_DIR=/c\
+R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
+    /^if test/,/^fi$/d
+  }' "${R_HOME_BIN_R}"
+  echo "  Patched lib/R/bin/R"
+fi
+
+# Replace compiled Rscript binary with a relocatable shell wrapper.
+# The compiled Rscript has R_HOME hardcoded at compile time and doesn't check
+# the R_HOME env var, so it can't find bin/R after relocation.
+# The wrapper replicates Rscript's argument handling: options like --verbose,
+# --default-packages are processed; -e expressions pass through; the first
+# positional arg becomes --file=arg; remaining positional args use --args.
+for rscript in "${R_INSTALL_PATH}/bin/Rscript" "${R_INSTALL_PATH}/lib/R/bin/Rscript"; do
+  [ -f "$rscript" ] || continue
+  # Determine R_HOME formula based on location (same logic as bin/R vs lib/R/bin/R)
+  if [[ "$rscript" == */lib/R/bin/Rscript ]]; then
+    r_home_formula='R_HOME="$(dirname "$(dirname "$(readlink -f "$0")")")"'
+  else
+    r_home_formula='R_HOME="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"'
+  fi
+  cat > "$rscript" <<'RSCRIPT_OUTER'
+#!/bin/sh
+# Relocatable Rscript wrapper (replaces compiled binary for portability)
+RSCRIPT_OUTER
+  echo "${r_home_formula}" >> "$rscript"
+  cat >> "$rscript" <<'RSCRIPT_EOF'
+export R_HOME
+
+# Process Rscript-specific options, collect pass-through R options.
+# R understands --verbose, --vanilla, --no-environ, --no-site-file, etc.
+# directly, so we only need to handle --default-packages (env var conversion)
+# and file argument conversion (first positional arg → --file=).
+r_opts=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --help|-h)
+      echo "Usage: Rscript [options] [-e expr [-e expr2 ...] | file] [args]"
+      exit 0
+      ;;
+    --version)
+      echo "Rscript front-end (shell wrapper)"
+      exit 0
+      ;;
+    --default-packages=*)
+      R_DEFAULT_PACKAGES="${1#--default-packages=}"
+      export R_DEFAULT_PACKAGES
+      shift
+      ;;
+    -e)
+      # -e starts expressions — stop processing options, pass rest to R
+      break
+      ;;
+    --*)
+      # Collect R options (--verbose, --vanilla, --no-environ, etc.)
+      r_opts="$r_opts $1"
+      shift
+      ;;
+    *)
+      # First positional arg is the script file
+      break
+      ;;
+  esac
+done
+
+# $@ now contains: [-e expr ...] or [file [args...]] or nothing
+# r_opts contains collected --options (no spaces in individual options)
+if [ $# -eq 0 ]; then
+  # No file or -e: just R options
+  exec "${R_HOME}/bin/R" --slave --no-restore $r_opts
+elif [ "$1" = "-e" ]; then
+  # -e expressions: pass through directly (preserves quoting via "$@")
+  exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "$@"
+else
+  # File argument: convert to --file=, remaining args become --args
+  file="$1"
+  shift
+  if [ $# -gt 0 ]; then
+    exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "--file=$file" --args "$@"
+  else
+    exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "--file=$file"
+  fi
+fi
+RSCRIPT_EOF
+  chmod +x "$rscript"
+  echo "  Replaced $(basename "$(dirname "$rscript")")/Rscript with relocatable wrapper"
+done
+
+echo ">>> Phase 6: Verify library resolution"
+# delocate_r bundles non-allowed system libs into lib/R/lib/.libs/ with $ORIGIN RPATHs.
+# libR.so and other R internal libs (libRblas.so, libRlapack.so) live in lib/R/lib/
+# and are found via LD_LIBRARY_PATH set by etc/ldpaths (sourced by bin/R before exec).
+#
+# We don't add libR.so RPATH entries because:
+# - The exec binary is non-PIE (EXEC type), and patchelf cannot expand its RPATH
+# - LD_LIBRARY_PATH from etc/ldpaths is the standard mechanism R uses
+echo "  Bundled libs:"
+find "${R_INSTALL_PATH}" -name ".libs" -type d 2>/dev/null
+echo "  exec RPATH: $(patchelf --print-rpath "${R_INSTALL_PATH}/lib/R/bin/exec/R" 2>/dev/null)"
+
+echo ">>> Phase 7: Clean up"
+# Remove DESCRIPTION file if created by delocate_r (shouldn't happen, but just in case)
+rm -f "${R_INSTALL_PATH}/DESCRIPTION"
+
+echo ">>> Done: R installation at ${R_INSTALL_PATH} is now manylinux_2_28 portable"

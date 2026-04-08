@@ -100,6 +100,42 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
+  manylinux_2_34:
+    image: ubuntu:noble
+    command: /r-builds/test/test-manylinux.sh
+    environment:
+      - OS_IDENTIFIER=manylinux_2_34
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
+  manylinux_2_34-rocky-9:
+    image: rockylinux:9
+    command: /r-builds/test/test-manylinux.sh
+    environment:
+      - OS_IDENTIFIER=manylinux_2_34
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
+  manylinux_2_34-rhel-10:
+    image: rockylinux/rockylinux:10
+    command: /r-builds/test/test-manylinux.sh
+    environment:
+      - OS_IDENTIFIER=manylinux_2_34
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
+  manylinux_2_34-opensuse-156:
+    image: opensuse/leap:15.6
+    command: /r-builds/test/test-manylinux.sh
+    environment:
+      - OS_IDENTIFIER=manylinux_2_34
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
   rhel-9:
     image: rockylinux:9
     command: /r-builds/test/test-yum.sh

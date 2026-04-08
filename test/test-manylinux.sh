@@ -14,8 +14,8 @@ set -ex
 
 SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
-# Install R from the manylinux_2_28 tarball.
-TARBALL_DIR="${SCRIPT_DIR}/../builder/integration/tmp/r/manylinux_2_28"
+# Install R from the tarball.
+TARBALL_DIR="${SCRIPT_DIR}/../builder/integration/tmp/r/${OS_IDENTIFIER}"
 TARBALL=$(ls "${TARBALL_DIR}"/R-${R_VERSION}*.tar.gz 2>/dev/null | head -1)
 
 if [ -z "$TARBALL" ]; then
