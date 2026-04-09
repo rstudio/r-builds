@@ -135,7 +135,7 @@ The tarball is self-contained except for:
 |---|---|---|
 | glibc >= build version | Core C library | (always present) |
 | `ca-certificates` | SSL/TLS certificate bundle for HTTPS | `ca-certificates` |
-| `fontconfig` | Font config files for text rendering | `fontconfig` |
+| `fontconfig` | Font config files for text rendering | `fontconfig` (on openSUSE/SLES, also install `dejavu-fonts`) |
 | `which` | Required by R's `utils` package at startup | `which` (RHEL/SUSE; included in `debianutils` on Debian/Ubuntu) |
 
 For compiling R packages from source, users also need a C/C++/Fortran compiler and dev packages for `pcre2`, `lzma`, `bz2`, `zlib`, `icu`.

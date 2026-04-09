@@ -46,7 +46,7 @@ elif command -v zypper &>/dev/null; then
   zypper --non-interactive install \
     gcc gcc-c++ gcc-fortran make ca-certificates less which tar gzip \
     pcre2-devel pcre-devel xz-devel libbz2-devel zlib-devel libicu-devel \
-    fontconfig
+    fontconfig dejavu-fonts
 else
   echo "ERROR: No supported package manager found"
   exit 1

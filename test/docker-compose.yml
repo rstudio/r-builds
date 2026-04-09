@@ -91,6 +91,7 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
+  # openSUSE 15.7 (using 15.6 image since there is no 15.7 Docker image yet)
   manylinux_2_34-opensuse-156:
     image: opensuse/leap:15.6
     command: /r-builds/test/test-manylinux.sh

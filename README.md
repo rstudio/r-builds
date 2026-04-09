@@ -245,13 +245,13 @@ sudo zypper install -y ca-certificates which
 # Arch Linux
 sudo pacman -S ca-certificates which
 
-# Font configuration (for plotting with cairo graphics devices)
+# Font configuration and fonts (for plotting with cairo graphics devices)
 # Ubuntu/Debian
 sudo apt-get install -y fontconfig
 # RHEL/Fedora/Rocky/Amazon Linux
 sudo dnf install -y fontconfig
-# openSUSE/SLES
-sudo zypper install -y fontconfig
+# openSUSE/SLES (fontconfig does not pull in fonts automatically)
+sudo zypper install -y fontconfig dejavu-fonts
 # Arch Linux
 sudo pacman -S fontconfig
 ```
