@@ -45,6 +45,12 @@ RUN dnf -y upgrade \
     zlib-devel \
     && dnf clean all
 
+# Install nfpm for DEB/RPM packaging
+RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(cat /tmp/arch).rpm" && \
+    dnf install -y "nfpm_$(cat /tmp/arch).rpm" && \
+    rm "nfpm_$(cat /tmp/arch).rpm"
+
 RUN chmod 0777 /opt
 
 # Rocky 9 ships fontconfig 2.14.0, which understands <reset-dirs/> and other

@@ -12,9 +12,10 @@ set -e
 # 3. Makes R_HOME self-detecting for relocatability
 # 4. Adds RPATH entries so the exec binary can find libR.so
 #
-# Output: a portable tarball (created by build.sh). No DEB/RPM packages are
-# produced because the manylinux build is distro-agnostic — distro-specific
-# package dependencies would defeat the purpose of a universal build.
+# Output: a portable tarball (created by build.sh), plus DEB and RPM packages
+# (built via nfpm). The DEB/RPM packages depend only on ca-certificates and
+# fontconfig, making them usable across DEB/RPM-based distros. For distros
+# that don't use DEB/RPM (e.g., Arch Linux), the tarball is a universal fallback.
 
 R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
 
@@ -236,3 +237,67 @@ echo ">>> Phase 7: Clean up"
 rm -f "${R_INSTALL_PATH}/DESCRIPTION"
 
 echo ">>> Done: R installation at ${R_INSTALL_PATH} is now manylinux_2_28 portable"
+
+# ── DEB/RPM packaging ─────────────────────────────────────────────────────────
+# Build generic DEB and RPM packages from the portable R installation.
+# These packages have minimal dependencies (ca-certificates, fontconfig) and
+# work across any DEB/RPM distro with glibc >= 2.28. If a distro doesn't
+# support these packages, users can fall back to the tarball.
+
+if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
+  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
+fi
+
+if [ "$(arch)" == "aarch64" ]; then nfpm_arch=arm64; else nfpm_arch=amd64; fi
+
+echo ">>> Phase 8: Build DEB package"
+cat <<EOF > /tmp/nfpm-deb.yml
+name: r-${R_VERSION}
+version: 1
+version_schema: none
+section: universe/math
+priority: optional
+arch: ${nfpm_arch}
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system (portable manylinux build)
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPL-2
+deb:
+  fields:
+    Bugs: https://github.com/rstudio/r-builds/issues
+depends:
+- ca-certificates
+- fontconfig
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+EOF
+
+nfpm package -f /tmp/nfpm-deb.yml -p deb -t "/tmp/output/${OS_IDENTIFIER}"
+echo "  Built $(ls /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.deb)"
+
+echo ">>> Phase 9: Build RPM package"
+cat <<EOF > /tmp/nfpm-rpm.yml
+name: R-${R_VERSION}
+version: 1
+version_schema: none
+arch: ${nfpm_arch}
+release: 1
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system (portable manylinux build)
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPLv2+
+depends:
+- ca-certificates
+- fontconfig
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+EOF
+
+nfpm package -f /tmp/nfpm-rpm.yml -p rpm -t "/tmp/output/${OS_IDENTIFIER}"
+echo "  Built $(ls /tmp/output/${OS_IDENTIFIER}/R-${R_VERSION}*.rpm)"

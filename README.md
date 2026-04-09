@@ -181,20 +181,50 @@ sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 
 #### Portable (manylinux) - any Linux distro with glibc >= 2.28
 
-Portable tar.gz builds are available that work across Linux distributions
-without distro-specific packages. Most library dependencies are bundled;
-R auto-detects its install location so it can be extracted to any path.
+Portable builds are available that work across Linux distributions without
+distro-specific packages. Most library dependencies are bundled; R auto-detects
+its install location so it can be extracted to any path.
 
-Two variants are available:
+These portable builds are useful for Linux distributions that don't have
+dedicated r-builds packages, such as:
 
-- **manylinux_2_28** - requires glibc >= 2.28 (RHEL 8+, Ubuntu 20.04+, Debian 10+, etc.)
-- **manylinux_2_34** - requires glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+, etc.)
+- Amazon Linux 2023
+- Arch Linux
+- Other glibc-based distros not in the supported platform list
+
+Three package formats are available: **tar.gz** (universal), **DEB**
+(Debian/Ubuntu-based distros), and **RPM** (RHEL/Fedora/SUSE-based distros).
+The DEB and RPM packages automatically install `ca-certificates` and `fontconfig`
+as dependencies. On distros that don't use DEB or RPM, use the tarball.
+
+Two manylinux variants are available:
+
+- **manylinux_2_28** - requires glibc >= 2.28 (RHEL 8+, Ubuntu 20.04+, Debian 10+, Amazon Linux 2+, etc.)
+- **manylinux_2_34** - requires glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+, Amazon Linux 2023+, etc.)
 
 Use the variant that matches the oldest glibc version on your target systems.
 
+##### Install via DEB package (Debian/Ubuntu and derivatives)
+
+```bash
+MANYLINUX=manylinux_2_28  # or manylinux_2_34
+curl -O https://cdn.posit.co/r/${MANYLINUX}/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
+sudo apt-get install -y ./r-${R_VERSION}_1_$(dpkg --print-architecture).deb
+```
+
+##### Install via RPM package (RHEL/Fedora/Rocky/Amazon Linux/SUSE)
+
+```bash
+MANYLINUX=manylinux_2_28  # or manylinux_2_34
+curl -O https://cdn.posit.co/r/${MANYLINUX}/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
+sudo dnf install -y R-${R_VERSION}-1-1.$(arch).rpm       # RHEL/Fedora/Rocky/Amazon Linux
+sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.$(arch).rpm  # openSUSE/SLES
+```
+
+##### Install via tarball (any Linux distro)
+
 Download and extract:
 ```bash
-# Set the manylinux variant
 MANYLINUX=manylinux_2_28  # or manylinux_2_34
 
 # x86_64
@@ -207,23 +237,27 @@ sudo mkdir -p /opt/R
 sudo tar xzf R-${R_VERSION}-${MANYLINUX}*.tar.gz -C /opt/R
 ```
 
-Install system dependencies:
+Install system dependencies (only needed for tarballs; DEB/RPM handle this automatically):
 ```bash
 # SSL/TLS certificates (for HTTPS, e.g. install.packages)
 # Ubuntu/Debian
 sudo apt-get install -y ca-certificates
-# RHEL/Fedora/Rocky
+# RHEL/Fedora/Rocky/Amazon Linux
 sudo dnf install -y ca-certificates
 # openSUSE/SLES
 sudo zypper install -y ca-certificates
+# Arch Linux
+sudo pacman -S ca-certificates
 
 # Font configuration (for plotting with cairo graphics devices)
 # Ubuntu/Debian
 sudo apt-get install -y fontconfig
-# RHEL/Fedora/Rocky
+# RHEL/Fedora/Rocky/Amazon Linux
 sudo dnf install -y fontconfig
 # openSUSE/SLES
 sudo zypper install -y fontconfig
+# Arch Linux
+sudo pacman -S fontconfig
 ```
 
 Optional - for installing R packages from source (`R CMD INSTALL`):
@@ -233,7 +267,7 @@ sudo apt-get install -y build-essential gfortran \
   libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev
   # For R 3.x, also install: libpcre3-dev
 
-# RHEL/Fedora/Rocky
+# RHEL/Fedora/Rocky/Amazon Linux
 sudo dnf install -y gcc gcc-c++ gcc-gfortran make \
   pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
   # For R 3.x, also install: pcre-devel
@@ -242,6 +276,9 @@ sudo dnf install -y gcc gcc-c++ gcc-gfortran make \
 sudo zypper install -y gcc gcc-c++ gcc-fortran make \
   pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
   # For R 3.x, also install: pcre-devel
+
+# Arch Linux
+sudo pacman -S base-devel gcc-fortran pcre2 xz bzip2 zlib icu
 ```
 
 

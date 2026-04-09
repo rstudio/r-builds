@@ -4,22 +4,39 @@ This directory documents R's portable manylinux builds, which produce cross-dist
 
 ## Overview
 
-A manylinux R build takes a standard R build (compiled on a specific distro) and runs a post-build portability step: `delocate_r.py` + patchelf bundle ~65 shared library dependencies into the R installation and rewrite RPATHs, producing a relocatable tar.gz that works across Linux distributions.
+A manylinux R build takes a standard R build (compiled on a specific distro) and runs a post-build portability step: `delocate_r.py` + patchelf bundle ~65 shared library dependencies into the R installation and rewrite RPATHs, producing relocatable packages that work across Linux distributions.
 
-Unlike the standard r-builds tarballs (which are distro-specific and must be installed to a fixed path), manylinux tarballs are fully relocatable -- they can be extracted anywhere and R will detect its own location at runtime via `readlink -f`. This makes them suitable for tools that manage multiple R versions in user-chosen directories.
+Three package formats are produced:
+
+- **tar.gz** -- universal, works on any glibc-based Linux (including non-DEB/RPM distros like Arch, Gentoo, etc.)
+- **DEB** -- for Debian, Ubuntu, and derivatives (auto-installs `ca-certificates` and `fontconfig`)
+- **RPM** -- for RHEL, Fedora, SUSE, Amazon Linux, and derivatives (auto-installs `ca-certificates` and `fontconfig`)
+
+Unlike the standard r-builds packages (which are distro-specific and must be installed to a fixed path), manylinux builds are fully relocatable -- R detects its own location at runtime via `readlink -f`. This makes them suitable for tools that manage multiple R versions in user-chosen directories.
 
 The naming follows Python's PEP 600 convention: `manylinux_<major>_<minor>` where the version refers to the minimum glibc required.
 
+### Use cases
+
+Portable manylinux builds are useful for:
+
+- **Unsupported distros**: Linux distributions without dedicated r-builds packages, such as Amazon Linux 2023 and Arch Linux
+- **Minimal/container environments**: Docker images, CI runners, and cloud VMs where you want R without pulling in distro-specific repos
+- **Version managers**: Tools like rig or custom scripts that install multiple R versions to user-chosen directories
+- **Older/newer distro versions**: Distro versions outside the supported matrix (e.g., older Ubuntu LTS, newer Fedora) that still meet the glibc requirement
+- **Air-gapped systems**: Copy the tarball to systems without internet access
+
 ### Limitations
 
-- **System deps**: `ca-certificates` is needed for HTTPS (e.g., `install.packages()` from CRAN), and `fontconfig` is needed for font discovery in plots. Both are present on most systems. R starts and runs fine without them -- only HTTPS downloads and text rendering in plots are affected.
+- **System deps**: `ca-certificates` is needed for HTTPS (e.g., `install.packages()` from CRAN), and `fontconfig` is needed for font discovery in plots. Both are present on most systems and are auto-installed by the DEB/RPM packages. R starts and runs fine without them -- only HTTPS downloads and text rendering in plots are affected.
 - **No runtime BLAS swapping**: OpenBLAS is bundled directly as `libRblas.so`. Users cannot swap to MKL or other BLAS implementations without rebuilding.
 
 ## Current builds
 
 | Platform | Base image | glibc | Compatible distros |
 |---|---|---|---|
-| `manylinux_2_28` | Rocky 8 | 2.28 | RHEL 8+, Ubuntu 20.04+, Debian 10+, openSUSE 15.4+, Fedora 30+, Amazon Linux 2 |
+| `manylinux_2_28` | Rocky 8 | 2.28 | RHEL 8+, Ubuntu 20.04+, Debian 10+, openSUSE 15.4+, Fedora 30+, Amazon Linux 2+, Arch Linux |
+| `manylinux_2_34` | Rocky 9 | 2.34 | RHEL 9+, Ubuntu 22.04+, Debian 12+, openSUSE 15.5+, Fedora 36+, Amazon Linux 2023+ |
 
 ## Platform support
 
@@ -76,7 +93,7 @@ test/
 3. **Make relocatable** (`package.<platform>`):
    - Patches `bin/R` and `lib/R/bin/R` with `readlink -f` self-detection
    - Bundles Tcl/Tk scripts (currently hardcoded to 8.6), adds CA cert auto-detection to `etc/ldpaths`
-4. **Archive**: `build.sh` creates the tar.gz (no DEB/RPM)
+4. **Package**: `build.sh` creates the tar.gz, then nfpm builds DEB and RPM packages from the portable installation
 
 ### delocate_r.py allowlist
 
