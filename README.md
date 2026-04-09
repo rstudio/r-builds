@@ -239,11 +239,11 @@ Install system dependencies (only needed for tarballs; DEB/RPM handle this autom
 # Ubuntu/Debian
 sudo apt-get install -y ca-certificates
 # RHEL/Fedora/Rocky/Amazon Linux
-sudo dnf install -y ca-certificates
+sudo dnf install -y ca-certificates which
 # openSUSE/SLES
-sudo zypper install -y ca-certificates
+sudo zypper install -y ca-certificates which
 # Arch Linux
-sudo pacman -S ca-certificates
+sudo pacman -S ca-certificates which
 
 # Font configuration (for plotting with cairo graphics devices)
 # Ubuntu/Debian

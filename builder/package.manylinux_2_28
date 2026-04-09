@@ -294,6 +294,7 @@ license: GPLv2+
 depends:
 - ca-certificates
 - fontconfig
+- which
 contents:
 - src: ${R_INSTALL_PATH}
   dst: ${R_INSTALL_PATH}
