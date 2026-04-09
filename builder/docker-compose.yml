@@ -90,19 +90,6 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
-  manylinux_2_28:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.manylinux_2_28
-    image: r-builds:manylinux_2_28
-    volumes:
-      - ./integration/tmp:/tmp/output
-    platform: ${PLATFORM_ARCH}
   manylinux_2_34:
     command: ./build.sh
     environment:

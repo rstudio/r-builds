@@ -179,7 +179,7 @@ Then install the package:
 sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
-#### Portable (manylinux) - any Linux distro with glibc >= 2.28
+#### Portable (manylinux) - any Linux distro with glibc >= 2.34
 
 Portable builds are available that work across Linux distributions without
 distro-specific packages. Most library dependencies are bundled; R auto-detects
@@ -195,28 +195,26 @@ dedicated r-builds packages, such as:
 Three package formats are available: **tar.gz** (universal), **DEB**
 (Debian/Ubuntu-based distros), and **RPM** (RHEL/Fedora/SUSE-based distros).
 The DEB and RPM packages automatically install `ca-certificates` and `fontconfig`
-as dependencies. On distros that don't use DEB or RPM, use the tarball.
+as dependencies, and install R to `/opt/R/<version>/`. On distros that don't use
+DEB or RPM, use the tarball. The tarball is also the right choice if you need R
+installed to a custom path, since it can be extracted anywhere (R auto-detects its
+location at runtime).
 
-Two manylinux variants are available:
-
-- **manylinux_2_28** - requires glibc >= 2.28 (RHEL 8+, Ubuntu 20.04+, Debian 10+, Amazon Linux 2+, etc.)
-- **manylinux_2_34** - requires glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+, Amazon Linux 2023+, etc.)
-
-Use the variant that matches the oldest glibc version on your target systems.
+The portable builds require glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+,
+Amazon Linux 2023+, Arch Linux, etc.). RHEL 8 and Ubuntu 20.04 are not supported;
+use the distro-specific packages above instead.
 
 ##### Install via DEB package (Debian/Ubuntu and derivatives)
 
 ```bash
-MANYLINUX=manylinux_2_28  # or manylinux_2_34
-curl -O https://cdn.posit.co/r/${MANYLINUX}/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
+curl -O https://cdn.posit.co/r/manylinux_2_34/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 sudo apt-get install -y ./r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 ```
 
 ##### Install via RPM package (RHEL/Fedora/Rocky/Amazon Linux/SUSE)
 
 ```bash
-MANYLINUX=manylinux_2_28  # or manylinux_2_34
-curl -O https://cdn.posit.co/r/${MANYLINUX}/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
+curl -O https://cdn.posit.co/r/manylinux_2_34/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 sudo dnf install -y R-${R_VERSION}-1-1.$(arch).rpm       # RHEL/Fedora/Rocky/Amazon Linux
 sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.$(arch).rpm  # openSUSE/SLES
 ```
@@ -225,16 +223,14 @@ sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.$(arch).rpm  # openSUSE/S
 
 Download and extract:
 ```bash
-MANYLINUX=manylinux_2_28  # or manylinux_2_34
-
 # x86_64
-curl -O https://cdn.posit.co/r/${MANYLINUX}/pkgs/R-${R_VERSION}-${MANYLINUX}.tar.gz
+curl -O https://cdn.posit.co/r/manylinux_2_34/pkgs/R-${R_VERSION}-manylinux_2_34.tar.gz
 
 # arm64
-curl -O https://cdn.posit.co/r/${MANYLINUX}/pkgs/R-${R_VERSION}-${MANYLINUX}-arm64.tar.gz
+curl -O https://cdn.posit.co/r/manylinux_2_34/pkgs/R-${R_VERSION}-manylinux_2_34-arm64.tar.gz
 
 sudo mkdir -p /opt/R
-sudo tar xzf R-${R_VERSION}-${MANYLINUX}*.tar.gz -C /opt/R
+sudo tar xzf R-${R_VERSION}-manylinux_2_34*.tar.gz -C /opt/R
 ```
 
 Install system dependencies (only needed for tarballs; DEB/RPM handle this automatically):

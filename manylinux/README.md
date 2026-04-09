@@ -35,8 +35,11 @@ Portable manylinux builds are useful for:
 
 | Platform | Base image | glibc | Compatible distros |
 |---|---|---|---|
-| `manylinux_2_28` | Rocky 8 | 2.28 | RHEL 8+, Ubuntu 20.04+, Debian 10+, openSUSE 15.4+, Fedora 30+, Amazon Linux 2+, Arch Linux |
-| `manylinux_2_34` | Rocky 9 | 2.34 | RHEL 9+, Ubuntu 22.04+, Debian 12+, openSUSE 15.5+, Fedora 36+, Amazon Linux 2023+ |
+| `manylinux_2_34` | Rocky 9 | 2.34 | RHEL 9+, Ubuntu 22.04+, Debian 12+, openSUSE 15.5+, Fedora 36+, Amazon Linux 2023+, Arch Linux |
+
+`manylinux_2_28` (Rocky 8, glibc 2.28) was previously available but has been removed
+from the default builds. The Dockerfile and package scripts remain in the repository
+for historical reference.
 
 ## Platform support
 
@@ -53,7 +56,7 @@ Based on [Posit platform support](https://docs.posit.co/platform-support.html). 
 | Debian 12 | Jun 2026 | 2.36 | manylinux_2_28 |
 | Debian 13 | Jun 2028 | 2.41 | manylinux_2_28 |
 
-All currently supported distros are covered by `manylinux_2_28` alone.
+All currently supported distros are covered by `manylinux_2_34`.
 
 ### manylinux compatibility reference
 
@@ -220,10 +223,10 @@ RHEL 8, Ubuntu 20.04, Debian 10-11, openSUSE 15.4-15.5, Amazon Linux 2
 
 You can build multiple manylinux versions in parallel:
 
-- **manylinux_2_28**: Maximum compatibility (RHEL 8+)
-- **manylinux_2_34**: Newer libs, still covers all Posit-supported distros except RHEL 8 (EOL May 2029)
+- **manylinux_2_34**: Covers all Posit-supported distros except RHEL 8 (EOL May 2029)
 
-Both can coexist -- they produce separate tarballs with different platform suffixes. Users or CI pick the one matching their target.
+To also build `manylinux_2_28`, the Dockerfile and package scripts are still in the
+repository and can be re-added to the Makefile and docker-compose files if needed.
 
 ## musllinux / Alpine
 
@@ -242,16 +245,16 @@ Feasibility: **moderate effort**. The build toolchain (gcc, gfortran, make) and 
 
 ```bash
 # Build the Docker image
-docker compose -f builder/docker-compose.yml build manylinux_2_28
+docker compose -f builder/docker-compose.yml build manylinux_2_34
 
 # Build R
-R_VERSION=4.4.2 docker compose -f builder/docker-compose.yml run --rm manylinux_2_28
+R_VERSION=4.4.2 docker compose -f builder/docker-compose.yml run --rm manylinux_2_34
 
 # Run integration tests (all 4 distros)
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28-centos-8
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28-rhel-10
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_28-opensuse-156
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_34
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_34-rocky-9
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_34-rhel-10
+R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_34-opensuse-156
 
 # Run unit tests for delocate_r.py
 cd builder && python3 -m pytest test_delocate_r.py -v
