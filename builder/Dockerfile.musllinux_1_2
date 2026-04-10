@@ -28,16 +28,18 @@ RUN apk update && apk add --no-cache \
     linux-headers \
     make \
     ncurses-dev \
-    nfpm \
-    openblas \
+    nfpm `# Builds APK packages from the portable R installation` \
+    openblas `# Bundled as libRblas.so (pthreads variant)` \
     openjdk11-jdk \
     pango-dev \
-    patchelf \
+    patch `# Needed by build.sh to apply R source patches` \
+    patchelf `# Rewrites RPATHs for library portability (delocate_r.py)` \
     pcre-dev \
     pcre2-dev \
     perl \
-    python3 \
+    python3 `# Runs delocate_r.py (library bundling script)` \
     readline-dev \
+    sed `# GNU sed; BusyBox sed lacks -z flag needed by build.sh` \
     tar \
     tcl-dev \
     texinfo \

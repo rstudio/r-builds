@@ -27,12 +27,12 @@ RUN dnf -y upgrade \
     libtool \
     make \
     ncurses-devel \
-    openblas-threads \
+    openblas-threads `# Bundled as libRblas.so (pthreads variant)` \
     pango-devel \
     pcre-devel \
     pcre2-devel \
     readline-devel \
-    rpm-build \
+    rpm-build `# Required by nfpm for RPM packaging` \
     tcl-devel \
     tex \
     texinfo-tex \

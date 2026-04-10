@@ -21,12 +21,16 @@ echo ">>> Phase 1: BLAS setup"
 # Replace reference BLAS with OpenBLAS for performance.
 # Swap it with system OpenBLAS so delocate_r bundles a real BLAS.
 # Alpine installs OpenBLAS to /usr/lib/ (not /usr/lib64/).
+# Use the pthreads variant (libopenblasp) for consistency with other r-builds.
+# On ARM64, the library is named libopenblas_armv8p-*.so instead of libopenblasp-*.so.
 rm -f "${R_LIB_DIR}/libRblas.so"
-OPENBLAS_LIB=$(ls /usr/lib/libopenblasp*.so* 2>/dev/null | head -1)
+OPENBLAS_LIB=$(ls /usr/lib/libopenblas*p-r*.so* 2>/dev/null | head -1)
 if [ -z "$OPENBLAS_LIB" ]; then
-  echo "ERROR: OpenBLAS not found in /usr/lib/"
+  echo "ERROR: OpenBLAS pthreads variant not found in /usr/lib/"
+  ls /usr/lib/libopenblas* 2>/dev/null || echo "  No libopenblas* files found"
   exit 1
 fi
+echo "  Using OpenBLAS: $OPENBLAS_LIB"
 cp "$OPENBLAS_LIB" "${R_LIB_DIR}/libRblas.so"
 
 echo ">>> Phase 2: delocate_r repair"
