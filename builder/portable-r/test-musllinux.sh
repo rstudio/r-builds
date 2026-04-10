@@ -131,4 +131,42 @@ if ls "${R_PREFIX}"/lib/R/lib/.libs/*Rblas* 2>/dev/null; then
 fi
 echo "  libRblas.so not in .libs/ (OK)"
 
+echo "=== Rscript wrapper tests ==="
+# Test key usage patterns of the relocatable Rscript shell wrapper to catch
+# regressions if upstream Rscript changes its CLI interface.
+RSCRIPT="${R_PREFIX}/bin/Rscript"
+
+# -e expression
+result=$("$RSCRIPT" -e 'cat("hello")')
+[ "$result" = "hello" ] || { echo "FAIL: Rscript -e"; exit 1; }
+echo "  Rscript -e: OK"
+
+# Multiple -e expressions
+result=$("$RSCRIPT" -e 'cat("a")' -e 'cat("b")')
+[ "$result" = "ab" ] || { echo "FAIL: Rscript -e -e"; exit 1; }
+echo "  Rscript -e -e: OK"
+
+# File execution with arguments
+tmpscript=$(mktemp /tmp/test_rscript_XXXXXX.R)
+echo 'args <- commandArgs(trailingOnly=TRUE); cat(paste(args, collapse=","))' > "$tmpscript"
+result=$("$RSCRIPT" "$tmpscript" arg1 arg2 arg3)
+[ "$result" = "arg1,arg2,arg3" ] || { echo "FAIL: Rscript file args: got '$result'"; exit 1; }
+echo "  Rscript file.R arg1 arg2 arg3: OK"
+
+# --default-packages
+result=$("$RSCRIPT" --default-packages=base -e 'cat(paste(.packages(), collapse=","))')
+echo "$result" | grep -q "base" || { echo "FAIL: --default-packages: got '$result'"; exit 1; }
+echo "  Rscript --default-packages=base: OK"
+
+# --vanilla pass-through
+result=$("$RSCRIPT" --vanilla -e 'cat("vanilla")')
+[ "$result" = "vanilla" ] || { echo "FAIL: Rscript --vanilla"; exit 1; }
+echo "  Rscript --vanilla: OK"
+
+# Rscript with no args should not hang (runs R --slave --no-restore, which exits)
+timeout 10 "$RSCRIPT" < /dev/null > /dev/null 2>&1 || { echo "FAIL: Rscript with no args hung or failed"; exit 1; }
+echo "  Rscript (no args): OK"
+
+rm -f "$tmpscript"
+
 echo "=== All musllinux_1_2 tests passed ==="
