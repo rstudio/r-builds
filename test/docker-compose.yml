@@ -100,15 +100,6 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
-  fedora-41:
-    image: fedora:41
-    command: /r-builds/test/test-yum.sh
-    environment:
-      - OS_IDENTIFIER=fedora-41
-      - R_VERSION=${R_VERSION}
-    volumes:
-      - ../:/r-builds
-    platform: ${PLATFORM_ARCH}
   fedora-42:
     image: fedora:42
     command: /r-builds/test/test-yum.sh

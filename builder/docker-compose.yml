@@ -153,20 +153,6 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
-  fedora-41:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
-      - LOCAL_STORE=/tmp/output
-      - PACKAGE_VERSION=${PACKAGE_VERSION}
-    build:
-      context: .
-      dockerfile: Dockerfile.fedora-41
-    image: r-builds:fedora-41
-    volumes:
-      - ./integration/tmp:/tmp/output
-    platform: ${PLATFORM_ARCH}
   fedora-42:
     command: ./build.sh
     environment:

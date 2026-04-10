@@ -406,11 +406,6 @@ jobs:
               echo "pkg_type=rpm" >> $GITHUB_OUTPUT
               echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
               ;;
-            fedora-41)
-              echo "distro=fedora/41" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
             fedora-42)
               echo "distro=fedora/42" >> $GITHUB_OUTPUT
               echo "pkg_type=rpm" >> $GITHUB_OUTPUT
