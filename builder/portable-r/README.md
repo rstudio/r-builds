@@ -1,20 +1,26 @@
-# Portable manylinux R Builds
+# Portable R Builds (manylinux / musllinux)
 
-This directory documents R's portable manylinux builds, which produce cross-distro R tarballs that work on any glibc-based Linux system.
+This directory documents R's portable builds, which produce cross-distro R tarballs that work across Linux distributions without distro-specific packages.
 
 ## Overview
 
-A manylinux R build takes a standard R build (compiled on a specific distro) and runs a post-build portability step: `delocate_r.py` + patchelf bundle ~65 shared library dependencies into the R installation and rewrite RPATHs, producing relocatable packages that work across Linux distributions.
+A portable R build takes a standard R build (compiled on a specific distro) and runs a post-build portability step: `delocate_r.py` + patchelf bundle shared library dependencies (~65 on manylinux, ~67 on musllinux) into the R installation and rewrite RPATHs, producing relocatable packages that work across Linux distributions.
 
-Three package formats are produced:
+Two platform families are supported:
 
-- **tar.gz** -- universal, works on any glibc-based Linux (including non-DEB/RPM distros like Arch, Gentoo, etc.)
-- **DEB** -- for Debian, Ubuntu, and derivatives (auto-installs `ca-certificates` and `fontconfig`)
-- **RPM** -- for RHEL, Fedora, SUSE, Amazon Linux, and derivatives (auto-installs `ca-certificates` and `fontconfig`)
+- **manylinux** (glibc-based) -- works on any glibc-based Linux distro (RHEL, Ubuntu, Debian, Fedora, SUSE, Arch, etc.)
+- **musllinux** (musl-based) -- works on Alpine Linux and other musl libc distributions
 
-Unlike the standard r-builds packages (which are distro-specific and must be installed to a fixed path), manylinux builds are fully relocatable -- R detects its own location at runtime via `readlink -f`. This makes them suitable for tools that manage multiple R versions in user-chosen directories.
+Package formats produced:
 
-The naming follows Python's PEP 600 convention: `manylinux_<major>_<minor>` where the version refers to the minimum glibc required.
+- **tar.gz** -- universal, works on any compatible Linux (manylinux and musllinux)
+- **DEB** -- for Debian, Ubuntu, and derivatives (manylinux only; auto-installs `ca-certificates` and `fontconfig`)
+- **RPM** -- for RHEL, Fedora, SUSE, Amazon Linux, and derivatives (manylinux only; auto-installs `ca-certificates` and `fontconfig`)
+- **APK** -- for Alpine Linux and derivatives (musllinux only; auto-installs `ca-certificates`, `fontconfig`, and `ttf-dejavu`)
+
+Unlike the standard r-builds packages (which are distro-specific and must be installed to a fixed path), portable builds are fully relocatable -- R detects its own location at runtime via `readlink -f`. This makes them suitable for tools that manage multiple R versions in user-chosen directories.
+
+The naming follows Python's PEP 600 convention: `manylinux_<major>_<minor>` refers to the minimum glibc version required. `musllinux_<major>_<minor>` refers to the minimum musl libc version required.
 
 ### Use cases
 
@@ -28,18 +34,19 @@ Portable manylinux builds are useful for:
 
 ### Limitations
 
-- **System deps**: `ca-certificates` is needed for HTTPS (e.g., `install.packages()` from CRAN), and `fontconfig` is needed for font discovery in plots. Both are present on most systems and are auto-installed by the DEB/RPM packages. R starts and runs fine without them -- only HTTPS downloads and text rendering in plots are affected.
+- **System deps**: `ca-certificates` is needed for HTTPS (e.g., `install.packages()` from CRAN), and `fontconfig` is needed for font discovery in plots. Both are present on most systems and are auto-installed by the DEB/RPM/APK packages. R starts and runs fine without them -- only HTTPS downloads and text rendering in plots are affected. On Alpine, `ttf-dejavu` is also needed since fontconfig does not pull in fonts automatically.
 - **No runtime BLAS swapping**: OpenBLAS is bundled directly as `libRblas.so`. Users cannot swap to MKL or other BLAS implementations without rebuilding.
 
 ## Current builds
 
-| Platform | Base image | glibc | Compatible distros |
+| Platform | Base image | libc | Compatible distros |
 |---|---|---|---|
-| `manylinux_2_34` | Rocky 9 | 2.34 | RHEL 9+, Ubuntu 22.04+, Debian 12+, openSUSE 15.5+, Fedora 36+, Amazon Linux 2023+, Arch Linux |
+| `manylinux_2_34` | Rocky 9 | glibc 2.34 | RHEL 9+, Ubuntu 22.04+, Debian 12+, openSUSE 15.5+, Fedora 36+, Amazon Linux 2023+, Arch Linux |
+| `musllinux_1_2` | Alpine 3.21 | musl 1.2 | Alpine 3.19+, any musl 1.2+ distro |
 
-`manylinux_2_28` (Rocky 8, glibc 2.28) was previously available but has been removed
-from the default builds. The Dockerfile and package scripts remain in the repository
-for historical reference.
+We use `manylinux_2_34` (based on RHEL 9) rather than `manylinux_2_28` (RHEL 8) to get newer libraries like OpenSSL 3.x and to work around issues with RHEL 8's old version of fontconfig (2.13, which doesn't understand modern config directives like `<reset-dirs/>`).
+
+`manylinux_2_28` (Rocky 8, glibc 2.28) is also available but not built by default. The Dockerfile and package scripts are kept for historical reference or future use.
 
 ## Platform support
 
@@ -56,7 +63,7 @@ Based on [Posit platform support](https://docs.posit.co/platform-support.html). 
 | Debian 12 | Jun 2026 | 2.36 | manylinux_2_28 |
 | Debian 13 | Jun 2028 | 2.41 | manylinux_2_28 |
 
-All currently supported distros are covered by `manylinux_2_34`.
+All currently supported distros are covered by `manylinux_2_34`, with the exception of RHEL 8 (which requires `manylinux_2_28`).
 
 ### manylinux compatibility reference
 
@@ -71,17 +78,19 @@ From [pep600_compliance](https://github.com/mayeut/pep600_compliance), useful ma
 
 ## Architecture
 
-### Files per manylinux platform
+### Files per portable R platform
 
-Each manylinux platform requires these files:
+Each portable platform requires these files:
 
 ```
 builder/
   Dockerfile.<platform>       # Docker image with build tools + portability tools
   package.<platform>           # Post-build script: library bundling, relocatability
-  delocate_r.py                # Shared: library bundling script (platform-agnostic)
-test/
-  test-manylinux.sh            # Shared: cross-distro integration tests
+  portable-r/
+    delocate_r.py              # Shared: library bundling script (supports --policy manylinux|musllinux)
+    test_delocate_r.py         # Unit tests for delocate_r.py
+    test-manylinux.sh          # Cross-distro integration tests (manylinux)
+    test-musllinux.sh          # Alpine integration tests (musllinux)
 ```
 
 ### How it works
@@ -112,7 +121,11 @@ A standalone script was created instead of using auditwheel-r directly because:
 - **Simpler, in-place workflow**: operates directly on one R installation rather than the wheelhouse copy step designed for R packages.
 - **No fork maintenance**: auditwheel's library API changes often for Python-specific needs, and a self-contained script avoids upstream dependency churn.
 
-The allowlist in `delocate_r.py` determines which libraries are NOT bundled (expected on the target system). It intentionally uses a narrower allowlist than the official manylinux spec:
+The allowlist in `delocate_r.py` determines which libraries are NOT bundled (expected on the target system). It uses per-policy allowlists selected via `--policy manylinux|musllinux`.
+
+#### manylinux allowlist
+
+Intentionally narrower than the official manylinux spec:
 
 **Allowed (not bundled):**
 - glibc core: `libc.so`, `libm.so`, `libdl.so`, `librt.so`, `libpthread.so`, etc.
@@ -125,7 +138,20 @@ The allowlist in `delocate_r.py` determines which libraries are NOT bundled (exp
 - X11 libs (`libX11`, `libSM`, `libICE`, etc.) - ensures graphics work without X11 packages
 - GLib/GObject - not always installed on minimal systems
 
-This allowlist is platform-agnostic. The same `delocate_r.py` works for any manylinux version.
+#### musllinux allowlist
+
+More restrictive than the manylinux allowlist because musl has fewer core libraries:
+
+**Allowed (not bundled):**
+- musl libc: `libc.musl-*` (includes libc, libm, libdl, librt, libpthread -- musl consolidates these into one library)
+- VDSO: `linux-vdso.so`
+- Core system: `libz.so`
+- GL drivers: `libGL.so` (system-specific)
+- R internal: `libR.so`, `libRblas.so`, `libRlapack.so`
+
+**Bundled on musllinux but allowed on manylinux:**
+- `libgcc_s.so`, `libstdc++.so` -- not guaranteed on clean Alpine installations
+- `libexpat.so` -- not in musl's core library set
 
 ### System dependencies at runtime
 
@@ -133,10 +159,11 @@ The tarball is self-contained except for:
 
 | Dependency | Why | Package |
 |---|---|---|
-| glibc >= build version | Core C library | (always present) |
+| glibc >= build version (manylinux) or musl >= 1.2 (musllinux) | Core C library | (always present) |
 | `ca-certificates` | SSL/TLS certificate bundle for HTTPS | `ca-certificates` |
 | `fontconfig` | Font config files for text rendering | `fontconfig` (on openSUSE/SLES, also install `dejavu-fonts`) |
-| `which` | Required by R's `utils` package at startup | `which` (RHEL/SUSE; included in `debianutils` on Debian/Ubuntu) |
+| `ttf-dejavu` (Alpine only) | Fonts for text rendering in plots | `ttf-dejavu` (not pulled in by fontconfig on Alpine) |
+| `which` | Required by R's `utils` package at startup | `which` (RHEL/SUSE; included in `debianutils` on Debian/Ubuntu; in `coreutils` on Alpine) |
 
 For compiling R packages from source, users also need a C/C++/Fortran compiler and dev packages for `pcre2`, `lzma`, `bz2`, `zlib`, `icu`.
 
@@ -181,13 +208,13 @@ Note: a higher manylinux version is NOT needed just to run on newer distros. `ma
    - `manylinux_2_34` -> `rockylinux:9`
    - `manylinux_2_39` -> `rockylinux:10` (when available)
 
-2. **Create `Dockerfile.<platform>`** based on the existing manylinux Dockerfile:
+2. **Create `builder/Dockerfile.<platform>`** based on the existing manylinux Dockerfile:
    - Match the corresponding centos/rhel Dockerfile for R build dependencies
    - Include patchelf install
    - Check if fontconfig source build is needed (Rocky 9 ships 2.14.0, which is exactly the minimum -- should be sufficient, but test for warnings)
    - Include the `--with-2025blas` configure flag for R >= 4.5.0 BLAS compat
 
-3. **Create `package.<platform>`** -- can likely reuse `package.manylinux_2_28` directly or with minor adjustments:
+3. **Create `builder/package.<platform>`** -- can likely reuse `package.manylinux_2_28` directly or with minor adjustments:
    - OpenBLAS package name may differ (check `openblas-threads` vs `openblas`)
    - Tcl/Tk version may differ (8.6 vs 9.x)
    - BLAS library path may differ
@@ -226,39 +253,65 @@ You can build multiple manylinux versions in parallel:
 
 - **manylinux_2_34**: Covers all Posit-supported distros except RHEL 8 (EOL May 2029)
 
-To also build `manylinux_2_28`, the Dockerfile and package scripts are still in the
-repository and can be re-added to the Makefile and docker-compose files if needed.
+To also build `manylinux_2_28`, the Dockerfile and package scripts are still in the repository and can be re-added to the Makefile and docker-compose files if needed.
 
 ## musllinux / Alpine
 
-Alpine Linux uses musl libc instead of glibc. A `musllinux` build would be a separate effort with different challenges:
+Alpine Linux uses musl libc instead of glibc. The `musllinux_1_2` platform builds on Alpine 3.21 and produces portable R for musl-based systems.
 
-- R compiles on musl (Alpine has R packages), but some CRAN packages assume glibc
-- Would need a separate allowlist (musl has different core libs)
-- `delocate_r.py` should work as-is (patchelf and ELF manipulation are libc-agnostic)
-- Smaller user base -- Alpine is primarily used for containers
+### How it differs from manylinux
 
-Feasibility: **moderate effort**. The build toolchain (gcc, gfortran, make) and all R build deps are available in Alpine's package repos. The main risk is CRAN package compatibility at runtime, not the R build itself.
+- **Base image**: Alpine 3.21 instead of Rocky Linux
+- **Allowlist**: musllinux policy is more restrictive -- `libgcc_s` and `libstdc++` must be bundled (not guaranteed on clean Alpine), and `libexpat` is not in musl's core set
+- **Package formats**: APK + tar.gz (no DEB/RPM, since musl binaries don't run on glibc systems)
+- **Fontconfig**: Alpine 3.21 ships fontconfig 2.15.0, so no source build is needed
+- **patchelf**: Installed from Alpine packages (not built from source)
+- **patchelf strtab fix**: patchelf 0.18.0 (the Alpine 3.21 version) has a bug where `.dynstr` VAddr becomes inconsistent with its LOAD segment on large binaries (e.g., ~34MB OpenBLAS). `delocate_r.py` includes `fix_patchelf_strtab()` to detect and correct this after patchelf runs.
+- **Runtime deps**: On Alpine, `ttf-dejavu` is required in addition to `ca-certificates` and `fontconfig`, since fontconfig does not pull in fonts automatically
+
+### musllinux_1_2 phases (package.musllinux_1_2)
+
+1. **BLAS setup**: Replace reference BLAS with OpenBLAS
+2. **delocate_r repair**: Bundle system libs with `--policy musllinux` (~67 libs)
+3. **Fix BLAS/LAPACK SONAMEs**: Fix SONAMEs + run `fix_patchelf_strtab()` on large binaries
+4. **Bundle Tcl/Tk scripts + SSL CA detection**: Same as manylinux, with Alpine-specific paths
+5. **Make bin/R relocatable**: Same `readlink -f` self-detection as manylinux
+6. **Verify + clean up**: Print RPATH info, remove DESCRIPTION artifact
+7. **Build APK package**: Via nfpm, with `ca-certificates`, `fontconfig`, and `ttf-dejavu` as dependencies
+
+### Build and test
+
+```bash
+# Build R
+R_VERSION=4.5.3 MAKEFLAGS=-j4 make build-r-musllinux_1_2
+
+# Run integration tests (Alpine 3.21)
+R_VERSION=4.5.3 make test-r-musllinux_1_2
+
+# Run unit tests (includes musllinux policy tests)
+cd builder/portable-r && python3 -m pytest test_delocate_r.py -v
+```
 
 ## Testing
 
 ### Build and test commands
 
 ```bash
-# Build the Docker image
-docker compose -f builder/docker-compose.yml build manylinux_2_34
-
-# Build R
-R_VERSION=4.4.2 docker compose -f builder/docker-compose.yml run --rm manylinux_2_34
+# Build R (manylinux)
+R_VERSION=4.5.3 MAKEFLAGS=-j4 make build-r-manylinux_2_34
 
 # Run integration tests (all 4 distros)
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_34
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_34-rocky-9
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_34-rhel-10
-R_VERSION=4.4.2 docker compose -f test/docker-compose.yml run --rm manylinux_2_34-opensuse-156
+R_VERSION=4.5.3 make test-r-manylinux_2_34
+R_VERSION=4.5.3 make test-r-manylinux_2_34-rocky-9
+R_VERSION=4.5.3 make test-r-manylinux_2_34-rhel-10
+R_VERSION=4.5.3 make test-r-manylinux_2_34-opensuse-156
+
+# Build and test musllinux
+R_VERSION=4.5.3 MAKEFLAGS=-j4 make build-r-musllinux_1_2
+R_VERSION=4.5.3 make test-r-musllinux_1_2
 
 # Run unit tests for delocate_r.py
-cd builder && python3 -m pytest test_delocate_r.py -v
+cd builder/portable-r && python3 -m pytest test_delocate_r.py -v
 ```
 
 ### What the tests verify

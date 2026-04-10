@@ -74,7 +74,7 @@ ENV R_RD4PDF="times,hyper"
 # R 3.x requires PCRE2 for Pango support
 ENV INCLUDE_PCRE2_IN_R_3 yes
 
-COPY delocate_r.py /delocate_r.py
+COPY portable-r/delocate_r.py /delocate_r.py
 RUN chmod +x /delocate_r.py
 COPY package.musllinux_1_2 /package.sh
 COPY build.sh .

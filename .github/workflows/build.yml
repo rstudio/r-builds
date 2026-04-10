@@ -146,7 +146,7 @@ jobs:
         run: pip install pytest
 
       - name: Run unit tests
-        run: python -m pytest builder/test_delocate_r.py -v
+        run: python -m pytest builder/portable-r/test_delocate_r.py -v
 
   docker-images:
     needs: setup-matrix

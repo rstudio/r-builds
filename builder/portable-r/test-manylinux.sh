@@ -13,9 +13,10 @@ set -ex
 # 4. Runs manylinux-specific tests (relocatability, R CMD INSTALL, SSL)
 
 SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+TEST_DIR="${SCRIPT_DIR}/../../test"
 
 # Install R from the tarball.
-TARBALL_DIR="${SCRIPT_DIR}/../builder/integration/tmp/r/${OS_IDENTIFIER}"
+TARBALL_DIR="${SCRIPT_DIR}/../integration/tmp/r/${OS_IDENTIFIER}"
 TARBALL=$(ls "${TARBALL_DIR}"/R-${R_VERSION}*.tar.gz 2>/dev/null | head -1)
 
 if [ -z "$TARBALL" ]; then
@@ -59,7 +60,7 @@ tar xzf "${TARBALL}" -C /opt/R
 
 # Run the standard test suite (same as all other platforms).
 echo "=== Running standard test suite ==="
-"${SCRIPT_DIR}/test-r.sh"
+"${TEST_DIR}/test-r.sh"
 
 # Manylinux-specific tests below.
 R_PREFIX=/opt/R/${R_VERSION}
@@ -109,7 +110,7 @@ rm -rf "${R_PREFIX}"
 
 echo "=== R CMD INSTALL from relocated path ==="
 # This tests that lib/R/bin/R is also patched (used by R CMD INSTALL internally).
-DIR=$SCRIPT_DIR "${RELOCATED_DIR}/bin/Rscript" -e '
+DIR=$TEST_DIR "${RELOCATED_DIR}/bin/Rscript" -e '
   temp_lib <- tempdir()
   .libPaths(temp_lib)
   curr_dir <- Sys.getenv("DIR", ".")

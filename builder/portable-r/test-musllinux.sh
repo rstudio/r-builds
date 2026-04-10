@@ -12,9 +12,10 @@ set -ex
 
 # Alpine uses /bin/sh (busybox ash), not bash
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+TEST_DIR="${SCRIPT_DIR}/../../test"
 
 # Install R from the tarball.
-TARBALL_DIR="${SCRIPT_DIR}/../builder/integration/tmp/r/${OS_IDENTIFIER}"
+TARBALL_DIR="${SCRIPT_DIR}/../integration/tmp/r/${OS_IDENTIFIER}"
 TARBALL=$(ls "${TARBALL_DIR}"/R-${R_VERSION}*.tar.gz 2>/dev/null | head -1)
 
 if [ -z "$TARBALL" ]; then
@@ -39,7 +40,7 @@ tar xzf "${TARBALL}" -C /opt/R
 # Run the standard test suite (same as all other platforms).
 # test-r.sh requires bash.
 echo "=== Running standard test suite ==="
-bash "${SCRIPT_DIR}/test-r.sh"
+bash "${TEST_DIR}/test-r.sh"
 
 # Musllinux-specific tests below.
 R_PREFIX=/opt/R/${R_VERSION}
@@ -87,7 +88,7 @@ rm -rf "${R_PREFIX}"
 "${RELOCATED_DIR}/bin/R" -e 'cat("Relocatability: bin/R works\n")' --vanilla
 
 echo "=== R CMD INSTALL from relocated path ==="
-DIR=$SCRIPT_DIR "${RELOCATED_DIR}/bin/Rscript" -e '
+DIR=$TEST_DIR "${RELOCATED_DIR}/bin/Rscript" -e '
   temp_lib <- tempdir()
   .libPaths(temp_lib)
   curr_dir <- Sys.getenv("DIR", ".")
