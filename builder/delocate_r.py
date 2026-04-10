@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""delocate_r.py — Bundle system library dependencies into an R installation.
+"""delocate_r.py -- Bundle system library dependencies into an R installation.
 
 Replaces auditwheel-r with a standalone script using ldd + patchelf.
 Discovers non-allowed shared library dependencies, copies them into
@@ -8,7 +8,7 @@ entries so the R installation is self-contained and portable.
 
 Operates in-place on the R installation directory.
 
-Usage: delocate_r.py <r-install-path>
+Usage: delocate_r.py [--policy manylinux|musllinux] <r-install-path>
 """
 from __future__ import annotations
 
@@ -16,21 +16,38 @@ import hashlib
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 from pathlib import Path
 
 # ── Allowed libraries (not bundled) ──────────────────────────────────────────
 #
-# These are expected to exist on any glibc 2.28+ system. Based on the
-# manylinux_2_28 standard (PEP 600), minus X11 libs which we bundle for
-# maximum portability.
+# Per-policy allowlists determine which libraries are expected on the target
+# system and should NOT be bundled. Based on the auditwheel policy definitions:
 #
-# Notable: libX11, libSM, libICE, libXext, libXrender, libglib-2.0, and
-# libgobject-2.0 are in the official manylinux_2_28 allowlist but we
-# intentionally exclude them so they get bundled, making R work on minimal
-# systems without X11 or GLib packages installed.
-ALLOWED_PREFIXES = [
+#   manylinux: https://github.com/pypa/auditwheel/blob/main/src/auditwheel/policy/manylinux-policy.json
+#   musllinux: https://github.com/pypa/auditwheel/blob/main/src/auditwheel/policy/musllinux-policy.json
+#
+# We intentionally use a narrower allowlist than the official policies:
+# X11 libs (libX11, libSM, libICE, etc.) and GLib (libgobject-2.0, etc.) are
+# in the manylinux allowlist but we bundle them for portability on minimal
+# systems. The musllinux policy only allows libc.so and libz.so.1.
+
+# Libs shared by all policies: linker pseudo-libs, R internals, GL drivers
+_COMMON_PREFIXES = [
+    # GL (keep as system -- drivers are system-specific)
+    "libGL.so",
+    # R internal (loaded via LD_LIBRARY_PATH from ldpaths, not RPATH)
+    "libR.so",
+    "libRblas.so",
+    "libRlapack.so",
+]
+
+# manylinux (glibc) policy: official lib_whitelist includes libgcc_s, libstdc++,
+# libatomic, X11, GLib, and more. We allow the subset that is truly universal
+# on glibc systems and bundle the rest (X11, GLib) for portability.
+MANYLINUX_PREFIXES = [
     # glibc core
     "linux-vdso.so",
     "ld-linux-x86-64.so",
@@ -44,25 +61,40 @@ ALLOWED_PREFIXES = [
     "libutil.so",
     "libresolv.so",
     "libanl.so",
-    # Compiler runtime
+    "libmvec.so",
+    # Compiler runtime (always present on glibc systems)
     "libgcc_s.so",
     "libstdc++.so",
     "libatomic.so",
     # Core system libs
     "libz.so",
     "libexpat.so",
-    # GL (keep as system — drivers are system-specific)
-    "libGL.so",
-    # R internal (loaded via LD_LIBRARY_PATH from ldpaths, not RPATH)
-    "libR.so",
-    "libRblas.so",
-    "libRlapack.so",
-]
+] + _COMMON_PREFIXES
+
+# musllinux (musl) policy: only libc.so and libz.so are on the official
+# whitelist. Everything else (including libgcc_s, libstdc++) must be bundled
+# since they are not part of the musl base system.
+MUSLLINUX_PREFIXES = [
+    # musl linker pseudo-libs
+    "linux-vdso.so",
+    # musl core (consolidates libc, libm, libdl, librt, libpthread into one)
+    "libc.musl-",
+    # Core system libs
+    "libz.so",
+] + _COMMON_PREFIXES
+
+POLICIES = {
+    "manylinux": MANYLINUX_PREFIXES,
+    "musllinux": MUSLLINUX_PREFIXES,
+}
+
+# Module-level state set by main() before any processing
+_allowed_prefixes: list[str] = []
 
 
 def is_allowed(soname: str) -> bool:
     """Check if a soname is on the allowlist (prefix match)."""
-    return any(soname.startswith(prefix) for prefix in ALLOWED_PREFIXES)
+    return any(soname.startswith(prefix) for prefix in _allowed_prefixes)
 
 
 def is_elf(path: Path) -> bool:
@@ -97,6 +129,134 @@ def patchelf_try(*args: str) -> str | None:
         capture_output=True, text=True,
     )
     return result.stdout.strip() if result.returncode == 0 else None
+
+
+# ── ELF constants ────────────────────────────────────────────────────────────
+_PT_LOAD = 1
+_PT_DYNAMIC = 2
+_DT_NULL = 0
+_DT_STRTAB = 5
+
+
+def fix_patchelf_strtab(path: Path) -> None:
+    """Fix patchelf's VAddr/offset mismatch for .dynstr in its LOAD segment.
+
+    patchelf 0.18.0 can produce an ELF where the .dynstr section's virtual
+    address is inconsistent with the LOAD segment that maps it. Within a
+    LOAD segment (offset P, VAddr V), a section at file offset P+X must
+    have VAddr V+X. When patchelf places .dynstr at VAddr V+Y where Y!=X,
+    the musl dynamic linker reads from the wrong file location, causing
+    "Error loading shared library" with corrupted library names.
+
+    This function detects the mismatch and patches DT_STRTAB in .dynamic
+    (and the .dynstr section header) to use the correct virtual address.
+    """
+    with open(path, "r+b") as f:
+        # Read ELF header (64 bytes for ELF64)
+        ident = f.read(16)
+        if ident[:4] != b"\x7fELF" or ident[4] != 2:  # Must be ELF64
+            return
+
+        f.seek(0)
+        ehdr = f.read(64)
+        e_phoff = struct.unpack_from("<Q", ehdr, 32)[0]
+        e_shoff = struct.unpack_from("<Q", ehdr, 40)[0]
+        e_phentsize = struct.unpack_from("<H", ehdr, 54)[0]
+        e_phnum = struct.unpack_from("<H", ehdr, 56)[0]
+        e_shentsize = struct.unpack_from("<H", ehdr, 58)[0]
+        e_shnum = struct.unpack_from("<H", ehdr, 60)[0]
+        e_shstrndx = struct.unpack_from("<H", ehdr, 62)[0]
+
+        # Read program headers
+        phdrs = []
+        for i in range(e_phnum):
+            pos = e_phoff + i * e_phentsize
+            f.seek(pos)
+            data = f.read(e_phentsize)
+            phdrs.append({
+                "type": struct.unpack_from("<I", data, 0)[0],
+                "offset": struct.unpack_from("<Q", data, 8)[0],
+                "vaddr": struct.unpack_from("<Q", data, 16)[0],
+                "filesz": struct.unpack_from("<Q", data, 32)[0],
+                "memsz": struct.unpack_from("<Q", data, 40)[0],
+            })
+
+        # Find PT_DYNAMIC and read DT_STRTAB
+        dyn_phdr = next((p for p in phdrs if p["type"] == _PT_DYNAMIC), None)
+        if dyn_phdr is None:
+            return
+
+        f.seek(dyn_phdr["offset"])
+        dyn_data = f.read(dyn_phdr["filesz"])
+
+        strtab_vaddr = None
+        strtab_dyn_fpos = None  # file position of DT_STRTAB's d_val field
+        for i in range(0, len(dyn_data), 16):
+            d_tag = struct.unpack_from("<q", dyn_data, i)[0]
+            if d_tag == _DT_NULL:
+                break
+            if d_tag == _DT_STRTAB:
+                strtab_vaddr = struct.unpack_from("<Q", dyn_data, i + 8)[0]
+                strtab_dyn_fpos = dyn_phdr["offset"] + i + 8
+                break
+
+        if strtab_vaddr is None:
+            return
+
+        # Find the LOAD segment containing the strtab VAddr
+        load = next(
+            (p for p in phdrs
+             if p["type"] == _PT_LOAD
+             and p["vaddr"] <= strtab_vaddr < p["vaddr"] + p["memsz"]),
+            None,
+        )
+        if load is None:
+            return
+
+        # Where the runtime linker thinks strtab data is in the file
+        runtime_offset = load["offset"] + (strtab_vaddr - load["vaddr"])
+
+        # Find actual .dynstr file offset from section headers
+        f.seek(e_shoff + e_shstrndx * e_shentsize + 24)
+        shstrtab_off = struct.unpack("<Q", f.read(8))[0]
+        f.seek(e_shoff + e_shstrndx * e_shentsize + 32)
+        shstrtab_sz = struct.unpack("<Q", f.read(8))[0]
+        f.seek(shstrtab_off)
+        shstrtab = f.read(shstrtab_sz)
+
+        dynstr_offset = None
+        dynstr_shdr_pos = None
+        for i in range(e_shnum):
+            pos = e_shoff + i * e_shentsize
+            f.seek(pos)
+            shdr = f.read(e_shentsize)
+            name_off = struct.unpack_from("<I", shdr, 0)[0]
+            end = shstrtab.find(b"\x00", name_off)
+            name = shstrtab[name_off:end].decode("ascii", errors="replace")
+            if name == ".dynstr":
+                dynstr_offset = struct.unpack_from("<Q", shdr, 24)[0]
+                dynstr_shdr_pos = pos
+                break
+
+        if dynstr_offset is None:
+            return
+
+        if runtime_offset == dynstr_offset:
+            return  # No mismatch
+
+        # Calculate the correct VAddr
+        correct_vaddr = load["vaddr"] + (dynstr_offset - load["offset"])
+
+        print(f"    Fixing patchelf strtab mismatch in {path.name}: "
+              f"VAddr 0x{strtab_vaddr:x} -> 0x{correct_vaddr:x}")
+
+        # Patch DT_STRTAB d_val in .dynamic
+        f.seek(strtab_dyn_fpos)
+        f.write(struct.pack("<Q", correct_vaddr))
+
+        # Patch .dynstr section header sh_addr for consistency
+        f.seek(dynstr_shdr_pos + 16)
+        f.write(struct.pack("<Q", correct_vaddr))
 
 
 def ldd(path: Path, extra_lib_path: str = "") -> list[tuple[str, str]]:
@@ -356,11 +516,30 @@ def verify_repair(
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        print("Usage: delocate_r.py <r-install-path>", file=sys.stderr)
+    global _allowed_prefixes
+
+    # Parse arguments: [--policy manylinux|musllinux] <r-install-path>
+    args = sys.argv[1:]
+    policy_name = "manylinux"  # default
+    if "--policy" in args:
+        idx = args.index("--policy")
+        if idx + 1 >= len(args):
+            print("ERROR: --policy requires a value (manylinux or musllinux)", file=sys.stderr)
+            sys.exit(1)
+        policy_name = args[idx + 1]
+        args = args[:idx] + args[idx + 2:]
+
+    if policy_name not in POLICIES:
+        print(f"ERROR: unknown policy '{policy_name}'. Use: {', '.join(POLICIES)}", file=sys.stderr)
         sys.exit(1)
 
-    r_path = Path(sys.argv[1]).resolve()
+    _allowed_prefixes = POLICIES[policy_name]
+
+    if len(args) != 1:
+        print("Usage: delocate_r.py [--policy manylinux|musllinux] <r-install-path>", file=sys.stderr)
+        sys.exit(1)
+
+    r_path = Path(args[0]).resolve()
     if not r_path.is_dir():
         print(f"ERROR: R installation not found at {r_path}", file=sys.stderr)
         sys.exit(1)
@@ -368,7 +547,7 @@ def main() -> None:
     libs_sdir = "lib/R/lib/.libs"
     dest_dir = r_path / libs_sdir
 
-    print(f"delocate_r: repairing {r_path} (in-place)")
+    print(f"delocate_r: repairing {r_path} (in-place, policy={policy_name})")
 
     # Phase 1: Discover ELF files
     print("  Discovering ELF files...")
@@ -422,6 +601,12 @@ def main() -> None:
     # Phase 5: Patch ELF binaries
     print("  Patching ELF binaries...")
     patch_elf_binaries(all_elf_needs, all_soname_map, dest_dir, r_path)
+
+    # Phase 5b: Fix patchelf strtab misalignment (patchelf 0.18.0 bug)
+    # Must run after all patchelf writes are done, before verification.
+    patched_files = set(all_soname_path.values()) | set(all_elf_needs.keys())
+    for elf in patched_files:
+        fix_patchelf_strtab(elf)
 
     # Phase 6: Verify repair
     print("  Verifying repair...")

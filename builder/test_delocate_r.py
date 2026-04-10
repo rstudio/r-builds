@@ -22,7 +22,15 @@ spec.loader.exec_module(delocate_r)
 # ── is_allowed ───────────────────────────────────────────────────────────────
 
 
-class TestIsAllowed:
+class TestIsAllowedManylinux:
+    """Tests for the manylinux policy allowlist."""
+
+    @pytest.fixture(autouse=True)
+    def set_policy(self):
+        delocate_r._allowed_prefixes = delocate_r.POLICIES["manylinux"]
+        yield
+        delocate_r._allowed_prefixes = []
+
     def test_exact_glibc_prefix(self):
         assert delocate_r.is_allowed("libc.so.6") is True
 
@@ -79,6 +87,56 @@ class TestIsAllowed:
         assert delocate_r.is_allowed("libRfoo.so") is False
         # But libR.so.1 does match
         assert delocate_r.is_allowed("libR.so.1") is True
+
+
+class TestIsAllowedMusllinux:
+    """Tests for the musllinux policy allowlist."""
+
+    @pytest.fixture(autouse=True)
+    def set_policy(self):
+        delocate_r._allowed_prefixes = delocate_r.POLICIES["musllinux"]
+        yield
+        delocate_r._allowed_prefixes = []
+
+    def test_musl_libc_allowed(self):
+        assert delocate_r.is_allowed("libc.musl-x86_64.so.1") is True
+        assert delocate_r.is_allowed("libc.musl-aarch64.so.1") is True
+
+    def test_libz_allowed(self):
+        assert delocate_r.is_allowed("libz.so.1") is True
+
+    def test_r_internal_allowed(self):
+        assert delocate_r.is_allowed("libR.so") is True
+        assert delocate_r.is_allowed("libRblas.so") is True
+        assert delocate_r.is_allowed("libRlapack.so") is True
+
+    def test_compiler_runtime_not_allowed(self):
+        """libgcc_s, libstdc++ must be bundled on musl (not in base system)."""
+        assert delocate_r.is_allowed("libgcc_s.so.1") is False
+        assert delocate_r.is_allowed("libstdc++.so.6") is False
+        assert delocate_r.is_allowed("libatomic.so.1") is False
+
+    def test_glibc_libs_not_allowed(self):
+        """glibc-specific libs are not present on musl systems."""
+        assert delocate_r.is_allowed("libc.so.6") is False
+        assert delocate_r.is_allowed("libm.so.6") is False
+        assert delocate_r.is_allowed("libdl.so.2") is False
+        assert delocate_r.is_allowed("libpthread.so.0") is False
+        assert delocate_r.is_allowed("librt.so.1") is False
+        assert delocate_r.is_allowed("libresolv.so.2") is False
+
+    def test_expat_not_allowed(self):
+        """libexpat is bundled on musllinux (not in the musllinux allowlist)."""
+        assert delocate_r.is_allowed("libexpat.so.1") is False
+
+    def test_x11_not_allowed(self):
+        assert delocate_r.is_allowed("libX11.so.6") is False
+        assert delocate_r.is_allowed("libSM.so.6") is False
+
+    def test_system_libs_not_allowed(self):
+        assert delocate_r.is_allowed("libcurl.so.4") is False
+        assert delocate_r.is_allowed("libssl.so.3") is False
+        assert delocate_r.is_allowed("libfontconfig.so.1") is False
 
 
 # ── hash_rename ──────────────────────────────────────────────────────────────
@@ -240,6 +298,12 @@ class TestLddParsing:
 
 class TestDiscoverExternalDeps:
     """Test dependency discovery with mocked ldd."""
+
+    @pytest.fixture(autouse=True)
+    def set_policy(self):
+        delocate_r._allowed_prefixes = delocate_r.POLICIES["manylinux"]
+        yield
+        delocate_r._allowed_prefixes = []
 
     def test_filters_allowed_and_internal(self):
         r_path = Path("/opt/R/4.4.2")
@@ -488,6 +552,12 @@ class TestFixInterLibraryRefs:
 
 
 class TestVerifyRepair:
+    @pytest.fixture(autouse=True)
+    def set_policy(self):
+        delocate_r._allowed_prefixes = delocate_r.POLICIES["manylinux"]
+        yield
+        delocate_r._allowed_prefixes = []
+
     def test_passes_on_good_state(self, tmp_path):
         dest_dir = tmp_path / "lib" / "R" / "lib" / ".libs"
         dest_dir.mkdir(parents=True)

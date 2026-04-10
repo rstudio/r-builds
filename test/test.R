@@ -15,8 +15,17 @@ install.packages(file.path(curr_dir, "testpkg"), repos = NULL, clean = TRUE)
 source(file.path(curr_dir, "testpkg/tests/test.R"))
 
 # Check iconv support
-if (!capabilities("iconv") || !all(c("ASCII", "LATIN1", "UTF-8") %in% iconvlist())) {
+# musl uses different encoding names than glibc (e.g. US_ASCII vs ASCII,
+# ISO8859-1 vs LATIN1), so check for either variant.
+if (!capabilities("iconv")) {
   stop("missing iconv support")
+}
+il <- iconvlist()
+has_ascii <- any(c("ASCII", "US_ASCII") %in% il)
+has_latin1 <- any(c("LATIN1", "ISO8859-1", "ISO-8859-1") %in% il)
+has_utf8 <- "UTF-8" %in% il
+if (!has_ascii || !has_latin1 || !has_utf8) {
+  stop(sprintf("missing iconv encodings: ASCII=%s, LATIN1=%s, UTF-8=%s", has_ascii, has_latin1, has_utf8))
 }
 
 # Check that built-in packages can be loaded

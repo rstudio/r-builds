@@ -32,6 +32,16 @@ can be found on the [Posit Platform Support](https://posit.co/about/platform-sup
 page. When an operating system has reached its end of support, builds for it
 will be discontinued, but existing binaries will continue to be available.
 
+### Portable builds (experimental)
+
+Portable R builds are also available that work across Linux distributions
+without distro-specific packages. These builds bundle most library dependencies
+and are relocatable to any install path.
+
+- **manylinux** - any Linux distro with glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+,
+  Debian 12+, Amazon Linux 2023+, Arch Linux, etc.)
+- **musllinux** - Alpine Linux 3.20+ and other musl-based distros
+
 ## Supported R Versions
 
 R binaries are primarily supported for the current R version and previous four minor versions of R.
@@ -275,6 +285,39 @@ sudo zypper install -y gcc gcc-c++ gcc-fortran make \
 
 # Arch Linux
 sudo pacman -S base-devel gcc-fortran pcre2 xz bzip2 zlib icu
+```
+
+#### Portable (musllinux) - Alpine Linux and musl-based distros
+
+Portable builds are available for Linux distributions that use musl libc
+instead of glibc, such as Alpine Linux. Most library dependencies are bundled,
+and R auto-detects its install location so it can be extracted to any path.
+
+These builds require musl >= 1.2 (Alpine 3.20+, Void Linux musl, etc.).
+
+##### Install via tarball
+
+Download and extract:
+```bash
+# x86_64
+curl -O https://cdn.posit.co/r/musllinux_1_2/pkgs/R-${R_VERSION}-musllinux_1_2.tar.gz
+
+# arm64
+curl -O https://cdn.posit.co/r/musllinux_1_2/pkgs/R-${R_VERSION}-musllinux_1_2-arm64.tar.gz
+
+sudo mkdir -p /opt/R
+sudo tar xzf R-${R_VERSION}-musllinux_1_2*.tar.gz -C /opt/R
+```
+
+Install system dependencies:
+```bash
+# Runtime dependencies
+sudo apk add --no-cache ca-certificates fontconfig ttf-dejavu
+
+# Optional: build tools for installing R packages from source
+sudo apk add --no-cache \
+  gcc g++ gfortran make \
+  pcre2-dev xz-dev bzip2-dev zlib-dev zstd-dev icu-dev
 ```
 
 

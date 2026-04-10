@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-# package.manylinux_2_28
+# package.musllinux_1_2
 #
-# Post-build portability script for manylinux_2_28 R builds.
+# Post-build portability script for musllinux_1_2 R builds.
 # Called by build.sh after compile_r() installs R to $R_INSTALL_PATH.
 #
 # This script:
@@ -12,19 +12,22 @@ set -e
 # 3. Makes R_HOME self-detecting for relocatability
 # 4. Adds RPATH entries so the exec binary can find libR.so
 #
-# Output: a portable tarball (created by build.sh), plus DEB and RPM packages
-# (built via nfpm). The DEB/RPM packages depend only on ca-certificates and
-# fontconfig, making them usable across DEB/RPM-based distros. For distros
-# that don't use DEB/RPM (e.g., Arch Linux), the tarball is a universal fallback.
+# Output: a portable tarball (created by build.sh), plus an APK package
+# (built via nfpm) for Alpine Linux.
 
 R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
 
 echo ">>> Phase 1: BLAS setup"
 # Replace reference BLAS with OpenBLAS for performance.
-# The centos-8 build uses internal shared BLAS (--with-blas is not set).
 # Swap it with system OpenBLAS so delocate_r bundles a real BLAS.
+# Alpine installs OpenBLAS to /usr/lib/ (not /usr/lib64/).
 rm -f "${R_LIB_DIR}/libRblas.so"
-cp /usr/lib64/libopenblasp.so.0 "${R_LIB_DIR}/libRblas.so"
+OPENBLAS_LIB=$(ls /usr/lib/libopenblasp*.so* 2>/dev/null | head -1)
+if [ -z "$OPENBLAS_LIB" ]; then
+  echo "ERROR: OpenBLAS not found in /usr/lib/"
+  exit 1
+fi
+cp "$OPENBLAS_LIB" "${R_LIB_DIR}/libRblas.so"
 
 echo ">>> Phase 2: delocate_r repair"
 # Bundle non-allowed system library dependencies into the R installation
@@ -33,7 +36,7 @@ echo ">>> Phase 2: delocate_r repair"
 # LD_LIBRARY_PATH must include R's lib dir so ldd can locate libRblas.so
 # and libRlapack.so (which are internal to the R installation).
 export LD_LIBRARY_PATH="${R_LIB_DIR}:${LD_LIBRARY_PATH:-}"
-python3 /delocate_r.py --policy manylinux "${R_INSTALL_PATH}"
+python3 /delocate_r.py --policy musllinux "${R_INSTALL_PATH}"
 
 echo ">>> Phase 3: Fix BLAS/LAPACK SONAMEs for package compilation"
 # After delocate_r repair, lib/R/lib/libRblas.so still has its original SONAME
@@ -51,21 +54,34 @@ if [ -f "${R_LIB_DIR}/libRlapack.so" ]; then
   patchelf --set-soname libRlapack.so "${R_LIB_DIR}/libRlapack.so"
   echo "  Fixed libRlapack.so SONAME"
 fi
+# Fix patchelf strtab mismatch (patchelf 0.18.0 bug with large binaries on musl)
+python3 -c "
+from pathlib import Path; import sys; sys.path.insert(0, '/')
+from delocate_r import fix_patchelf_strtab
+for f in Path('${R_LIB_DIR}').glob('*.so'):
+    fix_patchelf_strtab(f)
+"
 
 echo ">>> Phase 4: Bundle Tcl/Tk library scripts"
-# The bundled libtcl8.6.so has hardcoded paths to Tcl scripts (e.g., /usr/share/tcl8.6
-# on CentOS 8). On a different distro, these paths may not exist or differ.
+# The bundled libtcl8.6.so has hardcoded paths to Tcl scripts.
+# Alpine puts them in /usr/lib/tcl8.6 (not /usr/share/ like RHEL).
 # Bundle the Tcl/Tk library scripts into the R installation and set TCL_LIBRARY/TK_LIBRARY
 # in etc/ldpaths so R's tcltk package can always find them.
 TCL_SHARE="${R_INSTALL_PATH}/lib/R/share"
-if [ -d /usr/share/tcl8.6 ]; then
-  cp -a /usr/share/tcl8.6 "${TCL_SHARE}/tcl8.6"
-  echo "  Bundled tcl8.6 scripts"
-fi
-if [ -d /usr/share/tk8.6 ]; then
-  cp -a /usr/share/tk8.6 "${TCL_SHARE}/tk8.6"
-  echo "  Bundled tk8.6 scripts"
-fi
+for tcl_dir in /usr/lib/tcl8.6 /usr/share/tcl8.6; do
+  if [ -d "$tcl_dir" ]; then
+    cp -a "$tcl_dir" "${TCL_SHARE}/tcl8.6"
+    echo "  Bundled tcl8.6 scripts from $tcl_dir"
+    break
+  fi
+done
+for tk_dir in /usr/lib/tk8.6 /usr/share/tk8.6; do
+  if [ -d "$tk_dir" ]; then
+    cp -a "$tk_dir" "${TCL_SHARE}/tk8.6"
+    echo "  Bundled tk8.6 scripts from $tk_dir"
+    break
+  fi
+done
 # Add TCL_LIBRARY and TK_LIBRARY to etc/ldpaths so they're set when R starts
 if [ -f "${R_INSTALL_PATH}/lib/R/etc/ldpaths" ]; then
   cat >> "${R_INSTALL_PATH}/lib/R/etc/ldpaths" <<'TCLEOF'
@@ -236,13 +252,10 @@ echo ">>> Phase 7: Clean up"
 # Remove DESCRIPTION file if created by delocate_r (shouldn't happen, but just in case)
 rm -f "${R_INSTALL_PATH}/DESCRIPTION"
 
-echo ">>> Done: R installation at ${R_INSTALL_PATH} is now manylinux_2_28 portable"
+echo ">>> Done: R installation at ${R_INSTALL_PATH} is now musllinux_1_2 portable"
 
-# ── DEB/RPM packaging ─────────────────────────────────────────────────────────
-# Build generic DEB and RPM packages from the portable R installation.
-# These packages have minimal dependencies (ca-certificates, fontconfig) and
-# work across any DEB/RPM distro with glibc >= 2.28. If a distro doesn't
-# support these packages, users can fall back to the tarball.
+# ── APK packaging ──────────────────────────────────────────────────────────────
+# Build an APK package from the portable R installation for Alpine Linux.
 
 if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
   mkdir -p "/tmp/output/${OS_IDENTIFIER}"
@@ -250,55 +263,21 @@ fi
 
 if [ "$(arch)" == "aarch64" ]; then nfpm_arch=arm64; else nfpm_arch=amd64; fi
 
-echo ">>> Phase 8: Build DEB package"
-cat <<EOF > /tmp/nfpm-deb.yml
+echo ">>> Phase 8: Build APK package"
+cat <<EOF > /tmp/nfpm-apk.yml
 name: r-${R_VERSION}
 version: 1
 version_schema: none
-section: universe/math
-priority: optional
 arch: ${nfpm_arch}
 maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
 description: |
-  GNU R statistical computation and graphics system (portable manylinux build)
-vendor: Posit Software, PBC
+  GNU R statistical computation and graphics system (portable musllinux build)
 homepage: https://www.r-project.org
-license: GPL-2
-deb:
-  fields:
-    Bugs: https://github.com/rstudio/r-builds/issues
-depends:
-- ca-certificates
-- fontconfig
+license: GPL-2.0-or-later
 contents:
 - src: ${R_INSTALL_PATH}
   dst: ${R_INSTALL_PATH}
 EOF
 
-nfpm package -f /tmp/nfpm-deb.yml -p deb -t "/tmp/output/${OS_IDENTIFIER}"
-echo "  Built $(ls /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.deb)"
-
-echo ">>> Phase 9: Build RPM package"
-cat <<EOF > /tmp/nfpm-rpm.yml
-name: R-${R_VERSION}
-version: 1
-version_schema: none
-arch: ${nfpm_arch}
-release: 1
-maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
-description: |
-  GNU R statistical computation and graphics system (portable manylinux build)
-vendor: Posit Software, PBC
-homepage: https://www.r-project.org
-license: GPLv2+
-depends:
-- ca-certificates
-- fontconfig
-- which
-contents:
-- src: ${R_INSTALL_PATH}
-  dst: ${R_INSTALL_PATH}
-EOF
-
-nfpm package -f /tmp/nfpm-rpm.yml -p rpm -t "/tmp/output/${OS_IDENTIFIER}"
-echo "  Built $(ls /tmp/output/${OS_IDENTIFIER}/R-${R_VERSION}*.rpm)"
+nfpm package -f /tmp/nfpm-apk.yml -p apk -t "/tmp/output/${OS_IDENTIFIER}"
+echo "  Built $(ls /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.apk)"

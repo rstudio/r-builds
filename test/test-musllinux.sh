@@ -1,0 +1,133 @@
+#!/bin/sh
+set -ex
+
+# Test script for musllinux_1_2 portable R builds.
+# Runs on Alpine Linux to validate musl-based portability.
+#
+# This script:
+# 1. Installs R from the tarball
+# 2. Installs Alpine build tools and runtime deps
+# 3. Runs the standard test suite (test-r.sh -> test.R)
+# 4. Runs musllinux-specific tests (relocatability, R CMD INSTALL, SSL)
+
+# Alpine uses /bin/sh (busybox ash), not bash
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
+# Install R from the tarball.
+TARBALL_DIR="${SCRIPT_DIR}/../builder/integration/tmp/r/${OS_IDENTIFIER}"
+TARBALL=$(ls "${TARBALL_DIR}"/R-${R_VERSION}*.tar.gz 2>/dev/null | head -1)
+
+if [ -z "$TARBALL" ]; then
+  echo "ERROR: No tarball found for R ${R_VERSION} in ${TARBALL_DIR}"
+  ls -la "${TARBALL_DIR}/" 2>/dev/null || echo "  Directory does not exist"
+  exit 1
+fi
+
+# Install build tools and runtime dependencies.
+echo "=== Installing build tools and runtime dependencies ==="
+apk add --no-cache \
+  bash coreutils \
+  gcc g++ gfortran make \
+  ca-certificates less which \
+  pcre2-dev pcre-dev xz-dev bzip2-dev zlib-dev zstd-dev icu-dev \
+  fontconfig ttf-dejavu
+
+echo "=== Installing R from tarball: ${TARBALL} ==="
+mkdir -p /opt/R
+tar xzf "${TARBALL}" -C /opt/R
+
+# Run the standard test suite (same as all other platforms).
+# test-r.sh requires bash.
+echo "=== Running standard test suite ==="
+bash "${SCRIPT_DIR}/test-r.sh"
+
+# Musllinux-specific tests below.
+R_PREFIX=/opt/R/${R_VERSION}
+R_HOME=${R_PREFIX}/lib/R
+
+echo "=== Shared library dependencies (libR.so) ==="
+ldd "${R_HOME}/lib/libR.so" || true
+
+echo "=== Shared library dependencies (exec binary) ==="
+ldd "${R_HOME}/bin/exec/R" || true
+
+echo "=== RPATH on exec binary ==="
+readelf -d "${R_HOME}/bin/exec/R" | grep -i 'rpath\|runpath' || echo "(no RPATH)"
+
+echo "=== Verify bundled libs exist ==="
+LIBS_DIR=$(find "${R_PREFIX}" -name ".libs" -type d | head -1)
+if [ -n "$LIBS_DIR" ]; then
+  echo "  Bundled libs in ${LIBS_DIR}: $(ls "$LIBS_DIR" | wc -l) files"
+else
+  echo "WARNING: No .libs directory found"
+fi
+
+echo "=== Verify SSL CA detection ==="
+"${R_HOME}/bin/Rscript" -e '
+  ca <- Sys.getenv("CURL_CA_BUNDLE")
+  if (nchar(ca) == 0) stop("CURL_CA_BUNDLE is not set")
+  if (!file.exists(ca)) stop(paste("CURL_CA_BUNDLE points to missing file:", ca))
+  cat(sprintf("CURL_CA_BUNDLE=%s (OK)\n", ca))
+'
+
+echo "=== Verify Tcl/Tk bundled scripts ==="
+"${R_HOME}/bin/Rscript" -e '
+  tcl_lib <- Sys.getenv("TCL_LIBRARY")
+  tk_lib <- Sys.getenv("TK_LIBRARY")
+  if (nchar(tcl_lib) == 0) stop("TCL_LIBRARY is not set")
+  if (nchar(tk_lib) == 0) stop("TK_LIBRARY is not set")
+  if (!file.exists(file.path(tcl_lib, "init.tcl"))) stop(paste("init.tcl not found in", tcl_lib))
+  cat(sprintf("TCL_LIBRARY=%s (OK)\nTK_LIBRARY=%s (OK)\n", tcl_lib, tk_lib))
+'
+
+echo "=== Relocatability test ==="
+RELOCATED_DIR="/tmp/R-relocated-${R_VERSION}"
+cp -a "${R_PREFIX}" "${RELOCATED_DIR}"
+rm -rf "${R_PREFIX}"
+"${RELOCATED_DIR}/bin/R" -e 'cat("Relocatability: bin/R works\n")' --vanilla
+
+echo "=== R CMD INSTALL from relocated path ==="
+DIR=$SCRIPT_DIR "${RELOCATED_DIR}/bin/Rscript" -e '
+  temp_lib <- tempdir()
+  .libPaths(temp_lib)
+  curr_dir <- Sys.getenv("DIR", ".")
+  pkg <- file.path(curr_dir, "testpkg")
+  if (dir.exists(pkg)) {
+    install.packages(pkg, repos = NULL, lib = temp_lib, clean = TRUE)
+    library(testpkg, lib.loc = temp_lib)
+    cat("R CMD INSTALL from relocated path: OK\n")
+  } else {
+    cat("testpkg not found, skipping R CMD INSTALL test\n")
+  }
+' --vanilla
+
+echo "=== HTTPS download from relocated path ==="
+"${RELOCATED_DIR}/bin/Rscript" -e '
+  f <- tempfile()
+  tryCatch({
+    download.file("https://cloud.r-project.org", f, quiet = TRUE)
+    cat("HTTPS download from relocated path: OK\n")
+  }, error = function(e) {
+    stop(paste("HTTPS download failed:", e$message))
+  })
+' --vanilla
+
+# Restore original location for any further tests
+mv "${RELOCATED_DIR}" "${R_PREFIX}"
+
+echo "=== Verify libRblas/libRlapack SONAME ==="
+RBLAS_SONAME=$(readelf -d "${R_HOME}/lib/libRblas.so" 2>/dev/null | sed -n 's/.*\(SONAME\).*\[\(.*\)\]/\2/p')
+if [ "$RBLAS_SONAME" != "libRblas.so" ]; then
+  echo "FAIL: libRblas.so has SONAME '$RBLAS_SONAME', expected 'libRblas.so'"
+  exit 1
+fi
+echo "  libRblas.so SONAME: $RBLAS_SONAME (OK)"
+
+# libRblas must NOT be in .libs/
+if ls "${R_PREFIX}"/lib/R/lib/.libs/*Rblas* 2>/dev/null; then
+  echo "FAIL: libRblas.so should not be bundled in .libs/"
+  exit 1
+fi
+echo "  libRblas.so not in .libs/ (OK)"
+
+echo "=== All musllinux_1_2 tests passed ==="
