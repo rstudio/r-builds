@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-# Test script for manylinux_2_28 portable R builds.
+# Test script for manylinux portable R builds.
 # Runs on various distros to validate cross-distro portability.
 #
 # Tested distros: Ubuntu Noble, Rocky Linux 8, Rocky Linux 10, openSUSE 15.6
@@ -26,7 +26,7 @@ if [ -z "$TARBALL" ]; then
 fi
 
 # Install build tools and runtime dependencies.
-# These are the manylinux_2_28 allowed libs (not bundled) plus dev tools
+# These are the manylinux allowed libs (not bundled) plus dev tools
 # needed for R package compilation.
 echo "=== Installing build tools and runtime dependencies ==="
 if command -v apt-get &>/dev/null; then
@@ -204,4 +204,4 @@ echo "  Rscript (no args): OK"
 
 rm -f "$tmpscript"
 
-echo "=== All manylinux_2_28 tests passed ==="
+echo "=== All manylinux tests passed ==="

@@ -46,24 +46,22 @@ Portable manylinux builds are useful for:
 
 We use `manylinux_2_34` (based on RHEL 9) rather than `manylinux_2_28` (RHEL 8) to get newer libraries like OpenSSL 3.x and to work around issues with RHEL 8's old version of fontconfig (2.13, which doesn't understand modern config directives like `<reset-dirs/>`).
 
-`manylinux_2_28` (Rocky 8, glibc 2.28) is also available but not built by default. The Dockerfile and package scripts are kept for historical reference or future use.
-
 ## Platform support
 
 Based on [Posit platform support](https://docs.posit.co/platform-support.html). Check the current list when updating -- distros and EOL dates change frequently.
 
 | Distro | EOL | glibc | Minimum manylinux |
 |---|---|---|---|
-| RHEL 8 (Rocky/Alma 8) | May 2029 | 2.28 | manylinux_2_28 |
-| RHEL 9 (Rocky/Alma 9) | May 2032 | 2.34 | manylinux_2_28 |
-| RHEL 10 | May 2035 | 2.39 | manylinux_2_28 |
-| Ubuntu 22.04 | Apr 2027 | 2.35 | manylinux_2_28 |
-| Ubuntu 24.04 | Apr 2029 | 2.39 | manylinux_2_28 |
-| SLES 15 SP7 | Jul 2031 | 2.38 | manylinux_2_28 |
-| Debian 12 | Jun 2026 | 2.36 | manylinux_2_28 |
-| Debian 13 | Jun 2028 | 2.41 | manylinux_2_28 |
+| RHEL 8 (Rocky/Alma 8) | May 2029 | 2.28 | manylinux_2_28 (not built) |
+| RHEL 9 (Rocky/Alma 9) | May 2032 | 2.34 | manylinux_2_34 |
+| RHEL 10 | May 2035 | 2.39 | manylinux_2_34 |
+| Ubuntu 22.04 | Apr 2027 | 2.35 | manylinux_2_34 |
+| Ubuntu 24.04 | Apr 2029 | 2.39 | manylinux_2_34 |
+| SLES 15 SP7 | Jul 2031 | 2.38 | manylinux_2_34 |
+| Debian 12 | Jun 2026 | 2.36 | manylinux_2_34 |
+| Debian 13 | Jun 2028 | 2.41 | manylinux_2_34 |
 
-All currently supported distros are covered by `manylinux_2_34`, with the exception of RHEL 8 (which requires `manylinux_2_28`).
+All currently supported distros are covered by `manylinux_2_34`, with the exception of RHEL 8 (which would require `manylinux_2_28`). RHEL 8 is still served by the standard distro-specific r-builds packages.
 
 ### manylinux compatibility reference
 
@@ -72,7 +70,6 @@ From [pep600_compliance](https://github.com/mayeut/pep600_compliance), useful ma
 | manylinux | glibc | Build base | Compatible with |
 |---|---|---|---|
 | `manylinux_2_17` | 2.17 | manylinux-2014 | CentOS 7+, Amazon Linux 1+ |
-| `manylinux_2_28` | 2.28 | Rocky/Alma 8 | RHEL 8+, Ubuntu 20.04+, Debian 10+ |
 | `manylinux_2_34` | 2.34 | Rocky/Alma 9 | RHEL 9+, Ubuntu 22.04+, Debian 12+ |
 | `manylinux_2_39` | 2.39 | Rocky/Alma 10 | RHEL 10+, Ubuntu 24.04+, Debian 13+ |
 
@@ -200,7 +197,7 @@ Add a higher manylinux version (e.g. `manylinux_2_34` on Rocky 9) when:
 - The base image provides better toolchain support
 - You want to drop older distro compatibility in exchange for smaller tarballs (fewer libs to bundle if the target has more pre-installed)
 
-Note: a higher manylinux version is NOT needed just to run on newer distros. `manylinux_2_28` already runs on RHEL 10, Ubuntu 24.04, etc.
+Note: a higher manylinux version is NOT needed just to run on newer distros. `manylinux_2_34` already runs on RHEL 10, Ubuntu 24.04, etc.
 
 ### Step-by-step
 
@@ -214,7 +211,7 @@ Note: a higher manylinux version is NOT needed just to run on newer distros. `ma
    - Check if fontconfig source build is needed (Rocky 9 ships 2.14.0, which is exactly the minimum -- should be sufficient, but test for warnings)
    - Include the `--with-2025blas` configure flag for R >= 4.5.0 BLAS compat
 
-3. **Create `builder/package.<platform>`** -- can likely reuse `package.manylinux_2_28` directly or with minor adjustments:
+3. **Create `builder/package.<platform>`** -- can likely reuse `package.manylinux_2_34` directly or with minor adjustments:
    - OpenBLAS package name may differ (check `openblas-threads` vs `openblas`)
    - Tcl/Tk version may differ (8.6 vs 9.x)
    - BLAS library path may differ
@@ -244,7 +241,7 @@ A `manylinux_2_34` build on Rocky 9 would provide:
 **Compatible distros** (glibc >= 2.34):
 RHEL 9+, Ubuntu 22.04+, Debian 12+, Fedora 36+, Amazon Linux 2023+
 
-**Dropped distros** vs manylinux_2_28:
+**Dropped distros** (not supported by manylinux_2_34):
 RHEL 8, Ubuntu 20.04, Debian 10-11, openSUSE 15.4-15.5, Amazon Linux 2
 
 ### Parallel builds strategy
@@ -253,7 +250,7 @@ You can build multiple manylinux versions in parallel:
 
 - **manylinux_2_34**: Covers all Posit-supported distros except RHEL 8 (EOL May 2029)
 
-To also build `manylinux_2_28`, the Dockerfile and package scripts are still in the repository and can be re-added to the Makefile and docker-compose files if needed.
+A `manylinux_2_28` build for RHEL 8 compatibility could be added in the future if needed (the deleted files are recoverable from git history).
 
 ## musllinux / Alpine
 
@@ -331,7 +328,7 @@ cd builder/portable-r && python3 -m pytest test_delocate_r.py -v
 
 The integration test (`test-manylinux.sh`) runs on multiple distros to validate cross-distro portability. When adding a new manylinux version, test on:
 
-1. The build distro itself (e.g. Rocky 8 for manylinux_2_28)
+1. The build distro itself (e.g. Rocky 9 for manylinux_2_34)
 2. A distro with newer glibc that has different library paths (e.g. Ubuntu Noble)
 3. A distro with different package manager (e.g. openSUSE)
 4. The newest Posit-supported distro (to catch fontconfig/config issues)
