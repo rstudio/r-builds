@@ -10,7 +10,6 @@ set -e
 # 1. Swaps reference BLAS with OpenBLAS (for performance)
 # 2. Runs delocate_r.py to bundle system library dependencies
 # 3. Makes R_HOME self-detecting for relocatability
-# 4. Adds RPATH entries so the exec binary can find libR.so
 #
 # Output: a portable tarball (created by build.sh), plus an APK package
 # (built via nfpm) for Alpine Linux.
@@ -157,6 +156,10 @@ description: |
   GNU R statistical computation and graphics system (portable musllinux build)
 homepage: https://www.r-project.org
 license: GPL-2.0-or-later
+depends:
+- ca-certificates
+- fontconfig
+- ttf-dejavu
 contents:
 - src: ${R_INSTALL_PATH}
   dst: ${R_INSTALL_PATH}

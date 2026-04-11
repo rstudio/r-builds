@@ -88,8 +88,7 @@ while [ $# -gt 0 ]; do
       exit 0
       ;;
     --version)
-      echo "Rscript front-end (shell wrapper)"
-      exit 0
+      exec "${R_HOME}/bin/R" --slave -e 'cat(sprintf("Rscript (R) version %s.%s (%s)\n", R.version$major, R.version$minor, R.version$date))'
       ;;
     --default-packages=*)
       R_DEFAULT_PACKAGES="${1#--default-packages=}"

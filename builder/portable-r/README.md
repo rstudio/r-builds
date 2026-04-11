@@ -41,7 +41,7 @@ Portable manylinux builds are useful for:
 
 | Platform | Base image | libc | Compatible distros |
 |---|---|---|---|
-| `manylinux_2_34` | Rocky 9 | glibc 2.34 | RHEL 9+, Ubuntu 22.04+, Debian 12+, openSUSE 15.5+, Fedora 36+, Amazon Linux 2023+, Arch Linux |
+| `manylinux_2_34` | Rocky 9 | glibc 2.34 | RHEL 9+, Ubuntu 22.04+, Debian 12+, openSUSE 15.6+, Fedora 36+, Amazon Linux 2023+, Arch Linux |
 | `musllinux_1_2` | Alpine 3.21 | musl 1.2 | Alpine 3.19+, any musl 1.2+ distro |
 
 We use `manylinux_2_34` (based on RHEL 9) rather than `manylinux_2_28` (RHEL 8) to get newer libraries like OpenSSL 3.x and to work around issues with RHEL 8's old version of fontconfig (2.13, which doesn't understand modern config directives like `<reset-dirs/>`).
@@ -172,20 +172,7 @@ Fontconfig requires special treatment because:
 2. Older fontconfig versions don't understand config directives from newer versions (e.g. `<reset-dirs/>` added in 2.14), causing warnings on modern distros
 3. If fontconfig is not bundled, R's entire graphics stack fails to load on systems without the fontconfig package
 
-The solution: **build a newer fontconfig from source** if the base image's version is too old. The Dockerfile has a conditional check:
-
-```dockerfile
-ENV FONTCONFIG_MIN_VERSION=2.14
-RUN FC_VERSION=$(rpm -q --qf '%{VERSION}' fontconfig 2>/dev/null || echo "0") && \
-    if [ version >= min ]; then skip; else build 2.15.0 from source; fi
-```
-
-Version 2.15.0 was chosen because:
-- Latest release using autotools (2.16+ requires meson)
-- Matches Ubuntu 24.04, RHEL 10, Debian 13
-- Understands all config directives through `<reset-dirs/>`
-
-On base images with fontconfig >= 2.14 (e.g. Rocky 9+), this step is skipped automatically.
+The current builds use base images with fontconfig >= 2.14 (Rocky 9 ships 2.14.0, Alpine 3.21 ships 2.15.0), so no source build is needed. If a future manylinux build uses an older base image (e.g. with fontconfig 2.13), fontconfig 2.15.0 would need to be built from source. Version 2.15.0 is the latest release using autotools (2.16+ requires meson) and matches Ubuntu 24.04, RHEL 10, and Debian 13.
 
 ## Adding a new manylinux version
 
@@ -224,25 +211,25 @@ Note: a higher manylinux version is NOT needed just to run on newer distros. `ma
 
 6. **Test on target distros**: run `test-manylinux.sh` on distros that match the new manylinux level and also on distros with newer glibc
 
-### Rocky 9 / manylinux_2_34 tradeoffs
+### manylinux_2_34 system libraries
 
-A `manylinux_2_34` build on Rocky 9 would provide:
+The manylinux_2_34 build uses Rocky 9, which provides:
 
-| Library | Rocky 8 | Rocky 9 | Benefit |
-|---|---|---|---|
-| glibc | 2.28 | 2.34 | Drops RHEL 8, Ubuntu 20.04, Debian 10 |
-| OpenSSL | 1.1.1k | **3.0.7** | Modern TLS, SHA-3, post-quantum readiness |
-| fontconfig | 2.13.1 (build 2.15.0) | **2.14.0** | No source build needed |
-| ICU | 60.3 | 67.1 | Better Unicode support |
-| pango | 1.42.4 | 1.48.7 | Improved text rendering |
-| cairo | 1.15.12 | 1.17.4 | Better graphics |
-| GCC | 8.5 | 11.4 | Newer compiler, better optimizations |
+| Library | Version |
+|---|---|
+| glibc | 2.34 |
+| OpenSSL | **3.0.7** |
+| fontconfig | **2.14.0** |
+| ICU | 67.1 |
+| pango | 1.48.7 |
+| cairo | 1.17.4 |
+| GCC | 11.4 |
 
 **Compatible distros** (glibc >= 2.34):
 RHEL 9+, Ubuntu 22.04+, Debian 12+, Fedora 36+, Amazon Linux 2023+
 
-**Dropped distros** (not supported by manylinux_2_34):
-RHEL 8, Ubuntu 20.04, Debian 10-11, openSUSE 15.4-15.5, Amazon Linux 2
+**Not supported** (glibc < 2.34):
+RHEL 8, Ubuntu 20.04, Debian 10-11, Amazon Linux 2
 
 ### Parallel builds strategy
 

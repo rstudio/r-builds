@@ -4,7 +4,7 @@ set -ex
 # Test script for manylinux portable R builds.
 # Runs on various distros to validate cross-distro portability.
 #
-# Tested distros: Ubuntu Noble, Rocky Linux 8, Rocky Linux 10, openSUSE 15.6
+# Tested distros: Ubuntu Noble, Rocky Linux 9, Rocky Linux 10, openSUSE 15.6
 #
 # This script:
 # 1. Installs R from the tarball (not DEB/RPM)
@@ -80,7 +80,7 @@ LIBS_DIR=$(find "${R_PREFIX}" -name ".libs" -type d | head -1)
 if [ -n "$LIBS_DIR" ]; then
   echo "  Bundled libs in ${LIBS_DIR}: $(ls "$LIBS_DIR" | wc -l) files"
 else
-  echo "WARNING: No .libs directory found — auditwheel-r may not have bundled anything"
+  echo "WARNING: No .libs directory found — delocate_r.py may not have bundled anything"
 fi
 
 echo "=== Verify SSL CA detection ==="

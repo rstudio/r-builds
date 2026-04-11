@@ -10,7 +10,6 @@ set -e
 # 1. Swaps reference BLAS with OpenBLAS (for performance)
 # 2. Runs delocate_r.py to bundle system library dependencies
 # 3. Makes R_HOME self-detecting for relocatability
-# 4. Adds RPATH entries so the exec binary can find libR.so
 #
 # Output: a portable tarball (created by build.sh), plus DEB and RPM packages
 # (built via nfpm). The DEB/RPM packages depend only on ca-certificates and
@@ -21,7 +20,7 @@ R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
 
 echo ">>> Phase 1: BLAS setup"
 # Replace reference BLAS with OpenBLAS for performance.
-# The centos-8 build uses internal shared BLAS (--with-blas is not set).
+# The rhel-9 build uses internal shared BLAS (--with-blas is not set).
 # Swap it with system OpenBLAS so delocate_r bundles a real BLAS.
 rm -f "${R_LIB_DIR}/libRblas.so"
 cp /usr/lib64/libopenblasp.so.0 "${R_LIB_DIR}/libRblas.so"
