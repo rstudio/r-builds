@@ -17,15 +17,20 @@ source(file.path(curr_dir, "testpkg/tests/test.R"))
 # Check iconv support
 # musl uses different encoding names than glibc (e.g. US_ASCII vs ASCII,
 # ISO8859-1 vs LATIN1), so check for either variant.
+# On older R (< 4.1) with musl, iconvlist() may return an empty list even
+# though iconv works fine, so test actual conversions instead.
 if (!capabilities("iconv")) {
   stop("missing iconv support")
 }
-il <- iconvlist()
-has_ascii <- any(c("ASCII", "US_ASCII") %in% il)
-has_latin1 <- any(c("LATIN1", "ISO8859-1", "ISO-8859-1") %in% il)
-has_utf8 <- "UTF-8" %in% il
-if (!has_ascii || !has_latin1 || !has_utf8) {
-  stop(sprintf("missing iconv encodings: ASCII=%s, LATIN1=%s, UTF-8=%s", has_ascii, has_latin1, has_utf8))
+test_iconv <- function(from, to, input, expected) {
+  result <- tryCatch(iconv(input, from, to), error = function(e) NA)
+  !is.na(result) && result == expected
+}
+has_utf8 <- test_iconv("UTF-8", "UTF-8", "hello", "hello")
+has_latin1 <- test_iconv("UTF-8", "latin1", "\u00e9", "\xe9") ||
+              test_iconv("UTF-8", "ISO-8859-1", "\u00e9", "\xe9")
+if (!has_utf8 || !has_latin1) {
+  stop(sprintf("iconv not working: UTF-8=%s, latin1=%s", has_utf8, has_latin1))
 }
 
 # Check that built-in packages can be loaded

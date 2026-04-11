@@ -20,7 +20,7 @@ R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
 
 echo ">>> Phase 1: BLAS setup"
 # Replace reference BLAS with OpenBLAS for performance.
-# The rhel-9 build uses internal shared BLAS (--with-blas is not set).
+# The manylinux_2_34 build uses internal shared BLAS (--with-blas is not set).
 # Swap it with system OpenBLAS so delocate_r bundles a real BLAS.
 rm -f "${R_LIB_DIR}/libRblas.so"
 cp /usr/lib64/libopenblasp.so.0 "${R_LIB_DIR}/libRblas.so"
