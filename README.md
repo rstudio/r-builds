@@ -295,6 +295,18 @@ and R auto-detects its install location so it can be extracted to any path.
 
 These builds require musl >= 1.2 (Alpine 3.20+, Void Linux musl, etc.).
 
+Two package formats are available: **APK** (Alpine Linux) and **tar.gz**
+(universal). The APK package automatically installs `ca-certificates`,
+`fontconfig`, and `ttf-dejavu` as dependencies, and installs R to
+`/opt/R/<version>/`. On non-Alpine musl distros, use the tarball.
+
+##### Install via APK package (Alpine Linux)
+
+```bash
+curl -O https://cdn.posit.co/r/musllinux_1_2/pkgs/r-${R_VERSION}_1_$(apk --print-arch).apk
+sudo apk add --allow-untrusted ./r-${R_VERSION}_1_$(apk --print-arch).apk
+```
+
 ##### Install via tarball
 
 Download and extract:
@@ -309,7 +321,7 @@ sudo mkdir -p /opt/R
 sudo tar xzf R-${R_VERSION}-musllinux_1_2*.tar.gz -C /opt/R
 ```
 
-Install system dependencies:
+Install system dependencies (only needed for tarballs; APK handles this automatically):
 ```bash
 # Runtime dependencies
 sudo apk add --no-cache ca-certificates fontconfig ttf-dejavu

@@ -7,7 +7,7 @@ set -e
 # Called by build.sh after compile_r() installs R to $R_INSTALL_PATH.
 #
 # This script:
-# 1. Swaps reference BLAS with OpenBLAS (for performance)
+# 1. Replaces reference BLAS and LAPACK with OpenBLAS (for performance)
 # 2. Runs delocate_r.py to bundle system library dependencies
 # 3. Makes R_HOME self-detecting for relocatability
 #
@@ -18,37 +18,83 @@ set -e
 
 R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
 
-echo ">>> Phase 1: BLAS setup"
-# Replace reference BLAS with OpenBLAS for performance.
-# The manylinux_2_34 build uses internal shared BLAS (--with-blas is not set).
-# Swap it with system OpenBLAS so delocate_r bundles a real BLAS.
+echo ">>> Phase 1: BLAS/LAPACK setup"
+# Replace R's reference BLAS and LAPACK with OpenBLAS for performance, matching
+# how RHEL 9 uses flexiblas (a single library providing both BLAS and LAPACK).
+#
+# R compiles its own (slow) reference implementations into libRblas.so and
+# libRlapack.so. We replace libRblas.so with the system OpenBLAS library,
+# repoint all DT_NEEDED entries from libRlapack.so to libRblas.so, then remove
+# libRlapack.so entirely. This way, libRblas.so (OpenBLAS) provides both BLAS
+# and LAPACK, just like flexiblas does on RHEL 9.
+#
+# We don't use --with-blas/--with-lapack at configure time because it records
+# the external library name (e.g., -lopenblaso) in Makeconf. Unlike other
+# Makeconf libs (-lpcre2-8, -lbz2, etc.) which have consistent names across
+# distros, OpenBLAS names vary: libopenblaso.so on Rocky 9 vs. libopenblas.so
+# on Ubuntu/Alpine. Using -lRblas (R's own lib dir) avoids this portability
+# issue.
+#
+# Use the OpenMP variant (libopenblaso) to match RHEL 9's flexiblas default.
+# OpenMP OpenBLAS shares the thread pool with R's own OpenMP parallelism,
+# avoiding thread oversubscription.
+OPENBLAS_LIB=$(ls /usr/lib64/libopenblaso-r*.so 2>/dev/null | head -1)
+if [ -z "$OPENBLAS_LIB" ]; then
+  echo "ERROR: OpenBLAS OpenMP variant not found in /usr/lib64/"
+  ls /usr/lib64/libopenblas* 2>/dev/null || echo "  No libopenblas* files found"
+  exit 1
+fi
+echo "  Using OpenBLAS: $OPENBLAS_LIB"
 rm -f "${R_LIB_DIR}/libRblas.so"
-cp /usr/lib64/libopenblasp.so.0 "${R_LIB_DIR}/libRblas.so"
+cp "$OPENBLAS_LIB" "${R_LIB_DIR}/libRblas.so"
+echo "  Replaced libRblas.so with $(basename "$OPENBLAS_LIB")"
+
+# Repoint all DT_NEEDED entries from libRlapack.so to libRblas.so.
+# libR.so only links against libRblas.so, but several bundled modules link
+# against libRlapack.so at build time:
+#   - modules/lapack.so
+#   - library/stats/libs/stats.so
+#   - library/Matrix/libs/Matrix.so
+#   - library/mgcv/libs/mgcv.so
+# Without this, loading these modules at runtime would fail because
+# libRlapack.so no longer exists. Since OpenBLAS provides both BLAS and
+# LAPACK routines through libRblas.so, we redirect those references.
+echo "  Repointing libRlapack.so references to libRblas.so..."
+find "${R_INSTALL_PATH}" -name '*.so' -exec sh -c '
+  readelf -d "$1" 2>/dev/null | grep -q "libRlapack.so" && {
+    patchelf --replace-needed libRlapack.so libRblas.so "$1"
+    echo "    $(echo "$1" | sed "s|${R_INSTALL_PATH}/||")"
+  }
+' _ {} \;
+rm -f "${R_LIB_DIR}/libRlapack.so"
+echo "  Removed libRlapack.so"
+
+# Clear LAPACK_LIBS in Makeconf so it matches RHEL 9's flexiblas behavior.
+# BLAS_LIBS = -lRblas provides both BLAS and LAPACK routines.
+MAKECONF="${R_INSTALL_PATH}/lib/R/etc/Makeconf"
+sed -i 's|^LAPACK_LIBS = .*|LAPACK_LIBS = |' "$MAKECONF"
+echo "  Cleared LAPACK_LIBS in Makeconf"
 
 echo ">>> Phase 2: delocate_r repair"
 # Bundle non-allowed system library dependencies into the R installation
 # and rewrite RPATHs to use $ORIGIN-relative paths.
 #
 # LD_LIBRARY_PATH must include R's lib dir so ldd can locate libRblas.so
-# and libRlapack.so (which are internal to the R installation).
+# (which is internal to the R installation).
 export LD_LIBRARY_PATH="${R_LIB_DIR}:${LD_LIBRARY_PATH:-}"
 python3 /delocate_r.py "${R_INSTALL_PATH}"
 
-echo ">>> Phase 3: Fix BLAS/LAPACK SONAMEs for package compilation"
+echo ">>> Phase 3: Fix BLAS SONAME for package compilation"
 # After delocate_r repair, lib/R/lib/libRblas.so still has its original SONAME
-# (e.g., "libopenblasp.so.0"). When users compile R packages that link against
+# (e.g., "libopenblaso.so.0"). When users compile R packages that link against
 # -lRblas (from Makeconf's BLAS_LIBS), the linker records this SONAME. At load time,
-# the dynamic linker then fails to find "libopenblasp.so.0" on the target system.
+# the dynamic linker then fails to find "libopenblaso.so.0" on the target system.
 #
 # Fix: set the SONAME to match the filename so packages record "libRblas.so" as their
 # dependency, which can always be found in R's lib dir via LD_LIBRARY_PATH.
 if [ -f "${R_LIB_DIR}/libRblas.so" ]; then
   patchelf --set-soname libRblas.so "${R_LIB_DIR}/libRblas.so"
   echo "  Fixed libRblas.so SONAME"
-fi
-if [ -f "${R_LIB_DIR}/libRlapack.so" ]; then
-  patchelf --set-soname libRlapack.so "${R_LIB_DIR}/libRlapack.so"
-  echo "  Fixed libRlapack.so SONAME"
 fi
 
 echo ">>> Phase 4: Bundle Tcl/Tk library scripts"

@@ -116,7 +116,41 @@ echo "=== HTTPS download from relocated path ==="
 # Restore original location for any further tests
 mv "${RELOCATED_DIR}" "${R_PREFIX}"
 
-echo "=== Verify libRblas/libRlapack SONAME ==="
+echo "=== Verify OpenBLAS is linked (not reference BLAS) ==="
+# libRblas.so should be OpenBLAS (not R's reference implementation).
+# libRlapack.so should not exist (LAPACK is provided by OpenBLAS via libRblas.so).
+# Verify by checking for the openblas_get_config symbol, which only exists in OpenBLAS.
+if ! nm -D "${R_HOME}/lib/libRblas.so" 2>/dev/null | grep -q openblas_get_config; then
+  echo "FAIL: libRblas.so does not contain openblas_get_config -- not linked to OpenBLAS"
+  exit 1
+fi
+echo "  libRblas.so: contains OpenBLAS (OK)"
+# Verify libRlapack.so does not exist (all LAPACK routines come from libRblas.so)
+if [ -e "${R_HOME}/lib/libRlapack.so" ]; then
+  echo "FAIL: libRlapack.so should not exist (LAPACK is provided by libRblas.so)"
+  exit 1
+fi
+echo "  libRlapack.so does not exist (OK)"
+# Verify LAPACK_LIBS is empty in Makeconf (matches RHEL 9's flexiblas behavior)
+LAPACK_LIBS_VAL=$(grep '^LAPACK_LIBS' "${R_HOME}/etc/Makeconf" | sed 's/^LAPACK_LIBS = *//')
+if [ -n "$LAPACK_LIBS_VAL" ]; then
+  echo "FAIL: LAPACK_LIBS should be empty, got '$LAPACK_LIBS_VAL'"
+  exit 1
+fi
+echo "  Makeconf LAPACK_LIBS is empty (OK)"
+# Verify R reports the BLAS/LAPACK paths within R_HOME.
+# Since OpenBLAS provides both BLAS and LAPACK via libRblas.so, R should
+# report both BLAS and LAPACK pointing to libRblas.so.
+"${R_HOME}/bin/Rscript" -e '
+  si <- sessionInfo()
+  blas <- si$BLAS
+  lapack <- si$LAPACK
+  cat(sprintf("  BLAS: %s\n  LAPACK: %s\n", blas, lapack))
+  if (!grepl("libRblas", blas)) stop("sessionInfo()$BLAS does not point to libRblas.so")
+  if (!grepl("libRblas", lapack)) stop("sessionInfo()$LAPACK does not point to libRblas.so")
+'
+
+echo "=== Verify libRblas SONAME ==="
 RBLAS_SONAME=$(readelf -d "${R_HOME}/lib/libRblas.so" 2>/dev/null | sed -n 's/.*\(SONAME\).*\[\(.*\)\]/\2/p')
 if [ "$RBLAS_SONAME" != "libRblas.so" ]; then
   echo "FAIL: libRblas.so has SONAME '$RBLAS_SONAME', expected 'libRblas.so'"

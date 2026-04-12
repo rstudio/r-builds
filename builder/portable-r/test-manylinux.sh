@@ -138,8 +138,42 @@ echo "=== HTTPS download from relocated path ==="
 # Restore original location for any further tests
 mv "${RELOCATED_DIR}" "${R_PREFIX}"
 
-echo "=== Verify libRblas/libRlapack SONAME ==="
-# libRblas.so must have SONAME "libRblas.so" (not the original "libopenblasp.so.0").
+echo "=== Verify OpenBLAS is linked (not reference BLAS) ==="
+# libRblas.so should be OpenBLAS (not R's reference implementation).
+# libRlapack.so should not exist (LAPACK is provided by OpenBLAS via libRblas.so).
+# Verify by checking for the openblas_get_config symbol, which only exists in OpenBLAS.
+if ! nm -D "${R_HOME}/lib/libRblas.so" 2>/dev/null | grep -q openblas_get_config; then
+  echo "FAIL: libRblas.so does not contain openblas_get_config -- not linked to OpenBLAS"
+  exit 1
+fi
+echo "  libRblas.so: contains OpenBLAS (OK)"
+# Verify libRlapack.so does not exist (all LAPACK routines come from libRblas.so)
+if [ -e "${R_HOME}/lib/libRlapack.so" ]; then
+  echo "FAIL: libRlapack.so should not exist (LAPACK is provided by libRblas.so)"
+  exit 1
+fi
+echo "  libRlapack.so does not exist (OK)"
+# Verify LAPACK_LIBS is empty in Makeconf (matches RHEL 9's flexiblas behavior)
+LAPACK_LIBS_VAL=$(grep '^LAPACK_LIBS' "${R_HOME}/etc/Makeconf" | sed 's/^LAPACK_LIBS = *//')
+if [ -n "$LAPACK_LIBS_VAL" ]; then
+  echo "FAIL: LAPACK_LIBS should be empty, got '$LAPACK_LIBS_VAL'"
+  exit 1
+fi
+echo "  Makeconf LAPACK_LIBS is empty (OK)"
+# Verify R reports the BLAS/LAPACK paths within R_HOME.
+# Since OpenBLAS provides both BLAS and LAPACK via libRblas.so, R should
+# report both BLAS and LAPACK pointing to libRblas.so.
+"${R_HOME}/bin/Rscript" -e '
+  si <- sessionInfo()
+  blas <- si$BLAS
+  lapack <- si$LAPACK
+  cat(sprintf("  BLAS: %s\n  LAPACK: %s\n", blas, lapack))
+  if (!grepl("libRblas", blas)) stop("sessionInfo()$BLAS does not point to libRblas.so")
+  if (!grepl("libRblas", lapack)) stop("sessionInfo()$LAPACK does not point to libRblas.so")
+'
+
+echo "=== Verify libRblas SONAME ==="
+# libRblas.so must have SONAME "libRblas.so" (not the original "libopenblaso.so.0").
 # If wrong, packages that link against -lRblas will record the wrong SONAME and
 # fail to load on systems without the matching library.
 RBLAS_SONAME=$(readelf -d "${R_HOME}/lib/libRblas.so" 2>/dev/null | sed -n 's/.*\(SONAME\).*\[\(.*\)\]/\2/p')
@@ -156,14 +190,14 @@ if ls "${R_PREFIX}"/lib/R/lib/.libs/*Rblas* 2>/dev/null; then
 fi
 echo "  libRblas.so not in .libs/ (OK)"
 
-# Verify testpkg.so links against libRblas.so (not libopenblasp.so.0)
+# Verify testpkg.so links against libRblas.so (not libopenblaso.so.0)
 TESTPKG_SO=$(find "${R_PREFIX}" -path "*/testpkg/libs/testpkg.so" 2>/dev/null | head -1)
 if [ -n "$TESTPKG_SO" ]; then
-  if readelf -d "$TESTPKG_SO" | grep -q "libopenblasp"; then
-    echo "FAIL: testpkg.so links against libopenblasp instead of libRblas"
+  if readelf -d "$TESTPKG_SO" | grep -q "libopenblaso"; then
+    echo "FAIL: testpkg.so links against libopenblaso instead of libRblas"
     exit 1
   fi
-  echo "  testpkg.so DT_NEEDED: OK (no libopenblasp reference)"
+  echo "  testpkg.so DT_NEEDED: OK (no libopenblaso reference)"
 fi
 
 echo "=== Rscript wrapper tests ==="

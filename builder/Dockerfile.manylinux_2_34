@@ -27,7 +27,7 @@ RUN dnf -y upgrade \
     libtool \
     make \
     ncurses-devel \
-    openblas-threads `# Bundled as libRblas.so (pthreads variant)` \
+    openblas-openmp `# Bundled as libRblas.so and libRlapack.so (matches RHEL 9 default)` \
     pango-devel \
     pcre-devel \
     pcre2-devel \
@@ -57,12 +57,10 @@ RUN chmod 0777 /opt
 # modern config directives. No source build needed (unlike Rocky 8).
 
 # Configure flags matching rhel-9.
-# --with-2025blas: Required for R >= 4.5.0. LAPACK 3.12.1 (Jan 2025) added new
-# BLAS routines (dgemmtr/zgemmtr). This flag compiles them into libRlapack
-# instead of libRblas, preserving the ability to swap BLAS implementations.
-# For manylinux_2_34, BLAS swapping is not supported (OpenBLAS is bundled
-# directly), but we keep this for consistency.
-# Harmlessly ignored on older R versions.
+# R compiles its own reference BLAS/LAPACK into libRblas.so and libRlapack.so.
+# The package script replaces both with OpenBLAS for performance. We don't use
+# --with-blas/--with-lapack here because it records the external library name
+# in Makeconf, which breaks package compilation on systems without OpenBLAS.
 ENV CONFIGURE_OPTIONS="\
     --enable-R-shlib \
     --with-tcltk \

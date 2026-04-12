@@ -29,7 +29,7 @@ RUN apk update && apk add --no-cache \
     make \
     ncurses-dev \
     nfpm `# Builds APK packages from the portable R installation` \
-    openblas `# Bundled as libRblas.so (pthreads variant)` \
+    openblas `# Bundled as libRblas.so and libRlapack.so (pthreads; no OpenMP variant on Alpine)` \
     openjdk11-jdk \
     pango-dev \
     patch `# Needed by build.sh to apply R source patches` \
@@ -58,6 +58,10 @@ RUN chmod 0777 /opt
 
 # Configure flags for musllinux.
 # Same as manylinux_2_34, adapted for Alpine paths.
+# R compiles its own reference BLAS/LAPACK; the package script replaces both
+# with OpenBLAS. We don't use --with-blas/--with-lapack here because it records
+# the external library name in Makeconf, which breaks package compilation on
+# systems without OpenBLAS.
 # Tcl/Tk config files are in /usr/lib/ on Alpine (not /usr/lib64/).
 ENV CONFIGURE_OPTIONS="\
     --enable-R-shlib \

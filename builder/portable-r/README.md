@@ -174,6 +174,25 @@ Fontconfig requires special treatment because:
 
 The current builds use base images with fontconfig >= 2.14 (Rocky 9 ships 2.14.0, Alpine 3.21 ships 2.15.0), so no source build is needed. If a future manylinux build uses an older base image (e.g. with fontconfig 2.13), fontconfig 2.15.0 would need to be built from source. Version 2.15.0 is the latest release using autotools (2.16+ requires meson) and matches Ubuntu 24.04, RHEL 10, and Debian 13.
 
+### BLAS/LAPACK handling
+
+Portable builds use a post-build swap to replace R's reference BLAS and LAPACK with OpenBLAS. This differs from the standard r-builds approach and deserves explanation.
+
+**Standard r-builds** (e.g., `rhel-9`, `rhel-10`) use `--with-blas=flexiblas --with-lapack=flexiblas` at configure time. This works because the target system is the same distro, so FlexiBLAS is always available as an RPM dependency. Makeconf records `BLAS_LIBS = -lflexiblas`, and package compilation works because FlexiBLAS is installed.
+
+**Portable builds** cannot use `--with-blas` because:
+
+1. `--with-blas=<lib>` records the external library name in `etc/Makeconf` (e.g., `BLAS_LIBS = -lopenblasp`)
+2. When users compile R packages with Fortran code on a target system, `R CMD INSTALL` passes `$(BLAS_LIBS)` to the linker
+3. Unlike other Makeconf libraries (`-lpcre2-8`, `-llzma`, `-lbz2`, `-lz`, `-licuuc`) which have consistent `.so` names across all Linux distros, OpenBLAS does not: Rocky 9 names it `libopenblaso.so` (OpenMP variant), while Ubuntu and Alpine name it `libopenblas.so`. A `-lopenblaso` flag recorded on Rocky 9 fails on Ubuntu even with OpenBLAS installed.
+
+Instead, portable builds let R compile its own reference BLAS/LAPACK (so Makeconf says `BLAS_LIBS = -lRblas`), then replace the libraries post-build:
+
+1. **Phase 1** of `package.<platform>` replaces `libRblas.so` with a copy of the system OpenBLAS library, uses `patchelf --replace-needed` to repoint all `libRlapack.so` references to `libRblas.so`, removes `libRlapack.so`, and clears `LAPACK_LIBS` in Makeconf. This matches RHEL 9's flexiblas behavior where a single library provides both BLAS and LAPACK.
+2. **Phase 3** fixes the SONAME on `libRblas.so` from its original value (e.g., `libopenblaso.so.0`) to `libRblas.so`, so R packages that link against `-lRblas` record the correct DT_NEEDED entry
+
+This gives the same performance as `--with-blas` (optimized BLAS and LAPACK from OpenBLAS) while keeping Makeconf portable. The tradeoff is that users cannot swap to a different BLAS at runtime (noted in the Limitations section above).
+
 ## Adding a new manylinux version
 
 ### When to add a new version
@@ -229,7 +248,7 @@ The manylinux_2_34 build uses Rocky 9, which provides:
 RHEL 9+, Ubuntu 22.04+, Debian 12+, Fedora 36+, Amazon Linux 2023+
 
 **Not supported** (glibc < 2.34):
-RHEL 8, Ubuntu 20.04, Debian 10-11, Amazon Linux 2
+RHEL 8, Amazon Linux 2
 
 ### Parallel builds strategy
 
