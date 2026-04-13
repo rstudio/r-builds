@@ -29,6 +29,7 @@ Portable manylinux builds are useful for:
 - **Unsupported distros**: Linux distributions without dedicated r-builds packages, such as Amazon Linux 2023 and Arch Linux
 - **Minimal/container environments**: Docker images, CI runners, and cloud VMs where you want R without pulling in distro-specific repos
 - **Version managers**: Tools like rig or custom scripts that install multiple R versions to user-chosen directories
+- **Custom install paths / non-root installs**: R is fully relocatable, so the tarball can be extracted to any directory -- including user-writable paths that don't require root/sudo
 - **Older/newer distro versions**: Distro versions outside the supported matrix (e.g., older Ubuntu LTS, newer Fedora) that still meet the glibc requirement
 - **Air-gapped systems**: Copy the tarball to systems without internet access
 

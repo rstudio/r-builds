@@ -207,8 +207,8 @@ Three package formats are available: **tar.gz** (universal), **DEB**
 The DEB and RPM packages automatically install `ca-certificates` and `fontconfig`
 as dependencies, and install R to `/opt/R/<version>/`. On distros that don't use
 DEB or RPM, use the tarball. The tarball is also the right choice if you need R
-installed to a custom path, since it can be extracted anywhere (R auto-detects its
-location at runtime).
+installed to a custom path or without root access, since it can be extracted
+anywhere (R auto-detects its location at runtime).
 
 The portable builds require glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+,
 Amazon Linux 2023+, Arch Linux, etc.). RHEL 8 and Ubuntu 20.04 are not supported;
@@ -241,6 +241,11 @@ curl -O https://cdn.posit.co/r/manylinux_2_34/pkgs/R-${R_VERSION}-manylinux_2_34
 
 sudo mkdir -p /opt/R
 sudo tar xzf R-${R_VERSION}-manylinux_2_34*.tar.gz -C /opt/R
+
+# Or install to a user-writable directory (no root required):
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-manylinux_2_34*.tar.gz -C ~/R
+~/R/${R_VERSION}/bin/R --version
 ```
 
 Install system dependencies (only needed for tarballs; DEB/RPM handle this automatically):
@@ -319,6 +324,11 @@ curl -O https://cdn.posit.co/r/musllinux_1_2/pkgs/R-${R_VERSION}-musllinux_1_2-a
 
 sudo mkdir -p /opt/R
 sudo tar xzf R-${R_VERSION}-musllinux_1_2*.tar.gz -C /opt/R
+
+# Or install to a user-writable directory (no root required):
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-musllinux_1_2*.tar.gz -C ~/R
+~/R/${R_VERSION}/bin/R --version
 ```
 
 Install system dependencies (only needed for tarballs; APK handles this automatically):
