@@ -53,6 +53,10 @@ RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_
 RUN chmod 0777 /opt
 
 # Configure flags for CentOS 8 that don't use the defaults in build.sh
+# --with-2025blas: Required for R >= 4.5.0. LAPACK 3.12.1 (Jan 2025) added new
+# BLAS routines (dgemmtr/zgemmtr). This flag compiles them into libRlapack
+# instead of libRblas, preserving the ability to swap BLAS implementations
+# (e.g. MKL). Harmlessly ignored on older R versions.
 ENV CONFIGURE_OPTIONS="\
     --enable-R-shlib \
     --with-tcltk \

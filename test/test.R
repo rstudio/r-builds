@@ -15,8 +15,22 @@ install.packages(file.path(curr_dir, "testpkg"), repos = NULL, clean = TRUE)
 source(file.path(curr_dir, "testpkg/tests/test.R"))
 
 # Check iconv support
-if (!capabilities("iconv") || !all(c("ASCII", "LATIN1", "UTF-8") %in% iconvlist())) {
+# musl uses different encoding names than glibc (e.g. US_ASCII vs ASCII,
+# ISO8859-1 vs LATIN1), so check for either variant.
+# On older R (< 4.1) with musl, iconvlist() may return an empty list even
+# though iconv works fine, so test actual conversions instead.
+if (!capabilities("iconv")) {
   stop("missing iconv support")
+}
+test_iconv <- function(from, to, input, expected) {
+  result <- tryCatch(iconv(input, from, to), error = function(e) NA)
+  !is.na(result) && result == expected
+}
+has_utf8 <- test_iconv("UTF-8", "UTF-8", "hello", "hello")
+has_latin1 <- test_iconv("UTF-8", "latin1", "\u00e9", "\xe9") ||
+              test_iconv("UTF-8", "ISO-8859-1", "\u00e9", "\xe9")
+if (!has_utf8 || !has_latin1) {
+  stop(sprintf("iconv not working: UTF-8=%s, latin1=%s", has_utf8, has_latin1))
 }
 
 # Check that built-in packages can be loaded
@@ -64,6 +78,9 @@ for (dev_name in devices) {
 # Run externally to capture output from external processes.
 # For example, "Pango-WARNING **: failed to choose a font, expect ugly output"
 # messages when rendering text without any system fonts installed.
+# Fontconfig warnings like "unknown element \"reset-dirs\"" indicate a version
+# mismatch between the bundled fontconfig and the system's config files. These
+# should not occur if the bundled fontconfig is new enough (>= 2.14).
 output <- system2(R.home("bin/Rscript"), "-e 'png(tempfile()); plot(1)'", stdout = TRUE, stderr = TRUE)
 if (length(output) > 0) {
   stop(sprintf("unexpected output returned from plotting:\n%s", paste(output, collapse = "\n")))

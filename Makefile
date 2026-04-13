@@ -1,4 +1,4 @@
-PLATFORMS := ubuntu-2004 ubuntu-2204 ubuntu-2404 ubuntu-2604 debian-12 debian-13 centos-7 centos-8 rhel-9 rhel-10 opensuse-156 opensuse-160 fedora-42 fedora-43
+PLATFORMS := ubuntu-2004 ubuntu-2204 ubuntu-2404 ubuntu-2604 debian-12 debian-13 centos-7 centos-8 manylinux_2_34 rhel-9 rhel-10 opensuse-156 opensuse-160 fedora-42 fedora-43
 
 docker-build:
 	@cd builder && docker compose build --parallel
@@ -11,6 +11,9 @@ docker-build-r: docker-build
 
 docker-shell-r-env:
 	@cd builder && docker compose run --entrypoint /bin/bash ubuntu-2004
+
+unit-test:
+	cd builder/portable-r && python3 -m pytest test_delocate_r.py -v
 
 define GEN_TARGETS
 # Use PLATFORM_ARCH to override the architecture, e.g. PLATFORM_ARCH=linux/arm64 or PLATFORM_ARCH=linux/amd64

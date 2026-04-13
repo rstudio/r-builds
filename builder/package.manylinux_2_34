@@ -1,0 +1,234 @@
+#!/bin/bash
+set -e
+
+# package.manylinux_2_34
+#
+# Post-build portability script for manylinux_2_34 R builds.
+# Called by build.sh after compile_r() installs R to $R_INSTALL_PATH.
+#
+# This script:
+# 1. Replaces reference BLAS and LAPACK with OpenBLAS (for performance)
+# 2. Runs delocate_r.py to bundle system library dependencies
+# 3. Makes R_HOME self-detecting for relocatability
+#
+# Output: a portable tarball (created by build.sh), plus DEB and RPM packages
+# (built via nfpm). The DEB/RPM packages depend only on ca-certificates and
+# fontconfig, making them usable across DEB/RPM-based distros. For distros
+# that don't use DEB/RPM (e.g., Arch Linux), the tarball is a universal fallback.
+
+R_LIB_DIR="${R_INSTALL_PATH}/lib/R/lib"
+
+echo ">>> Phase 1: BLAS/LAPACK setup"
+# Replace R's reference BLAS and LAPACK with OpenBLAS for performance, matching
+# how RHEL 9 uses flexiblas (a single library providing both BLAS and LAPACK).
+#
+# R compiles its own (slow) reference implementations into libRblas.so and
+# libRlapack.so. We replace libRblas.so with the system OpenBLAS library,
+# repoint all DT_NEEDED entries from libRlapack.so to libRblas.so, then remove
+# libRlapack.so entirely. This way, libRblas.so (OpenBLAS) provides both BLAS
+# and LAPACK, just like flexiblas does on RHEL 9.
+#
+# We don't use --with-blas/--with-lapack at configure time because it records
+# the external library name (e.g., -lopenblaso) in Makeconf. Unlike other
+# Makeconf libs (-lpcre2-8, -lbz2, etc.) which have consistent names across
+# distros, OpenBLAS names vary: libopenblaso.so on Rocky 9 vs. libopenblas.so
+# on Ubuntu/Alpine. Using -lRblas (R's own lib dir) avoids this portability
+# issue.
+#
+# Use the OpenMP variant (libopenblaso) to match RHEL 9's flexiblas default.
+# OpenMP OpenBLAS shares the thread pool with R's own OpenMP parallelism,
+# avoiding thread oversubscription.
+OPENBLAS_LIB=$(ls /usr/lib64/libopenblaso-r*.so 2>/dev/null | head -1)
+if [ -z "$OPENBLAS_LIB" ]; then
+  echo "ERROR: OpenBLAS OpenMP variant not found in /usr/lib64/"
+  ls /usr/lib64/libopenblas* 2>/dev/null || echo "  No libopenblas* files found"
+  exit 1
+fi
+echo "  Using OpenBLAS: $OPENBLAS_LIB"
+rm -f "${R_LIB_DIR}/libRblas.so"
+cp "$OPENBLAS_LIB" "${R_LIB_DIR}/libRblas.so"
+echo "  Replaced libRblas.so with $(basename "$OPENBLAS_LIB")"
+
+# Repoint all DT_NEEDED entries from libRlapack.so to libRblas.so.
+# libR.so only links against libRblas.so, but several bundled modules link
+# against libRlapack.so at build time:
+#   - modules/lapack.so
+#   - library/stats/libs/stats.so
+#   - library/Matrix/libs/Matrix.so
+#   - library/mgcv/libs/mgcv.so
+# Without this, loading these modules at runtime would fail because
+# libRlapack.so no longer exists. Since OpenBLAS provides both BLAS and
+# LAPACK routines through libRblas.so, we redirect those references.
+echo "  Repointing libRlapack.so references to libRblas.so..."
+find "${R_INSTALL_PATH}" -name '*.so' -exec sh -c '
+  readelf -d "$1" 2>/dev/null | grep -q "libRlapack.so" && {
+    patchelf --replace-needed libRlapack.so libRblas.so "$1"
+    echo "    $(echo "$1" | sed "s|${R_INSTALL_PATH}/||")"
+  }
+' _ {} \;
+rm -f "${R_LIB_DIR}/libRlapack.so"
+echo "  Removed libRlapack.so"
+
+# Clear LAPACK_LIBS in Makeconf so it matches RHEL 9's flexiblas behavior.
+# BLAS_LIBS = -lRblas provides both BLAS and LAPACK routines.
+MAKECONF="${R_INSTALL_PATH}/lib/R/etc/Makeconf"
+sed -i 's|^LAPACK_LIBS = .*|LAPACK_LIBS = |' "$MAKECONF"
+echo "  Cleared LAPACK_LIBS in Makeconf"
+
+echo ">>> Phase 2: delocate_r repair"
+# Bundle non-allowed system library dependencies into the R installation
+# and rewrite RPATHs to use $ORIGIN-relative paths.
+#
+# LD_LIBRARY_PATH must include R's lib dir so ldd can locate libRblas.so
+# (which is internal to the R installation).
+export LD_LIBRARY_PATH="${R_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+python3 /delocate_r.py "${R_INSTALL_PATH}"
+
+echo ">>> Phase 3: Fix BLAS SONAME for package compilation"
+# After delocate_r repair, lib/R/lib/libRblas.so still has its original SONAME
+# (e.g., "libopenblaso.so.0"). When users compile R packages that link against
+# -lRblas (from Makeconf's BLAS_LIBS), the linker records this SONAME. At load time,
+# the dynamic linker then fails to find "libopenblaso.so.0" on the target system.
+#
+# Fix: set the SONAME to match the filename so packages record "libRblas.so" as their
+# dependency, which can always be found in R's lib dir via LD_LIBRARY_PATH.
+if [ -f "${R_LIB_DIR}/libRblas.so" ]; then
+  patchelf --set-soname libRblas.so "${R_LIB_DIR}/libRblas.so"
+  echo "  Fixed libRblas.so SONAME"
+fi
+
+echo ">>> Phase 4: Bundle Tcl/Tk library scripts"
+# The bundled libtcl8.6.so has hardcoded paths to Tcl scripts (e.g., /usr/share/tcl8.6
+# on CentOS 8). On a different distro, these paths may not exist or differ.
+# Bundle the Tcl/Tk library scripts into the R installation.
+TCL_SHARE="${R_INSTALL_PATH}/lib/R/share"
+if [ -d /usr/share/tcl8.6 ]; then
+  cp -a /usr/share/tcl8.6 "${TCL_SHARE}/tcl8.6"
+  echo "  Bundled tcl8.6 scripts"
+fi
+if [ -d /usr/share/tk8.6 ]; then
+  cp -a /usr/share/tk8.6 "${TCL_SHARE}/tk8.6"
+  echo "  Bundled tk8.6 scripts"
+fi
+
+# Set TCL_LIBRARY, TK_LIBRARY, and CURL_CA_BUNDLE in the base Rprofile so they
+# work in all R launch contexts: bin/R, RStudio's rsession, Positron, and
+# --vanilla mode. These cannot go in etc/ldpaths (only sourced by the bin/R
+# shell script) or Rprofile.site (skipped by --vanilla).
+cat >> "${R_INSTALL_PATH}/lib/R/library/base/R/Rprofile" <<'CAEOF'
+
+## Auto-detect SSL CA certificate bundle (portable R builds)
+local({
+  if (Sys.getenv("CURL_CA_BUNDLE") == "") {
+    ca_paths <- c(
+      "/etc/ssl/certs/ca-certificates.crt",  # Debian/Ubuntu/Arch
+      "/etc/pki/tls/certs/ca-bundle.crt",    # CentOS/RHEL/Fedora
+      "/etc/ssl/ca-bundle.pem",              # openSUSE/SLES
+      "/var/lib/ca-certificates/ca-bundle.pem"
+    )
+    for (ca in ca_paths) {
+      if (file.exists(ca)) {
+        Sys.setenv(CURL_CA_BUNDLE = ca)
+        break
+      }
+    }
+  }
+})
+
+## Set Tcl/Tk library paths for bundled scripts (portable R builds)
+local({
+  r_home <- Sys.getenv("R_HOME", R.home())
+  tcl_dir <- file.path(r_home, "share", "tcl8.6")
+  tk_dir <- file.path(r_home, "share", "tk8.6")
+  if (Sys.getenv("TCL_LIBRARY") == "" && dir.exists(tcl_dir))
+    Sys.setenv(TCL_LIBRARY = tcl_dir)
+  if (Sys.getenv("TK_LIBRARY") == "" && dir.exists(tk_dir))
+    Sys.setenv(TK_LIBRARY = tk_dir)
+})
+CAEOF
+
+echo ">>> Phase 5: Make bin/R relocatable"
+/make-relocatable.sh "${R_INSTALL_PATH}"
+
+echo ">>> Phase 6: Verify library resolution"
+# delocate_r bundles non-allowed system libs into lib/R/lib/.libs/ with $ORIGIN RPATHs.
+# libR.so and other R internal libs (libRblas.so, libRlapack.so) live in lib/R/lib/
+# and are found via LD_LIBRARY_PATH set by etc/ldpaths (sourced by bin/R before exec).
+#
+# We don't add libR.so RPATH entries because:
+# - The exec binary is non-PIE (EXEC type), and patchelf cannot expand its RPATH
+# - LD_LIBRARY_PATH from etc/ldpaths is the standard mechanism R uses
+echo "  Bundled libs:"
+find "${R_INSTALL_PATH}" -name ".libs" -type d 2>/dev/null
+echo "  exec RPATH: $(patchelf --print-rpath "${R_INSTALL_PATH}/lib/R/bin/exec/R" 2>/dev/null)"
+
+echo ">>> Phase 7: Clean up"
+# Remove DESCRIPTION file if created by delocate_r (shouldn't happen, but just in case)
+rm -f "${R_INSTALL_PATH}/DESCRIPTION"
+
+echo ">>> Done: R installation at ${R_INSTALL_PATH} is now manylinux_2_34 portable"
+
+# ── DEB/RPM packaging ─────────────────────────────────────────────────────────
+# Build generic DEB and RPM packages from the portable R installation.
+# These packages have minimal dependencies (ca-certificates, fontconfig) and
+# work across any DEB/RPM distro with glibc >= 2.34. If a distro doesn't
+# support these packages, users can fall back to the tarball.
+
+if [[ ! -d /tmp/output/${OS_IDENTIFIER} ]]; then
+  mkdir -p "/tmp/output/${OS_IDENTIFIER}"
+fi
+
+if [ "$(arch)" == "aarch64" ]; then nfpm_arch=arm64; else nfpm_arch=amd64; fi
+
+echo ">>> Phase 8: Build DEB package"
+cat <<EOF > /tmp/nfpm-deb.yml
+name: r-${R_VERSION}
+version: 1
+version_schema: none
+section: universe/math
+priority: optional
+arch: ${nfpm_arch}
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system (portable manylinux build)
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPL-2
+deb:
+  fields:
+    Bugs: https://github.com/rstudio/r-builds/issues
+depends:
+- ca-certificates
+- fontconfig
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+EOF
+
+nfpm package -f /tmp/nfpm-deb.yml -p deb -t "/tmp/output/${OS_IDENTIFIER}"
+echo "  Built $(ls /tmp/output/${OS_IDENTIFIER}/r-${R_VERSION}*.deb)"
+
+echo ">>> Phase 9: Build RPM package"
+cat <<EOF > /tmp/nfpm-rpm.yml
+name: R-${R_VERSION}
+version: 1
+version_schema: none
+arch: ${nfpm_arch}
+release: 1
+maintainer: Posit Software, PBC <https://github.com/rstudio/r-builds>
+description: |
+  GNU R statistical computation and graphics system (portable manylinux build)
+vendor: Posit Software, PBC
+homepage: https://www.r-project.org
+license: GPLv2+
+depends:
+- ca-certificates
+- fontconfig
+- which
+contents:
+- src: ${R_INSTALL_PATH}
+  dst: ${R_INSTALL_PATH}
+EOF
+
+nfpm package -f /tmp/nfpm-rpm.yml -p rpm -t "/tmp/output/${OS_IDENTIFIER}"
+echo "  Built $(ls /tmp/output/${OS_IDENTIFIER}/R-${R_VERSION}*.rpm)"
