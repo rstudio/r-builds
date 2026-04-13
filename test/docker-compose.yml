@@ -110,6 +110,15 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
+  musllinux_1_2:
+    image: alpine:3.21
+    command: /r-builds/builder/portable-r/test-musllinux.sh
+    environment:
+      - OS_IDENTIFIER=musllinux_1_2
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
   rhel-9:
     image: rockylinux:9
     command: /r-builds/test/test-yum.sh

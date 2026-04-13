@@ -116,6 +116,19 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
+  musllinux_1_2:
+    command: bash ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.musllinux_1_2
+    image: r-builds:musllinux_1_2
+    volumes:
+      - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   rhel-9:
     command: ./build.sh
     environment:
