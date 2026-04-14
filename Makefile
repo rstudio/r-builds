@@ -12,6 +12,9 @@ docker-build-r: docker-build
 docker-shell-r-env:
 	@cd builder && docker compose run --entrypoint /bin/bash ubuntu-2004
 
+unit-test:
+	cd builder/portable-r && python3 -m pytest test_delocate_r.py -v
+
 define GEN_TARGETS
 # Use PLATFORM_ARCH to override the architecture, e.g. PLATFORM_ARCH=linux/arm64 or PLATFORM_ARCH=linux/amd64
 # If unset, PLATFORM_ARCH will default to the architecture of the host machine.
