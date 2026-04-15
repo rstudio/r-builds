@@ -87,6 +87,7 @@ RUN if [ "$(arch)" == "aarch64" ]; then PATCHELF_ARCH=aarch64; else PATCHELF_ARC
     rm patchelf.tar.gz
 
 COPY portable-r/delocate_r.py /delocate_r.py
+COPY portable-r/generate_sbom.py /generate_sbom.py
 RUN chmod +x /delocate_r.py
 COPY portable-r/make-relocatable.sh /make-relocatable.sh
 COPY package.manylinux_2_34 /package.sh

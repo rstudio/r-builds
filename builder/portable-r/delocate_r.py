@@ -13,6 +13,7 @@ Usage: delocate_r.py [--policy manylinux|musllinux] <r-install-path>
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -560,6 +561,7 @@ def main() -> None:
     all_soname_map: dict[str, str] = {}
     all_soname_path: dict[str, Path] = {}
     all_elf_needs: dict[Path, list[str]] = {}
+    all_external_libs: dict[str, str] = {}
     scan_files = list(elf_files)
     iteration = 0
 
@@ -587,6 +589,7 @@ def main() -> None:
         all_soname_map.update(soname_map)
         all_soname_path.update(soname_path)
         all_elf_needs.update(elf_needs)
+        all_external_libs.update(new_libs)
 
         # Next iteration: scan the newly grafted libs for their deps
         scan_files = [path for path in soname_path.values()]
@@ -611,6 +614,22 @@ def main() -> None:
     # Phase 6: Verify repair
     print("  Verifying repair...")
     verify_repair(all_soname_map, all_soname_path, all_elf_needs, dest_dir, r_path)
+
+    # Phase 7: Write delocate manifest
+    # Maps each bundled (hash-renamed) filename to its original system path.
+    # Used by generate_sbom.py to trace libraries back to source packages.
+    manifest: dict[str, str] = {}
+    for soname, dest_path in all_soname_path.items():
+        new_soname = all_soname_map[soname]
+        # external_libs had {soname: src_path} across iterations; the src_path
+        # was resolved before grafting. Recover it from dest_path metadata:
+        # we know the original path from the accumulated external_libs.
+        manifest[new_soname] = all_external_libs.get(soname, "unknown")
+    manifest_path = dest_dir / "delocate-manifest.json"
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2, sort_keys=True)
+        f.write("\n")
+    print(f"  Wrote {manifest_path} ({len(manifest)} entries)")
 
     print(f"delocate_r: done. Bundled {total} libraries into {libs_sdir}/")
 
