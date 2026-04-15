@@ -26,6 +26,15 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
+  ubuntu-2604:
+    image: ubuntu:resolute
+    command: /r-builds/test/test-apt.sh
+    environment:
+      - OS_IDENTIFIER=ubuntu-2604
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}
   debian-12:
     image: debian:bookworm
     command: /r-builds/test/test-apt.sh

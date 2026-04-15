@@ -1,0 +1,33 @@
+FROM ubuntu:resolute
+
+ENV OS_IDENTIFIER ubuntu-2604
+
+RUN set -x \
+  && sed -i "s|Types: deb|Types: deb deb-src|g" /etc/apt/sources.list.d/ubuntu.sources \
+  && export DEBIAN_FRONTEND=noninteractive \
+  && apt update \
+  # For BLAS/LAPACK, select the library-only OpenBLAS package that gets included in the
+  # the libopenblas-dev package by default. Usually this is OpenBLAS with pthreads.
+  #
+  # Note that libopenblas-dev must NOT be installed to ensure that R links to BLAS in a
+  # portable way, via the generic libblas.so provided by the libblas-dev package.
+  # This gets installed through the r-base build dependencies. If both libblas-dev and
+  # libopenblas-dev are present, R will prefer linking to OpenBLAS.
+  && apt install -y curl libcurl4-openssl-dev libicu-dev libopenblas0-pthread libpcre2-dev unzip wget \
+  && apt build-dep -y r-base
+
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.46.1/nfpm_2.46.1_$(dpkg --print-architecture).deb" && \
+    apt install -y "./nfpm_2.46.1_$(dpkg --print-architecture).deb" && \
+    rm "nfpm_2.46.1_$(dpkg --print-architecture).deb"
+
+RUN chmod 0777 /opt
+
+# Override the default pager used by R
+ENV PAGER /usr/bin/pager
+
+# Note: Ubuntu 26 does not have PCRE1 (libpcre3), so R 3.x is not supported
+
+COPY package.ubuntu-2604 /package.sh
+COPY build.sh .
+COPY patches /patches
+ENTRYPOINT ./build.sh
