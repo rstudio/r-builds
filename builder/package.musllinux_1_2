@@ -173,9 +173,16 @@ echo "  Bundled libs:"
 find "${R_INSTALL_PATH}" -name ".libs" -type d 2>/dev/null
 echo "  exec RPATH: $(patchelf --print-rpath "${R_INSTALL_PATH}/lib/R/bin/exec/R" 2>/dev/null)"
 
-echo ">>> Phase 7: Clean up"
+echo ">>> Phase 7: Build SBOM"
+# Generate a CycloneDX SBOM from the delocate manifest (written by delocate_r.py).
+# Maps bundled libraries back to their source APK packages.
+python3 /generate_sbom.py "${R_INSTALL_PATH}" "${R_VERSION}" "${OS_IDENTIFIER}"
+
+echo ">>> Phase 8: Clean up"
 # Remove DESCRIPTION file if created by delocate_r (shouldn't happen, but just in case)
 rm -f "${R_INSTALL_PATH}/DESCRIPTION"
+# Remove delocate manifest (only needed during build by generate_sbom.py)
+rm -f "${R_INSTALL_PATH}/lib/R/lib/.libs/delocate-manifest.json"
 
 echo ">>> Done: R installation at ${R_INSTALL_PATH} is now musllinux_1_2 portable"
 
@@ -188,7 +195,7 @@ fi
 
 if [ "$(arch)" == "aarch64" ]; then nfpm_arch=arm64; else nfpm_arch=amd64; fi
 
-echo ">>> Phase 8: Build APK package"
+echo ">>> Phase 9: Build APK package"
 cat <<EOF > /tmp/nfpm-apk.yml
 name: r-${R_VERSION}
 version: 1
