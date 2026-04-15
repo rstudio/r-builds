@@ -136,13 +136,14 @@ local({
 })
 
 ## Set Tcl/Tk library paths for bundled scripts (portable R builds)
+## NOTE: Uses file.exists() instead of dir.exists() for R < 3.2 compatibility.
 local({
   r_home <- Sys.getenv("R_HOME", R.home())
   tcl_dir <- file.path(r_home, "share", "tcl8.6")
   tk_dir <- file.path(r_home, "share", "tk8.6")
-  if (Sys.getenv("TCL_LIBRARY") == "" && dir.exists(tcl_dir))
+  if (Sys.getenv("TCL_LIBRARY") == "" && file.exists(tcl_dir))
     Sys.setenv(TCL_LIBRARY = tcl_dir)
-  if (Sys.getenv("TK_LIBRARY") == "" && dir.exists(tk_dir))
+  if (Sys.getenv("TK_LIBRARY") == "" && file.exists(tk_dir))
     Sys.setenv(TK_LIBRARY = tk_dir)
 })
 CAEOF
