@@ -131,6 +131,23 @@ jobs:
         echo "arch=$arch" >> $GITHUB_OUTPUT
         echo "Using architectures: $arch"
 
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Unit tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run unit tests
+        run: make unit-test
+
   docker-images:
     needs: setup-matrix
     strategy:

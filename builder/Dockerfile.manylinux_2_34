@@ -1,0 +1,96 @@
+FROM rockylinux:9
+
+ENV OS_IDENTIFIER manylinux_2_34
+
+RUN dnf -y upgrade \
+    && dnf -y install dnf-plugins-core \
+    && dnf config-manager --set-enabled crb \
+    && dnf -y install \
+    autoconf \
+    automake \
+    bzip2-devel \
+    cairo-devel \
+    gcc-c++ \
+    gcc-gfortran \
+    java-11-openjdk-devel \
+    java-11-openjdk-headless \
+    libICE-devel \
+    libSM-devel \
+    libX11-devel \
+    libXmu-devel \
+    libXt-devel \
+    libcurl-devel \
+    libicu-devel \
+    libjpeg-devel \
+    libpng-devel \
+    libtiff-devel \
+    libtool \
+    make \
+    ncurses-devel \
+    openblas-openmp `# Bundled as libRblas.so and libRlapack.so (matches RHEL 9 default)` \
+    pango-devel \
+    pcre-devel \
+    pcre2-devel \
+    readline-devel \
+    rpm-build `# Required by nfpm for RPM packaging` \
+    tcl-devel \
+    tex \
+    texinfo-tex \
+    texlive-collection-latexrecommended \
+    tk-devel \
+    valgrind-devel \
+    which \
+    wget \
+    xz-devel \
+    zlib-devel \
+    && dnf clean all
+
+# Install nfpm for DEB/RPM packaging
+RUN if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
+RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_$(cat /tmp/arch).rpm" && \
+    dnf install -y "nfpm_$(cat /tmp/arch).rpm" && \
+    rm "nfpm_$(cat /tmp/arch).rpm"
+
+RUN chmod 0777 /opt
+
+# Rocky 9 ships fontconfig 2.14.0, which understands <reset-dirs/> and other
+# modern config directives. No source build needed (unlike Rocky 8).
+
+# Configure flags matching rhel-9.
+# R compiles its own reference BLAS/LAPACK into libRblas.so and libRlapack.so.
+# The package script replaces both with OpenBLAS for performance. We don't use
+# --with-blas/--with-lapack here because it records the external library name
+# in Makeconf, which breaks package compilation on systems without OpenBLAS.
+ENV CONFIGURE_OPTIONS="\
+    --enable-R-shlib \
+    --with-tcltk \
+    --enable-memory-profiling \
+    --with-x \
+    --with-system-valgrind-headers \
+    --with-tcl-config=/usr/lib64/tclConfig.sh \
+    --with-tk-config=/usr/lib64/tkConfig.sh \
+    --enable-prebuilt-html \
+    --with-2025blas"
+
+# RHEL 9 doesn't have the inconsolata font
+ENV R_RD4PDF="times,hyper"
+
+# R 3.x requires PCRE2 for Pango support on RHEL 9
+ENV INCLUDE_PCRE2_IN_R_3 yes
+
+# Install patchelf 0.17.2 (avoid 0.18.0 per known issues)
+RUN if [ "$(arch)" == "aarch64" ]; then PATCHELF_ARCH=aarch64; else PATCHELF_ARCH=x86_64; fi && \
+    PATCHELF_VER=0.17.2 && \
+    curl -fsSL -o patchelf.tar.gz "https://github.com/NixOS/patchelf/releases/download/${PATCHELF_VER}/patchelf-${PATCHELF_VER}-${PATCHELF_ARCH}.tar.gz" && \
+    tar -xvf patchelf.tar.gz -C /usr/local && \
+    chmod +x /usr/local/bin/patchelf && \
+    rm patchelf.tar.gz
+
+COPY portable-r/delocate_r.py /delocate_r.py
+COPY portable-r/generate_sbom.py /generate_sbom.py
+RUN chmod +x /delocate_r.py
+COPY portable-r/make-relocatable.sh /make-relocatable.sh
+COPY package.manylinux_2_34 /package.sh
+COPY build.sh .
+COPY patches /patches
+ENTRYPOINT ./build.sh
