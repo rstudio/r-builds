@@ -217,6 +217,13 @@ The portable builds require glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+,
 Amazon Linux 2023+, Arch Linux, etc.). RHEL 8 and Ubuntu 20.04 are not supported;
 use the distro-specific packages above instead.
 
+Portable builds bundle most shared library dependencies (including OpenSSL and
+libcurl). Unlike distro-specific builds, updating system packages on the host
+does not update the bundled copies; users must reinstall R to receive updates
+for bundled libraries. Each build includes a CycloneDX SBOM at
+`$R_HOME/sbom.cdx.json` listing all bundled libraries and their source packages.
+See the [portable-r README](builder/portable-r/README.md) for details.
+
 ##### Install via DEB package (Debian/Ubuntu and derivatives)
 
 ```bash

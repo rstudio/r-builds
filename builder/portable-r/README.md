@@ -38,6 +38,18 @@ Portable manylinux builds are useful for:
 - **System deps**: `ca-certificates` is needed for HTTPS (e.g., `install.packages()` from CRAN), and `fontconfig` is needed for font discovery in plots. Both are present on most systems and are auto-installed by the DEB/RPM/APK packages. R starts and runs fine without them -- only HTTPS downloads and text rendering in plots are affected. On Alpine, `ttf-dejavu` is also needed since fontconfig does not pull in fonts automatically.
 - **No runtime BLAS swapping**: OpenBLAS is bundled directly as `libRblas.so`. Users cannot swap to MKL or other BLAS implementations without rebuilding.
 
+### Bundled libraries and security
+
+Portable builds bundle most shared library dependencies (including OpenSSL and libcurl) from the build base image. This is the same approach used by R on Windows and macOS, where system libraries are shipped with the R installation rather than dynamically linked to the host.
+
+Unlike distro-specific builds, updating system packages on the host does not update the bundled copies. Users must reinstall R to receive security updates for bundled libraries. If immediate system library updates are important for your environment, use the distro-specific packages instead.
+
+#### SBOM (Software Bill of Materials)
+
+Each portable R build includes a [CycloneDX](https://cyclonedx.org/) 1.5 SBOM at `$R_HOME/sbom.cdx.json` that lists all bundled shared libraries and their source packages. This can be used to audit bundled library versions and check for known vulnerabilities.
+
+The SBOM is generated during the build by `generate_sbom.py`, which reads an intermediate delocate manifest (written by `delocate_r.py` during library bundling) and queries the build system's package manager (RPM or APK) to trace each bundled library back to its source package. Each component includes a [Package URL (purl)](https://github.com/package-url/purl-spec) for programmatic identification. The intermediate manifest is removed after SBOM generation and is not included in the final package.
+
 ## Current builds
 
 | Platform | Base image | libc | Compatible distros |
@@ -86,6 +98,7 @@ builder/
   package.<platform>           # Post-build script: library bundling, relocatability
   portable-r/
     delocate_r.py              # Shared: library bundling script (supports --policy manylinux|musllinux)
+    generate_sbom.py           # Shared: CycloneDX SBOM generator for bundled libraries
     test_delocate_r.py         # Unit tests for delocate_r.py
     test-manylinux.sh          # Cross-distro integration tests (manylinux)
     test-musllinux.sh          # Alpine integration tests (musllinux)
@@ -100,6 +113,7 @@ builder/
    - Copies non-allowed libs into `lib/R/lib/.libs/` with hash-renamed filenames
    - Rewrites RPATHs to `$ORIGIN`-relative paths using patchelf
    - Fixes inter-library DT_NEEDED references and SONAMEs
+   - Writes `lib/R/lib/.libs/delocate-manifest.json` mapping bundled filenames to original system paths
 3. **Make relocatable** (`package.<platform>`):
    - Patches `bin/R` and `lib/R/bin/R` with `readlink -f` self-detection (appended after
      the original static `R_HOME_DIR` and `if test` block, which are kept intact for IDE
@@ -107,7 +121,8 @@ builder/
    - Bundles Tcl/Tk scripts (currently hardcoded to 8.6), adds Tcl/Tk path detection and
      CA cert auto-detection to the base Rprofile (`library/base/R/Rprofile`), which works
      in all R launch contexts including RStudio, Positron, and `--vanilla` mode
-4. **Package**: `build.sh` creates the tar.gz, then nfpm builds DEB and RPM packages from the portable installation
+4. **Build SBOM** (`generate_sbom.py`): reads the delocate manifest to map bundled libraries back to their source system packages (RPM or APK), and writes a CycloneDX 1.5 SBOM at `$R_HOME/sbom.cdx.json`
+5. **Package**: `build.sh` creates the tar.gz, then nfpm builds DEB and RPM packages from the portable installation
 
 ### IDE compatibility (Positron, RStudio)
 
@@ -302,8 +317,10 @@ Alpine Linux uses musl libc instead of glibc. The `musllinux_1_2` platform build
 3. **Fix BLAS/LAPACK SONAMEs**: Fix SONAMEs + run `fix_patchelf_strtab()` on large binaries
 4. **Bundle Tcl/Tk scripts + SSL CA detection**: Same as manylinux, with Alpine-specific paths
 5. **Make bin/R relocatable**: Same `readlink -f` self-detection as manylinux
-6. **Verify + clean up**: Print RPATH info, remove DESCRIPTION artifact
-7. **Build APK package**: Via nfpm, with `ca-certificates`, `fontconfig`, and `ttf-dejavu` as dependencies
+6. **Verify library resolution**: Print RPATH info
+7. **Build SBOM**: Generate CycloneDX SBOM via `generate_sbom.py`
+8. **Clean up**: Remove DESCRIPTION artifact
+9. **Build APK package**: Via nfpm, with `ca-certificates`, `fontconfig`, and `ttf-dejavu` as dependencies
 
 ### Build and test
 
