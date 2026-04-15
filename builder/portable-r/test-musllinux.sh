@@ -43,6 +43,11 @@ echo "=== Running standard test suite ==="
 bash "${TEST_DIR}/test-r.sh"
 
 # Musllinux-specific tests below.
+#
+# NOTE: All Rscript -e calls must be single-line and must not contain \n
+# escape sequences. R <= 3.5.x's Rscript mangles multi-line -e arguments
+# and treats \n as a literal newline, splitting the argument. Use writeLines()
+# instead of cat("...\n"), and use temp .R files for longer tests.
 R_PREFIX=/opt/R/${R_VERSION}
 R_HOME=${R_PREFIX}/lib/R
 
@@ -64,71 +69,46 @@ else
 fi
 
 echo "=== Verify SSL CA detection ==="
-"${R_HOME}/bin/Rscript" -e '
-  ca <- Sys.getenv("CURL_CA_BUNDLE")
-  if (nchar(ca) == 0) stop("CURL_CA_BUNDLE is not set")
-  if (!file.exists(ca)) stop(paste("CURL_CA_BUNDLE points to missing file:", ca))
-  cat(sprintf("CURL_CA_BUNDLE=%s (OK)\n", ca))
-'
+"${R_HOME}/bin/Rscript" -e 'ca <- Sys.getenv("CURL_CA_BUNDLE"); if (nchar(ca) == 0) stop("CURL_CA_BUNDLE is not set"); if (!file.exists(ca)) stop(paste("CURL_CA_BUNDLE points to missing file:", ca)); writeLines(paste("CURL_CA_BUNDLE", ca, "(OK)"))'
 
 echo "=== Verify SSL CA detection with --vanilla ==="
-"${R_HOME}/bin/Rscript" --vanilla -e '
-  ca <- Sys.getenv("CURL_CA_BUNDLE")
-  if (nchar(ca) == 0) stop("CURL_CA_BUNDLE is not set with --vanilla")
-  if (!file.exists(ca)) stop(paste("CURL_CA_BUNDLE points to missing file:", ca))
-  cat(sprintf("CURL_CA_BUNDLE=%s (--vanilla OK)\n", ca))
-'
+"${R_HOME}/bin/Rscript" --vanilla -e 'ca <- Sys.getenv("CURL_CA_BUNDLE"); if (nchar(ca) == 0) stop("CURL_CA_BUNDLE is not set with --vanilla"); if (!file.exists(ca)) stop(paste("CURL_CA_BUNDLE points to missing file:", ca)); writeLines(paste("CURL_CA_BUNDLE", ca, "(--vanilla OK)"))'
 
 echo "=== Verify Tcl/Tk bundled scripts ==="
-"${R_HOME}/bin/Rscript" -e '
-  tcl_lib <- Sys.getenv("TCL_LIBRARY")
-  tk_lib <- Sys.getenv("TK_LIBRARY")
-  if (nchar(tcl_lib) == 0) stop("TCL_LIBRARY is not set")
-  if (nchar(tk_lib) == 0) stop("TK_LIBRARY is not set")
-  if (!file.exists(file.path(tcl_lib, "init.tcl"))) stop(paste("init.tcl not found in", tcl_lib))
-  cat(sprintf("TCL_LIBRARY=%s (OK)\nTK_LIBRARY=%s (OK)\n", tcl_lib, tk_lib))
-'
+"${R_HOME}/bin/Rscript" -e 'tcl_lib <- Sys.getenv("TCL_LIBRARY"); tk_lib <- Sys.getenv("TK_LIBRARY"); if (nchar(tcl_lib) == 0) stop("TCL_LIBRARY is not set"); if (nchar(tk_lib) == 0) stop("TK_LIBRARY is not set"); if (!file.exists(file.path(tcl_lib, "init.tcl"))) stop(paste("init.tcl not found in", tcl_lib)); writeLines(paste("TCL_LIBRARY", tcl_lib, "(OK)")); writeLines(paste("TK_LIBRARY", tk_lib, "(OK)"))'
 
 echo "=== Verify Tcl/Tk bundled scripts with --vanilla ==="
-"${R_HOME}/bin/Rscript" --vanilla -e '
-  tcl_lib <- Sys.getenv("TCL_LIBRARY")
-  tk_lib <- Sys.getenv("TK_LIBRARY")
-  if (nchar(tcl_lib) == 0) stop("TCL_LIBRARY is not set with --vanilla")
-  if (nchar(tk_lib) == 0) stop("TK_LIBRARY is not set with --vanilla")
-  cat(sprintf("TCL_LIBRARY=%s (--vanilla OK)\nTK_LIBRARY=%s (--vanilla OK)\n", tcl_lib, tk_lib))
-'
+"${R_HOME}/bin/Rscript" --vanilla -e 'tcl_lib <- Sys.getenv("TCL_LIBRARY"); tk_lib <- Sys.getenv("TK_LIBRARY"); if (nchar(tcl_lib) == 0) stop("TCL_LIBRARY is not set with --vanilla"); if (nchar(tk_lib) == 0) stop("TK_LIBRARY is not set with --vanilla"); writeLines(paste("TCL_LIBRARY", tcl_lib, "(--vanilla OK)")); writeLines(paste("TK_LIBRARY", tk_lib, "(--vanilla OK)"))'
 
 echo "=== Relocatability test ==="
 RELOCATED_DIR="/tmp/R-relocated-${R_VERSION}"
 cp -a "${R_PREFIX}" "${RELOCATED_DIR}"
 rm -rf "${R_PREFIX}"
-"${RELOCATED_DIR}/bin/R" -e 'cat("Relocatability: bin/R works\n")' --vanilla
+"${RELOCATED_DIR}/bin/Rscript" --vanilla -e 'writeLines("Relocatability: bin/R works")'
 
 echo "=== R CMD INSTALL from relocated path ==="
-DIR=$TEST_DIR "${RELOCATED_DIR}/bin/Rscript" -e '
-  temp_lib <- tempdir()
-  .libPaths(temp_lib)
-  curr_dir <- Sys.getenv("DIR", ".")
-  pkg <- file.path(curr_dir, "testpkg")
-  if (dir.exists(pkg)) {
-    install.packages(pkg, repos = NULL, lib = temp_lib, clean = TRUE)
-    library(testpkg, lib.loc = temp_lib)
-    cat("R CMD INSTALL from relocated path: OK\n")
-  } else {
-    cat("testpkg not found, skipping R CMD INSTALL test\n")
-  }
-' --vanilla
+cat > /tmp/test_relocated_install.R <<'REOF'
+temp_lib <- tempdir()
+.libPaths(temp_lib)
+curr_dir <- Sys.getenv("DIR", ".")
+pkg <- file.path(curr_dir, "testpkg")
+if (file.exists(pkg)) {
+  install.packages(pkg, repos = NULL, lib = temp_lib, clean = TRUE)
+  library(testpkg, lib.loc = temp_lib)
+  cat("R CMD INSTALL from relocated path: OK\n")
+} else {
+  cat("testpkg not found, skipping R CMD INSTALL test\n")
+}
+REOF
+DIR=$TEST_DIR "${RELOCATED_DIR}/bin/Rscript" --vanilla /tmp/test_relocated_install.R
 
 echo "=== HTTPS download from relocated path ==="
-"${RELOCATED_DIR}/bin/Rscript" -e '
-  f <- tempfile()
-  tryCatch({
-    download.file("https://cloud.r-project.org", f, quiet = TRUE)
-    cat("HTTPS download from relocated path: OK\n")
-  }, error = function(e) {
-    stop(paste("HTTPS download failed:", e$message))
-  })
-' --vanilla
+# method="libcurl" was added in R 3.2. Skip this test for older R.
+if "${RELOCATED_DIR}/bin/Rscript" --vanilla -e 'if (getRversion() < "3.2") q("no", status = 1)'; then
+  "${RELOCATED_DIR}/bin/Rscript" --vanilla -e 'f <- tempfile(); tryCatch({ download.file("https://cloud.r-project.org", f, method = "libcurl", quiet = TRUE); writeLines("HTTPS download from relocated path: OK") }, error = function(e) { stop(paste("HTTPS download failed:", e$message)) })'
+else
+  echo "  Skipped (R < 3.2 does not support method=libcurl)"
+fi
 
 # Restore original location for any further tests
 mv "${RELOCATED_DIR}" "${R_PREFIX}"
@@ -158,14 +138,7 @@ echo "  Makeconf LAPACK_LIBS is empty (OK)"
 # Verify R reports the BLAS/LAPACK paths within R_HOME.
 # Since OpenBLAS provides both BLAS and LAPACK via libRblas.so, R should
 # report both BLAS and LAPACK pointing to libRblas.so.
-"${R_HOME}/bin/Rscript" -e '
-  si <- sessionInfo()
-  blas <- si$BLAS
-  lapack <- si$LAPACK
-  cat(sprintf("  BLAS: %s\n  LAPACK: %s\n", blas, lapack))
-  if (!grepl("libRblas", blas)) stop("sessionInfo()$BLAS does not point to libRblas.so")
-  if (!grepl("libRblas", lapack)) stop("sessionInfo()$LAPACK does not point to libRblas.so")
-'
+"${R_HOME}/bin/Rscript" -e 'si <- sessionInfo(); blas <- si$BLAS; lapack <- si$LAPACK; if (is.null(blas) || nchar(blas) == 0) { writeLines("  BLAS/LAPACK: not reported by sessionInfo (old R), skipping") } else { writeLines(paste("  BLAS:", blas)); writeLines(paste("  LAPACK:", lapack)); if (!grepl("libRblas", blas)) stop("sessionInfo()$BLAS does not point to libRblas.so"); if (!grepl("libRblas", lapack)) stop("sessionInfo()$LAPACK does not point to libRblas.so") }'
 
 echo "=== Verify libRblas SONAME ==="
 RBLAS_SONAME=$(readelf -d "${R_HOME}/lib/libRblas.so" 2>/dev/null | sed -n 's/.*\(SONAME\).*\[\(.*\)\]/\2/p')
