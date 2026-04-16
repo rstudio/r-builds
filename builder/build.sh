@@ -108,6 +108,14 @@ compile_r() {
     export FFLAGS="$FFLAGS -fallow-argument-mismatch"
   fi
 
+  # GCC 14 and above makes -Wincompatible-pointer-types a hard error
+  # (e.g., on Alpine 3.21, Fedora 42). Old recommended packages bundled
+  # with R (e.g. Matrix's COLAMD) have incompatible pointer type
+  # assignments that trigger this.
+  if _version_is_less_than "${r_version}" 3.2.0 && _version_is_greater_than "${gcc_major_version}" 13; then
+    export CFLAGS="$CFLAGS -Wno-incompatible-pointer-types"
+  fi
+
   # GCC 15 and above needs -std=gnu11, because it defaults to C23, and R
   # versions below R 4.5.0 do not compile in C23 mode.
   if _version_is_less_than "${r_version}" 4.5.0 && _version_is_greater_than "${gcc_major_version}" 14; then
@@ -165,6 +173,16 @@ compile_r() {
   fi
 
   echo "Using CONFIGURE_OPTIONS: ${CONFIGURE_OPTIONS}"
+
+  # musl libc (e.g., Alpine) does not have __libc_stack_end (a glibc-specific
+  # symbol). R's configure test in R <= 4.x links against it without checking
+  # the value, so the test passes on musl but the final build fails with
+  # "undefined reference to `__libc_stack_end'". Pre-seed the cache variable
+  # to skip this check. R 4.2.1+ improved the test to also dereference the
+  # symbol, but we apply this unconditionally for safety.
+  if ldd --version 2>&1 | grep -qi musl; then
+    export r_cv_libc_stack_end=no
+  fi
 
   # set some common environment variables for the configure step
   AWK=/usr/bin/awk \
