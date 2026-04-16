@@ -1,0 +1,91 @@
+FROM alpine:3.21
+
+ENV OS_IDENTIFIER musllinux_1_2
+
+RUN apk update && apk add --no-cache \
+    autoconf \
+    automake \
+    bash \
+    bzip2-dev \
+    cairo-dev \
+    coreutils \
+    curl \
+    g++ \
+    gcc \
+    gfortran \
+    icu-dev \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libice-dev \
+    libsm-dev \
+    libx11-dev \
+    libxmu-dev \
+    libxt-dev \
+    curl-dev \
+    file \
+    tiff-dev \
+    libtool \
+    linux-headers \
+    make \
+    ncurses-dev \
+    nfpm `# Builds APK packages from the portable R installation` \
+    openblas `# Bundled as libRblas.so and libRlapack.so (pthreads; no OpenMP variant on Alpine)` \
+    openjdk11-jdk \
+    pango-dev \
+    patch `# Needed by build.sh to apply R source patches` \
+    patchelf `# Rewrites RPATHs for library portability (delocate_r.py)` \
+    pcre-dev \
+    pcre2-dev \
+    perl \
+    python3 `# Runs delocate_r.py (library bundling script)` \
+    readline-dev \
+    sed `# GNU sed; BusyBox sed lacks -z flag needed by build.sh` \
+    tar \
+    tcl-dev \
+    texinfo \
+    texlive \
+    texmf-dist-fontsrecommended `# Provides rsfs TFM fonts needed by R vignettes` \
+    texmf-dist-latexrecommended \
+    tk-dev \
+    valgrind-dev \
+    wget \
+    which \
+    xz-dev \
+    zlib-dev
+
+RUN chmod 0777 /opt
+
+# Alpine 3.21 ships fontconfig 2.15.0. No source build needed.
+
+# Configure flags for musllinux.
+# Same as manylinux_2_34, adapted for Alpine paths.
+# R compiles its own reference BLAS/LAPACK; the package script replaces both
+# with OpenBLAS. We don't use --with-blas/--with-lapack here because it records
+# the external library name in Makeconf, which breaks package compilation on
+# systems without OpenBLAS.
+# Tcl/Tk config files are in /usr/lib/ on Alpine (not /usr/lib64/).
+ENV CONFIGURE_OPTIONS="\
+    --enable-R-shlib \
+    --with-tcltk \
+    --enable-memory-profiling \
+    --with-x \
+    --with-system-valgrind-headers \
+    --with-tcl-config=/usr/lib/tclConfig.sh \
+    --with-tk-config=/usr/lib/tkConfig.sh \
+    --enable-prebuilt-html \
+    --with-2025blas"
+
+# No inconsolata font on Alpine
+ENV R_RD4PDF="times,hyper"
+
+# R 3.x requires PCRE2 for Pango support
+ENV INCLUDE_PCRE2_IN_R_3 yes
+
+COPY portable-r/delocate_r.py /delocate_r.py
+COPY portable-r/generate_sbom.py /generate_sbom.py
+RUN chmod +x /delocate_r.py
+COPY portable-r/make-relocatable.sh /make-relocatable.sh
+COPY package.musllinux_1_2 /package.sh
+COPY build.sh .
+COPY patches /patches
+ENTRYPOINT ["bash", "./build.sh"]
