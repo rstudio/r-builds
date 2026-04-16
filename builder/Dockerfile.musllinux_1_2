@@ -44,6 +44,7 @@ RUN apk update && apk add --no-cache \
     tcl-dev \
     texinfo \
     texlive \
+    texmf-dist-fontsrecommended `# Provides rsfs TFM fonts needed by R vignettes` \
     texmf-dist-latexrecommended \
     tk-dev \
     valgrind-dev \
