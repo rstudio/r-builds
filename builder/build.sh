@@ -219,7 +219,12 @@ local({
     os <- readLines("/etc/os-release")
     id <- gsub('^ID=|"', "", grep("^ID=", os, value = TRUE))
     version <- gsub('^VERSION_ID=|"', "", grep("^VERSION_ID=", os, value = TRUE))
-    sprintf("%s-%s", id, version)
+    if (length(id) > 0L && length(version) > 0L)
+      sprintf("%s-%s", id[1L], version[1L])
+    else if (length(id) > 0L)
+      id[1L]
+    else
+      "${OS_IDENTIFIER}"
   } else {
     "${OS_IDENTIFIER}"
   }

@@ -122,6 +122,7 @@ if (getRversion() >= "3.5.0" && getRversion() < "4.0.0") {
 }
 
 # Check that the custom HTTP user agent was configured
-if (!grepl(sprintf("^R/%s", getRversion()), getOption("HTTPUserAgent"))) {
-  stop("unexpected HTTPUserAgent")
-}
+ua <- getOption("HTTPUserAgent")
+if (is.null(ua) || !nzchar(ua)) stop("HTTPUserAgent is not set")
+if (!grepl(sprintf("^R/%s", getRversion()), ua)) stop(paste("unexpected HTTPUserAgent:", ua))
+message(sprintf("HTTPUserAgent: %s", ua))
