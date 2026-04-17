@@ -5,6 +5,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.ubuntu-2004
@@ -18,6 +19,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.ubuntu-2204
@@ -31,6 +33,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.ubuntu-2404
@@ -57,6 +60,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.debian-12
@@ -70,6 +74,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.debian-13
@@ -83,6 +88,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.centos-7
@@ -96,6 +102,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.centos-8
@@ -109,6 +116,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.rhel-9
@@ -122,6 +130,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.rhel-10
@@ -135,6 +144,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.opensuse-156
@@ -148,6 +158,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.opensuse-160
@@ -161,6 +172,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.fedora-42
@@ -174,6 +186,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.fedora-43
