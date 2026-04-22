@@ -1,0 +1,152 @@
+name: Windows R builds
+
+on:
+  workflow_call:
+    inputs:
+      r_versions:
+        description: |
+          Comma-separated R versions or specifiers (e.g. last-5,3.6.3,devel).
+          Defaults to "last-5,3.6.3,devel".
+        required: false
+        default: 'last-5,3.6.3,devel'
+        type: string
+      publish:
+        description: |
+          Publish the builds to S3 staging or production? Allowed values are "staging", "production", or empty (default).
+        required: false
+        default: ''
+        type: string
+    secrets:
+      AWS_PUBLISH_ROLE:
+        required: true
+      AWS_REGION:
+        required: true
+      S3_BUCKET_STAGING:
+        required: true
+      S3_BUCKET_PRODUCTION:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.setup-matrix.outputs.matrix }}
+      r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Set up matrix of R versions
+        id: setup-matrix
+        run: |
+          # Resolve version specifiers to concrete R versions
+          r_versions=$(python manage_r_versions.py get "${{ inputs.r_versions }}")
+          echo "Resolved R versions: $r_versions"
+
+          # Build matrix JSON (Windows is x86_64 only — no arch filtering needed)
+          includes="[]"
+          for version in $(echo "$r_versions" | tr ',' ' '); do
+            includes=$(echo "$includes" | jq --arg v "$version" \
+              '. + [{"r_version": $v, "os": "windows-latest"}]')
+          done
+
+          matrix=$(echo "$includes" | jq -c '{"include": .}')
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "Using matrix: $matrix"
+
+          r_versions_json=$(echo "$r_versions" | jq -Rc 'split(",") | map(select(length > 0))')
+          echo "r_versions=$r_versions_json" >> $GITHUB_OUTPUT
+
+  build:
+    needs: setup-matrix
+    if: ${{ fromJson(needs.setup-matrix.outputs.matrix).include != null && toJson(fromJson(needs.setup-matrix.outputs.matrix).include) != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    name: windows (R ${{ matrix.r_version }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build R ${{ matrix.r_version }} for Windows
+        id: build
+        shell: pwsh
+        run: |
+          $outputDir = "$env:RUNNER_TEMP\r-builds-output"
+          New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+          .\windows\build.ps1 -Version "${{ matrix.r_version }}" -OutputDir "$outputDir"
+          $zip = "$outputDir\R-${{ matrix.r_version }}-windows.zip"
+          echo "zip=$zip" >> $env:GITHUB_OUTPUT
+          echo "output_dir=$outputDir" >> $env:GITHUB_OUTPUT
+
+      - name: Extract R for testing
+        id: extract
+        shell: pwsh
+        run: |
+          $extractDir = "$env:RUNNER_TEMP\r-extracted"
+          New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
+          Expand-Archive -Path "${{ steps.build.outputs.zip }}" -DestinationPath $extractDir -Force
+          $rHome = "$extractDir\R-${{ matrix.r_version }}"
+          echo "r_home=$rHome" >> $env:GITHUB_OUTPUT
+
+      - name: Test R
+        shell: pwsh
+        run: .\windows\test.ps1 -RHome "${{ steps.extract.outputs.r_home }}"
+
+      - name: Configure AWS Credentials
+        if: ${{ inputs.publish != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Publish R to S3
+        if: ${{ inputs.publish != '' }}
+        shell: pwsh
+        run: |
+          $zip = "${{ steps.build.outputs.zip }}"
+          $s3Bucket = "${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
+          $s3Key = "r/windows/R-${{ matrix.r_version }}-windows.zip"
+          Write-Host "Publishing R ${{ matrix.r_version }} (windows) to s3://$s3Bucket/$s3Key"
+          aws s3 cp "$zip" "s3://$s3Bucket/$s3Key" --acl public-read
+
+  update-versions-json:
+    if: ${{ inputs.publish != '' && !cancelled() }}
+    needs: [build, setup-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update versions.json
+        run: |
+          echo "Publishing versions.json for ${{ inputs.publish }}"
+          s3_bucket="${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
+          versions=$(echo '${{ needs.setup-matrix.outputs.r_versions }}' | jq -r 'join(",")')
+          python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"

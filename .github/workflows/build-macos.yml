@@ -1,0 +1,233 @@
+name: macOS R builds
+
+on:
+  workflow_call:
+    inputs:
+      r_versions:
+        description: |
+          Comma-separated R versions or specifiers (e.g. last-5,3.6.3,devel).
+          Defaults to "last-5,3.6.3,devel".
+        required: false
+        default: 'last-5,3.6.3,devel'
+        type: string
+      arch:
+        description: 'Architecture: arm64, x86_64, or both'
+        default: 'both'
+        type: string
+      publish:
+        description: |
+          Publish the builds to S3 staging or production? Allowed values are "staging", "production", or empty (default).
+        required: false
+        default: ''
+        type: string
+    secrets:
+      AWS_PUBLISH_ROLE:
+        required: true
+      AWS_REGION:
+        required: true
+      S3_BUCKET_STAGING:
+        required: true
+      S3_BUCKET_PRODUCTION:
+        required: true
+      MACOS_DEVELOPER_CERTIFICATE:
+        required: false
+      MACOS_DEVELOPER_CERTIFICATE_PASSWORD:
+        required: false
+      MACOS_NOTARIZATION_USER_NAME:
+        required: false
+      MACOS_NOTARIZATION_USER_PASSWORD:
+        required: false
+      APPLE_TEAM_ID:
+        required: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.setup-matrix.outputs.matrix }}
+      r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Set up matrix of R versions and architectures
+        id: setup-matrix
+        run: |
+          # Resolve version specifiers to concrete R versions
+          r_versions=$(python manage_r_versions.py get "${{ inputs.r_versions }}")
+          echo "Resolved R versions: $r_versions"
+
+          # Determine which architectures to build
+          input_arch="${{ inputs.arch }}"
+          if [ "${input_arch}" = "both" ]; then
+            archs="arm64 x86_64"
+          else
+            archs="${input_arch}"
+          fi
+
+          # Build matrix JSON, filtering out arm64 + R < 4.1 (no CRAN arm64 .pkg)
+          includes="[]"
+          for version in $(echo "$r_versions" | tr ',' ' '); do
+            for arch in $archs; do
+              if [ "${arch}" = "arm64" ]; then
+                # Skip arm64 for R < 4.1 — no CRAN arm64 .pkg exists for those versions
+                case "${version}" in
+                  devel|patched|next) ;;
+                  *)
+                    major=$(echo "${version}" | cut -d. -f1)
+                    minor=$(echo "${version}" | cut -d. -f2)
+                    if [ "${major}" -lt 4 ] || { [ "${major}" -eq 4 ] && [ "${minor}" -lt 1 ]; }; then
+                      echo "Skipping arm64 for R ${version} (no CRAN arm64 .pkg for R < 4.1)"
+                      continue
+                    fi
+                    ;;
+                esac
+                runner="macos-14"
+              else
+                runner="macos-13"
+              fi
+              includes=$(echo "$includes" | jq --arg v "$version" --arg a "$arch" --arg o "$runner" \
+                '. + [{"r_version": $v, "arch": $a, "os": $o}]')
+            done
+          done
+
+          matrix=$(echo "$includes" | jq -c '{"include": .}')
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "Using matrix: $matrix"
+
+          r_versions_json=$(echo "$r_versions" | jq -Rc 'split(",") | map(select(length > 0))')
+          echo "r_versions=$r_versions_json" >> $GITHUB_OUTPUT
+
+  build:
+    needs: setup-matrix
+    if: ${{ fromJson(needs.setup-matrix.outputs.matrix).include != null && toJson(fromJson(needs.setup-matrix.outputs.matrix).include) != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    name: macos-${{ matrix.arch }} (R ${{ matrix.r_version }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import Developer Certificate into keychain
+        # An unset secret evaluates to empty string in GitHub Actions expressions,
+        # so this condition correctly skips signing when the certificate is not configured.
+        if: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE != '' }}
+        env:
+          MACOS_DEVELOPER_CERTIFICATE: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE }}
+          MACOS_DEVELOPER_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE_PASSWORD }}
+        run: |
+          cert_file="${RUNNER_TEMP}/developer_certificate.p12"
+          keychain_file="${RUNNER_TEMP}/build.keychain"
+          keychain_password="$(openssl rand -hex 16)"
+
+          echo "${MACOS_DEVELOPER_CERTIFICATE}" | base64 --decode > "${cert_file}"
+
+          security create-keychain -p "${keychain_password}" "${keychain_file}"
+          security default-keychain -s "${keychain_file}"
+          security unlock-keychain -p "${keychain_password}" "${keychain_file}"
+          security import "${cert_file}" -k "${keychain_file}" \
+            -P "${MACOS_DEVELOPER_CERTIFICATE_PASSWORD}" \
+            -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: \
+            -s -k "${keychain_password}" "${keychain_file}"
+
+          # Identify the Developer ID Application certificate CN for signing
+          identity=$(security find-identity -v -p codesigning "${keychain_file}" \
+            | grep "Developer ID Application" | head -1 | sed 's/.*"\(.*\)"/\1/')
+          echo "CODESIGN_IDENTITY=${identity}" >> $GITHUB_ENV
+          echo "Using codesign identity: ${identity}"
+
+          # Store keychain path for cleanup step
+          echo "BUILD_KEYCHAIN=${keychain_file}" >> $GITHUB_ENV
+
+      - name: Build R ${{ matrix.r_version }} for macOS ${{ matrix.arch }}
+        id: build
+        run: |
+          output_dir="${RUNNER_TEMP}/r-builds-output"
+          mkdir -p "${output_dir}"
+          bash macos/build.sh "${{ matrix.r_version }}" "${{ matrix.arch }}" "${output_dir}"
+          tarball="${output_dir}/R-${{ matrix.r_version }}-macos-${{ matrix.arch }}.tar.gz"
+          echo "tarball=${tarball}" >> $GITHUB_OUTPUT
+          echo "output_dir=${output_dir}" >> $GITHUB_OUTPUT
+
+      - name: Extract R for testing
+        id: extract
+        run: |
+          extract_dir="${RUNNER_TEMP}/r-extracted"
+          mkdir -p "${extract_dir}"
+          tar xzf "${{ steps.build.outputs.tarball }}" -C "${extract_dir}"
+          r_home="${extract_dir}/R-${{ matrix.r_version }}"
+          echo "r_home=${r_home}" >> $GITHUB_OUTPUT
+
+      - name: Test R
+        run: bash macos/test.sh "${{ steps.extract.outputs.r_home }}"
+
+      - name: Notarize R (production only)
+        if: ${{ inputs.publish == 'production' && secrets.MACOS_NOTARIZATION_USER_NAME != '' && secrets.MACOS_NOTARIZATION_USER_PASSWORD != '' && secrets.APPLE_TEAM_ID != '' }}
+        env:
+          APPLE_ID: ${{ secrets.MACOS_NOTARIZATION_USER_NAME }}
+          APPLE_APP_PASSWORD: ${{ secrets.MACOS_NOTARIZATION_USER_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bash macos/notarize.sh "${{ steps.extract.outputs.r_home }}"
+
+      - name: Clean up keychain
+        if: ${{ always() && env.BUILD_KEYCHAIN != '' }}
+        run: security delete-keychain "${BUILD_KEYCHAIN}"
+
+      - name: Configure AWS Credentials
+        if: ${{ inputs.publish != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Publish R to S3
+        if: ${{ inputs.publish != '' }}
+        run: |
+          tarball="${{ steps.build.outputs.tarball }}"
+          s3_bucket="${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
+          s3_key="r/macos-${{ matrix.arch }}/R-${{ matrix.r_version }}-macos-${{ matrix.arch }}.tar.gz"
+          echo "Publishing R ${{ matrix.r_version }} (macos-${{ matrix.arch }}) to s3://${s3_bucket}/${s3_key}"
+          aws s3 cp "${tarball}" "s3://${s3_bucket}/${s3_key}" --acl public-read
+
+  update-versions-json:
+    if: ${{ inputs.publish != '' && !cancelled() }}
+    needs: [build, setup-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update versions.json
+        run: |
+          echo "Publishing versions.json for ${{ inputs.publish }}"
+          s3_bucket="${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
+          versions=$(echo '${{ needs.setup-matrix.outputs.r_versions }}' | jq -r 'join(",")')
+          python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"

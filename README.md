@@ -353,6 +353,29 @@ sudo apk add --no-cache \
 ```
 
 
+#### macOS
+
+```bash
+# arm64 (Apple Silicon)
+curl -LO https://cdn.posit.co/r/macos-arm64/R-4.4.1-macos-arm64.tar.gz
+tar xzf R-4.4.1-macos-arm64.tar.gz
+./R-4.4.1/bin/R --version
+
+# x86_64 (Intel)
+curl -LO https://cdn.posit.co/r/macos-x86_64/R-4.4.1-macos-x86_64.tar.gz
+tar xzf R-4.4.1-macos-x86_64.tar.gz
+./R-4.4.1/bin/R --version
+```
+
+#### Windows
+
+```powershell
+# Download and extract
+Invoke-WebRequest -Uri https://cdn.posit.co/r/windows/R-4.4.1-windows.zip -OutFile R-4.4.1-windows.zip
+Expand-Archive R-4.4.1-windows.zip -DestinationPath .
+.\R-4.4.1\bin\R.exe --version
+```
+
 ### Verify R installation
 
 Test that R was successfully installed by running:

@@ -53,4 +53,16 @@ bash:
 		-w /r-builds \
 		${TARGET_IMAGE} /bin/bash
 
-.PHONY: docker-build docker-down print-platforms
+build-r-macos:
+	bash macos/build.sh $(R_VERSION) $(ARCH) output
+
+test-r-macos:
+	bash macos/test.sh output/R-$(R_VERSION)
+
+build-r-windows:
+	powershell.exe -File windows/build.ps1 -Version $(R_VERSION) -OutputDir output
+
+test-r-windows:
+	powershell.exe -File windows/test.ps1 -RHome output/R-$(R_VERSION)-windows/R-$(R_VERSION)
+
+.PHONY: docker-build docker-down print-platforms build-r-macos test-r-macos build-r-windows test-r-windows

@@ -70,9 +70,41 @@ jobs:
       publish: ${{ inputs.publish || 'production' }}
     secrets: inherit
 
+  build-new-r-versions-macos:
+    needs: check-r-versions
+    if: ${{ needs.check-r-versions.outputs.new_r_versions != '' }}
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      r_versions: ${{ needs.check-r-versions.outputs.new_r_versions }}
+      arch: both
+      publish: ${{ inputs.publish || 'production' }}
+    secrets:
+      AWS_PUBLISH_ROLE: ${{ secrets.AWS_PUBLISH_ROLE }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET_STAGING: ${{ secrets.S3_BUCKET_STAGING }}
+      S3_BUCKET_PRODUCTION: ${{ secrets.S3_BUCKET_PRODUCTION }}
+      MACOS_DEVELOPER_CERTIFICATE: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE }}
+      MACOS_DEVELOPER_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE_PASSWORD }}
+      MACOS_NOTARIZATION_USER_NAME: ${{ secrets.MACOS_NOTARIZATION_USER_NAME }}
+      MACOS_NOTARIZATION_USER_PASSWORD: ${{ secrets.MACOS_NOTARIZATION_USER_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+  build-new-r-versions-windows:
+    needs: check-r-versions
+    if: ${{ needs.check-r-versions.outputs.new_r_versions != '' }}
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      r_versions: ${{ needs.check-r-versions.outputs.new_r_versions }}
+      publish: ${{ inputs.publish || 'production' }}
+    secrets:
+      AWS_PUBLISH_ROLE: ${{ secrets.AWS_PUBLISH_ROLE }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET_STAGING: ${{ secrets.S3_BUCKET_STAGING }}
+      S3_BUCKET_PRODUCTION: ${{ secrets.S3_BUCKET_PRODUCTION }}
+
   # Notify Hosted about new R versions
   notify-slack-success:
-    needs: [build-new-r-versions, check-r-versions]
+    needs: [build-new-r-versions, build-new-r-versions-macos, build-new-r-versions-windows, check-r-versions]
     if: ${{ needs.check-r-versions.outputs.new_r_versions != '' }}
     runs-on: ubuntu-latest
     steps:
