@@ -6,6 +6,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Suppress the PS 5.1 progress bar; it slows Invoke-WebRequest / Expand-Archive
+# by 50-100x when running non-interactively.
+$ProgressPreference = "SilentlyContinue"
 $StagingDir = "$env:TEMP\r-build\R-$Version"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
@@ -66,15 +69,15 @@ if (-not $innoextract) {
         Expand-Archive -Path $innoZip -DestinationPath $innoDir -Force
         $innoExe = Get-ChildItem -Path $innoDir -Recurse -Filter "innoextract.exe" | Select-Object -First 1
         if ($innoExe) {
-            $innoextract = $innoExe  # use the FileInfo object directly
+            $env:PATH = "$($innoExe.DirectoryName);$env:PATH"
         }
+        $innoextract = Get-Command innoextract -ErrorAction SilentlyContinue
     }
 }
 
 if ($innoextract) {
     Write-Host "  Extracting with innoextract..."
-    $innoPath = if ($innoextract -is [System.IO.FileInfo]) { $innoextract.FullName } else { $innoextract.Source }
-    $output = & $innoPath -d $StagingDir --extract $InstallerPath 2>&1
+    $output = & innoextract -d $StagingDir --extract $InstallerPath 2>&1
     if ($LASTEXITCODE -eq 0) {
         $AppDir = Join-Path $StagingDir "app"
         if (Test-Path $AppDir) {
@@ -153,6 +156,8 @@ Write-Host "=== Package created: $ZipPath ==="
 Get-Item $ZipPath | Select-Object Name, Length
 
 } finally {
-    Remove-Item $InstallerPath -Force -ErrorAction SilentlyContinue
+    # Keep the installer cached at $InstallerPath so re-runs of the same R
+    # version skip the ~80 MB download (see the "Using cached installer" branch
+    # above). Only the staging tree is removed.
     Remove-Item $StagingDir -Recurse -Force -ErrorAction SilentlyContinue
 }

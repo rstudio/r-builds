@@ -275,7 +275,5 @@ tar czf "${TARBALL}" -C "${WORK_OUTPUT_PARENT}" "R-${R_VERSION}"
 echo "=== Tarball created: ${TARBALL} ==="
 
 # ── Cleanup ──────────────────────────────────────────────────────────
-# The EXIT trap also handles cleanup on error; this explicit call covers
-# the success path and runs before the trap fires.
-rm -rf "${WORK_DIR}" "${WORK_OUTPUT_PARENT}"
+# Cleanup is handled by the EXIT trap set at the top of the script.
 echo "=== Build complete ==="

@@ -288,7 +288,7 @@ jobs:
           python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"
 
   build-macos:
-    if: ${{ contains(inputs.platforms, 'macos') }}
+    if: ${{ inputs.platforms == 'all' || contains(inputs.platforms, 'macos') }}
     needs: [setup-matrix]
     uses: ./.github/workflows/build-macos.yml
     with:
@@ -310,7 +310,7 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
   build-windows:
-    if: ${{ contains(inputs.platforms, 'windows') }}
+    if: ${{ inputs.platforms == 'all' || contains(inputs.platforms, 'windows') }}
     needs: [setup-matrix]
     uses: ./.github/workflows/build-windows.yml
     with:

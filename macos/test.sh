@@ -64,9 +64,9 @@ echo "--- Test: No hardcoded paths ---"
 HARDCODED_FOUND=0
 while IFS= read -r f; do
   if file "${f}" 2>/dev/null | grep -q "Mach-O"; then
-    if otool -L "${f}" 2>/dev/null | grep -qE "/Library/Frameworks/R\.framework|/opt/(homebrew|R/)|/usr/local/(Cellar|opt|lib)"; then
+    if otool -L "${f}" 2>/dev/null | grep -qE "/tmp/r-(build|install)|/Library/Frameworks/R\.framework|/opt/(homebrew|R/)|/usr/local/(Cellar|opt|lib)"; then
       fail "hardcoded path in ${f#${R_HOME}/}"
-      otool -L "${f}" | grep -E "/Library/Frameworks|/opt/(homebrew|R/)|/usr/local/(Cellar|opt|lib)" | head -3
+      otool -L "${f}" | grep -E "/tmp/r-(build|install)|/Library/Frameworks|/opt/(homebrew|R/)|/usr/local/(Cellar|opt|lib)" | head -3
       HARDCODED_FOUND=1
     fi
   fi
@@ -98,18 +98,52 @@ else
   fail "requires DYLD_* variables"
 fi
 
-# 9. Relocatability
+# 9. Relocatability (R and Rscript both exercised at the new location)
 echo "--- Test: Relocatability ---"
 MOVED="/tmp/r-relocated-$$"
 cp -R "${R_HOME}" "${MOVED}"
-MOVED_HOME=$("${MOVED}/bin/Rscript" -e 'cat(R.home())' 2>/dev/null)
+MOVED_HOME=$("${MOVED}/bin/R" --vanilla --no-echo -e 'cat(R.home())' 2>/dev/null)
 MOVED_RESOLVED="$(cd "${MOVED}" && pwd -P)"
 if [ "${MOVED_HOME}" = "${MOVED_RESOLVED}" ] || [ "${MOVED_HOME}" = "${MOVED}" ]; then
   pass "relocated R reports correct new R_HOME"
+  if "${MOVED}/bin/Rscript" -e 'cat("relocated Rscript OK\n")' 2>/dev/null | grep -q "relocated Rscript OK"; then
+    pass "relocated Rscript works"
+  else
+    fail "relocated Rscript failed"
+  fi
 else
   fail "relocated R.home() = '${MOVED_HOME}', expected '${MOVED}'"
 fi
 rm -rf "${MOVED}"
+
+# 10. Source package compilation — exercises Makeconf, headers, linker flags
+echo "--- Test: Source package compilation ---"
+if "${R_HOME}/bin/R" --vanilla --no-echo -e '
+  tmp <- tempdir()
+  install.packages("jsonlite", repos="https://cloud.r-project.org", type="source", lib=tmp, quiet=TRUE)
+  stopifnot(requireNamespace("jsonlite", lib.loc=tmp))
+  cat("source install OK\n")
+' 2>/dev/null | grep -q "source install OK"; then
+  pass "source package compilation (jsonlite)"
+else
+  fail "source package compilation failed (may need Xcode CLT)"
+fi
+
+# 11. Binary package install — exercises the .portable Rprofile hook's
+# post-install dylib fix-up (install_name_tool + codesign). Uses PPM because
+# it serves arm64 binaries for all R versions, including older ones CRAN
+# no longer hosts.
+echo "--- Test: Binary package install ---"
+if "${R_HOME}/bin/R" --no-save --no-restore --no-init-file --no-echo -e '
+  tmp <- tempdir()
+  install.packages("jsonlite", repos="https://packagemanager.posit.co/cran/latest", type="binary", lib=tmp, quiet=TRUE)
+  stopifnot(requireNamespace("jsonlite", lib.loc=tmp))
+  cat("binary install OK\n")
+' 2>/dev/null | grep -q "binary install OK"; then
+  pass "binary package install (jsonlite)"
+else
+  fail "binary package install failed"
+fi
 
 echo ""
 echo "=== Results: ${PASS} passed, ${FAIL} failed ==="

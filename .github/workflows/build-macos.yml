@@ -118,13 +118,18 @@ jobs:
       matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     name: macos-${{ matrix.arch }} (R ${{ matrix.r_version }})
+    # The `secrets` context is not available in step-level `if:` conditions,
+    # so surface presence flags via job-level env and test `env.HAS_*` instead.
+    env:
+      HAS_DEVELOPER_CERTIFICATE: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE != '' }}
+      HAS_NOTARIZATION_CREDENTIALS: ${{ secrets.MACOS_NOTARIZATION_USER_NAME != '' && secrets.MACOS_NOTARIZATION_USER_PASSWORD != '' && secrets.APPLE_TEAM_ID != '' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Import Developer Certificate into keychain
         # An unset secret evaluates to empty string in GitHub Actions expressions,
         # so this condition correctly skips signing when the certificate is not configured.
-        if: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE != '' }}
+        if: ${{ env.HAS_DEVELOPER_CERTIFICATE == 'true' }}
         env:
           MACOS_DEVELOPER_CERTIFICATE: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE }}
           MACOS_DEVELOPER_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE_PASSWORD }}
@@ -176,7 +181,7 @@ jobs:
         run: bash macos/test.sh "${{ steps.extract.outputs.r_home }}"
 
       - name: Notarize R (production only)
-        if: ${{ inputs.publish == 'production' && secrets.MACOS_NOTARIZATION_USER_NAME != '' && secrets.MACOS_NOTARIZATION_USER_PASSWORD != '' && secrets.APPLE_TEAM_ID != '' }}
+        if: ${{ inputs.publish == 'production' && env.HAS_NOTARIZATION_CREDENTIALS == 'true' }}
         env:
           APPLE_ID: ${{ secrets.MACOS_NOTARIZATION_USER_NAME }}
           APPLE_APP_PASSWORD: ${{ secrets.MACOS_NOTARIZATION_USER_PASSWORD }}
