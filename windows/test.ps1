@@ -61,11 +61,13 @@ function Get-StdoutLine {
 }
 
 # ── 1. R starts ─────────────────────────────────────────────────────
+# Released R reports "R version X.Y.Z (...)"; devel reports "R Under
+# development (unstable) (YYYY-MM-DD rXXXXX) ...". Match both.
 Write-Host "--- Test: R starts ---"
 $ErrorActionPreference = "Continue"
 $rVersion = & $RExe --version 2>&1 | Select-Object -First 1
 $ErrorActionPreference = "Stop"
-if ("$rVersion" -match "R version") {
+if ("$rVersion" -match "^R (version|Under development)") {
     Test-Pass "R --version reports R version"
 } else {
     Test-Fail "R --version failed: $rVersion"

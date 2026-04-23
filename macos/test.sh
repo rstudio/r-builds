@@ -14,9 +14,10 @@ trap 'rm -rf "${MOVED}"' EXIT
 
 echo "=== Testing R installation at ${R_HOME} ==="
 
-# 1. R starts
+# 1. R starts — released R prints "R version X.Y.Z", devel prints
+# "R Under development (unstable) ..."; match both.
 echo "--- Test: R starts ---"
-if "${R_HOME}/bin/R" --version 2>&1 | head -1 | grep -q "R version"; then
+if "${R_HOME}/bin/R" --version 2>&1 | head -1 | grep -qE "^R (version|Under development)"; then
   pass "R --version reports R version"
 else
   fail "R --version did not report R version"
@@ -130,12 +131,22 @@ else
 fi
 
 # 11. Binary package install — exercises the .portable Rprofile hook's
-# post-install dylib fix-up (install_name_tool + codesign). Uses PPM because
-# it serves arm64 binaries for all R versions the matrix targets (R >= 4.1).
+# post-install dylib fix-up (install_name_tool + codesign).
+#
+# Use CRAN + PPM together so install.packages picks whichever has the
+# binary for this R version × platform combo:
+#   - CRAN covers R 4.2+ big-sur-arm64, 4.3+ big-sur-x86_64, 4.6 sonoma-arm64,
+#     plus old unified macosx/contrib/4.1/ (but only for x86_64 pkgType).
+#   - PPM covers R 4.1-4.5 on both arches via legacy paths.
+#   - Neither has R 3.x (matrix skips those).
+# R resolves Contrib URLs via .Platform$pkgType, so passing both repos lets
+# install.packages find the package in whichever serves it.
 echo "--- Test: Binary package install ---"
 if "${R_HOME}/bin/R" --no-save --no-restore --no-init-file --no-echo -e '
   tmp <- tempdir()
-  install.packages("jsonlite", repos="https://packagemanager.posit.co/cran/latest", type="binary", lib=tmp, quiet=TRUE)
+  repos <- c(CRAN = "https://cloud.r-project.org",
+             PPM  = "https://packagemanager.posit.co/cran/latest")
+  install.packages("jsonlite", repos=repos, type="binary", lib=tmp, quiet=TRUE)
   stopifnot(requireNamespace("jsonlite", lib.loc=tmp))
   cat("binary install OK\n")
 ' 2>/dev/null | grep -q "binary install OK"; then
