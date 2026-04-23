@@ -189,7 +189,9 @@ jobs:
         run: bash macos/test.sh "${{ steps.extract.outputs.r_home }}"
 
       - name: Notarize R (production only)
-        if: ${{ inputs.publish == 'production' && env.HAS_NOTARIZATION_CREDENTIALS == 'true' }}
+        # Requires Developer ID signed binaries — Apple rejects ad-hoc
+        # signatures — so gate on HAS_DEVELOPER_CERTIFICATE too.
+        if: ${{ inputs.publish == 'production' && env.HAS_DEVELOPER_CERTIFICATE == 'true' && env.HAS_NOTARIZATION_CREDENTIALS == 'true' }}
         env:
           APPLE_ID: ${{ secrets.MACOS_NOTARIZATION_USER_NAME }}
           APPLE_APP_PASSWORD: ${{ secrets.MACOS_NOTARIZATION_USER_PASSWORD }}
