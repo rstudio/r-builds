@@ -63,53 +63,55 @@ echo "=== Building portable R ${R_VERSION} for macOS ${ARCH} ==="
 echo "Output dir: ${OUTPUT_DIR_BASE}"
 
 # ── 1. Resolve the CRAN .pkg download URL ────────────────────────────
-# CRAN has changed its URL layout across R versions, and nightly builds
-# (devel, patched, next) are hosted on mac.r-project.org, not CRAN mirrors.
+# CRAN's URL layout has shifted multiple times. Summary of what actually
+# exists as of 2026-04, probed and recorded:
 #
-# Release versions:
-#   R >= 4.2    arm64  : bin/macosx/big-sur-arm64/base/R-{ver}-arm64.pkg
-#   R >= 4.2    x86_64 : bin/macosx/big-sur-x86_64/base/R-{ver}-x86_64.pkg
-#   R 4.1.x    arm64  : bin/macosx/big-sur-arm64/base/R-{ver}.pkg
-#   R <= 4.1   x86_64 : bin/macosx/base/R-{ver}.pkg
+# Release versions (on cloud.r-project.org):
+#   R >= 4.3   arm64  : bin/macosx/big-sur-arm64/base/R-{ver}-arm64.pkg
+#   R >= 4.3   x86_64 : bin/macosx/big-sur-x86_64/base/R-{ver}-x86_64.pkg
+#   R 4.1-4.2  arm64  : bin/macosx/big-sur-arm64/base/R-{ver}-arm64.pkg
+#   R 4.1-4.2  x86_64 : bin/macosx/base/R-{ver}.pkg
+#   R < 4.0    arm64  : not available
+#   R 3.6.x    x86_64 : cran-archive.r-project.org/bin/macosx/base/R-{ver}.nn.pkg
+#   R <= 3.5   x86_64 : cran-archive.r-project.org/bin/macosx/base/R-{ver}.pkg
 #
-# Nightly builds (mac.r-project.org):
-#   devel/patched/next : .pkg and .tar.xz for arm64 and x86_64
-#
-# Strategy: try the most specific URL first, then fall back.
+# Nightly "devel" builds (on mac.r-project.org):
+#   The old /last-success/ scheme is gone. Current layout is:
+#     sonoma-arm64/R-{branch}-branch/R-{branch}-branch-arm64.pkg  (R 4.6+ arm64)
+#     big-sur-arm64/R-{branch}-branch/R-{branch}-branch-arm64.pkg (R 4.5 arm64)
+#     big-sur-x86_64/R-{branch}-branch/R-{branch}-branch-x86_64.pkg
+#   "devel" maps to whichever branch is currently open — iterate from newest
+#   plausible branch downward so this keeps working across branch rollovers.
 
 resolve_pkg_url() {
   local ver="$1" arch="$2" mirror="$3"
   local candidates=()
 
-  # Nightly/development builds live on mac.r-project.org
   case "${ver}" in
     devel|patched|next)
+      # Nightly builds at mac.r-project.org. "devel" resolves to the current
+      # open branch (e.g., 4.6-branch in 2026-04); iterate newest-first.
       local mac_base="https://mac.r-project.org"
+      local branches=("4.8" "4.7" "4.6" "4.5" "4.4")
       if [[ "${arch}" == "arm64" ]]; then
-        candidates+=(
-          "${mac_base}/big-sur-arm64/last-success/R-devel-arm64.pkg"
-          "${mac_base}/big-sur-arm64/last-success/R-devel.pkg"
-        )
-        # Also try versioned branch patterns
-        for branch in "4.7" "4.6" "4.5"; do
+        # arm64 R 4.6+ targets sonoma; R 4.5 stays on big-sur.
+        for branch in "${branches[@]}"; do
           candidates+=(
-            "${mac_base}/big-sur-arm64/last-success/R-${branch}-branch-arm64.pkg"
+            "${mac_base}/sonoma-arm64/R-${branch}-branch/R-${branch}-branch-arm64.pkg"
+            "${mac_base}/big-sur-arm64/R-${branch}-branch/R-${branch}-branch-arm64.pkg"
           )
         done
       else
-        candidates+=(
-          "${mac_base}/big-sur-x86_64/last-success/R-devel-x86_64.pkg"
-          "${mac_base}/big-sur-x86_64/last-success/R-devel.pkg"
-        )
-        for branch in "4.7" "4.6" "4.5"; do
+        for branch in "${branches[@]}"; do
           candidates+=(
-            "${mac_base}/big-sur-x86_64/last-success/R-${branch}-branch-x86_64.pkg"
+            "${mac_base}/big-sur-x86_64/R-${branch}-branch/R-${branch}-branch-x86_64.pkg"
           )
         done
       fi
       ;;
     *)
-      # Release versions on CRAN mirrors
+      # Release versions.
+      local archive="https://cran-archive.r-project.org"
       local major minor
       major="${ver%%.*}"
       minor="${ver#*.}"; minor="${minor%%.*}"
@@ -128,6 +130,10 @@ resolve_pkg_url() {
           "${mirror}/bin/macosx/big-sur-x86_64/base/R-${ver}-x86_64.pkg"
           "${mirror}/bin/macosx/big-sur-x86_64/base/R-${ver}.pkg"
           "${mirror}/bin/macosx/base/R-${ver}.pkg"
+          # Versions retired from the main CDN live on cran-archive. The
+          # ".nn" suffix is CRAN's notarized variant shipped for R 3.6.x.
+          "${archive}/bin/macosx/base/R-${ver}.nn.pkg"
+          "${archive}/bin/macosx/base/R-${ver}.pkg"
         )
       fi
       ;;

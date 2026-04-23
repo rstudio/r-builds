@@ -77,23 +77,30 @@ jobs:
             archs="${input_arch}"
           fi
 
-          # Build matrix JSON, filtering out arm64 + R < 4.1 (no CRAN arm64 .pkg)
+          # Build matrix JSON. Two skip rules:
+          #   1. R < 4.1 is skipped entirely — no CRAN/PPM macOS binary package
+          #      repo exists for those versions, and R 4.0.x has no .pkg
+          #      installer hosted anywhere, so a produced tarball is unusable.
+          #   2. arm64 is additionally unsupported on R < 4.1 (no arm64 .pkg),
+          #      but rule 1 already covers this — kept as a defensive comment.
           includes="[]"
+          built_versions=""
           for version in $(echo "$r_versions" | tr ',' ' '); do
+            case "${version}" in
+              devel|patched|next)
+                ;;
+              *)
+                major=$(echo "${version}" | cut -d. -f1)
+                minor=$(echo "${version}" | cut -d. -f2)
+                if [ "${major}" -lt 4 ] || { [ "${major}" -eq 4 ] && [ "${minor}" -lt 1 ]; }; then
+                  echo "Skipping macOS build for R ${version} — no binary package ecosystem for macOS R < 4.1"
+                  continue
+                fi
+                ;;
+            esac
+            built_versions="${built_versions:+${built_versions},}${version}"
             for arch in $archs; do
               if [ "${arch}" = "arm64" ]; then
-                # Skip arm64 for R < 4.1 — no CRAN arm64 .pkg exists for those versions
-                case "${version}" in
-                  devel|patched|next) ;;
-                  *)
-                    major=$(echo "${version}" | cut -d. -f1)
-                    minor=$(echo "${version}" | cut -d. -f2)
-                    if [ "${major}" -lt 4 ] || { [ "${major}" -eq 4 ] && [ "${minor}" -lt 1 ]; }; then
-                      echo "Skipping arm64 for R ${version} (no CRAN arm64 .pkg for R < 4.1)"
-                      continue
-                    fi
-                    ;;
-                esac
                 runner="macos-14"
               else
                 runner="macos-13"
@@ -107,7 +114,8 @@ jobs:
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "Using matrix: $matrix"
 
-          r_versions_json=$(echo "$r_versions" | jq -Rc 'split(",") | map(select(length > 0))')
+          # Only publish versions we actually built; filtering happens above.
+          r_versions_json=$(echo "$built_versions" | jq -Rc 'split(",") | map(select(length > 0))')
           echo "r_versions=$r_versions_json" >> $GITHUB_OUTPUT
 
   build:

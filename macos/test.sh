@@ -131,8 +131,7 @@ fi
 
 # 11. Binary package install — exercises the .portable Rprofile hook's
 # post-install dylib fix-up (install_name_tool + codesign). Uses PPM because
-# it serves arm64 binaries for all R versions, including older ones CRAN
-# no longer hosts.
+# it serves arm64 binaries for all R versions the matrix targets (R >= 4.1).
 echo "--- Test: Binary package install ---"
 if "${R_HOME}/bin/R" --no-save --no-restore --no-init-file --no-echo -e '
   tmp <- tempdir()

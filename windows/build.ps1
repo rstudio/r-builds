@@ -22,24 +22,36 @@ $InstallerPath = "$env:TEMP\R-$Version-win.exe"
 if (Test-Path $InstallerPath) {
     Write-Host "  Using cached installer: $InstallerPath"
 } else {
+    # URL locations, tried newest-first:
+    #   current       — cloud.r-project.org/bin/windows/base/R-$Version-win.exe
+    #   main archive  — cloud.r-project.org/bin/windows/base/old/$Version/...
+    #   cran-archive  — cran-archive.r-project.org/bin/windows/base/old/$Version/...
+    # devel uses its own stable URL; all other versions walk the list.
     if ($Version -eq "devel") {
-        $InstallerUrl = "https://cloud.r-project.org/bin/windows/base/R-devel-win.exe"
-        Write-Host "  Downloading: $InstallerUrl"
-        Invoke-WebRequest -Uri $InstallerUrl -OutFile $InstallerPath -UseBasicParsing
+        $candidates = @("https://cloud.r-project.org/bin/windows/base/R-devel-win.exe")
     } else {
-        $CurrentUrl = "https://cloud.r-project.org/bin/windows/base/R-$Version-win.exe"
-        $ArchiveUrl = "https://cloud.r-project.org/bin/windows/base/old/$Version/R-$Version-win.exe"
-        Write-Host "  Trying current URL: $CurrentUrl"
+        $candidates = @(
+            "https://cloud.r-project.org/bin/windows/base/R-$Version-win.exe",
+            "https://cloud.r-project.org/bin/windows/base/old/$Version/R-$Version-win.exe",
+            "https://cran-archive.r-project.org/bin/windows/base/old/$Version/R-$Version-win.exe"
+        )
+    }
+
+    $InstallerUrl = $null
+    foreach ($url in $candidates) {
+        Write-Host "  Trying: $url"
         try {
-            Invoke-WebRequest -Uri $CurrentUrl -OutFile $InstallerPath -UseBasicParsing
-            $InstallerUrl = $CurrentUrl
+            Invoke-WebRequest -Uri $url -OutFile $InstallerPath -UseBasicParsing
+            $InstallerUrl = $url
+            break
         } catch {
-            Write-Host "  Current URL failed, trying archive URL: $ArchiveUrl"
-            Invoke-WebRequest -Uri $ArchiveUrl -OutFile $InstallerPath -UseBasicParsing
-            $InstallerUrl = $ArchiveUrl
+            Write-Host "    -> $($_.Exception.Message)"
         }
     }
-    Write-Host "  Downloaded: $InstallerPath"
+    if (-not $InstallerUrl) {
+        throw "Could not download R $Version installer from any known URL"
+    }
+    Write-Host "  Downloaded: $InstallerUrl"
 }
 
 Write-Host "--- Extracting installer ---"

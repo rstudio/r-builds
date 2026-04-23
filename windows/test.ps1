@@ -113,10 +113,13 @@ if ("$movedOut" -eq "relocated OK") {
 Remove-Item $movedDir -Recurse -Force
 
 # ── 5. Binary package install ────────────────────────────────────────
+# Use Posit Package Manager because CRAN's Windows contrib/3.6/ is empty
+# (CRAN only keeps installers for old R, not compiled packages). PPM serves
+# Windows binaries for every R minor from 3.6 onward.
 Write-Host "--- Test: Binary package install ---"
 $pkgExpr = @'
 tmp <- tempdir()
-install.packages("jsonlite", repos = "https://cloud.r-project.org", lib = tmp, quiet = TRUE)
+install.packages("jsonlite", repos = "https://packagemanager.posit.co/cran/latest", lib = tmp, quiet = TRUE)
 stopifnot(requireNamespace("jsonlite", lib.loc = tmp))
 cat("pkg OK")
 '@
