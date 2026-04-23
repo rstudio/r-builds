@@ -157,7 +157,15 @@ local({
 Write-Host "  Rprofile.site configured"
 
 Write-Host "--- Packaging ---"
-$OutputPath = Join-Path $RepoRoot $OutputDir
+# PowerShell's Join-Path naively concatenates even when the second arg is
+# absolute, producing e.g. 'D:\repo\D:\temp\out'. Handle both cases: use
+# $OutputDir directly when it's already rooted (CI passes $RUNNER_TEMP), and
+# resolve relative to the repo for local 'output/' usage.
+if ([System.IO.Path]::IsPathRooted($OutputDir)) {
+    $OutputPath = $OutputDir
+} else {
+    $OutputPath = Join-Path $RepoRoot $OutputDir
+}
 if (-not (Test-Path $OutputPath)) { New-Item -ItemType Directory -Path $OutputPath | Out-Null }
 $ZipName = "R-$Version-windows.zip"
 $ZipPath = Join-Path $OutputPath $ZipName

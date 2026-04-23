@@ -5,12 +5,13 @@ R_HOME="${1:?Usage: make-relocatable.sh <r-home> [r-version]}"
 R_HOME="$(cd "${R_HOME}" && pwd)"
 R_VERSION="${2:-}"
 
-# Parse major.minor for version-specific handling
-if [[ -n "${R_VERSION}" ]]; then
+# Parse major.minor for version-specific handling. R_VERSION may be "devel",
+# "patched", or "next" — non-numeric — so fall back to introspecting the binary
+# in that case (and when R_VERSION is unset entirely).
+if [[ -n "${R_VERSION}" ]] && [[ "${R_VERSION}" =~ ^[0-9]+\.[0-9]+ ]]; then
   R_MAJOR="${R_VERSION%%.*}"
   R_MINOR="${R_VERSION#*.}"; R_MINOR="${R_MINOR%%.*}"
 else
-  # Fall back to detecting from the binary
   R_VER_STRING=$("${R_HOME}/bin/exec/R" --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "")
   R_MAJOR="${R_VER_STRING%%.*}"
   R_MINOR="${R_VER_STRING#*.}"; R_MINOR="${R_MINOR%%.*}"
@@ -53,7 +54,8 @@ echo "  bin/R: R_HOME_DIR overridden at runtime (original preserved for IDE comp
 echo "--- Setting up bin/Rscript ---"
 RSCRIPT_BIN="${R_HOME}/bin/Rscript"
 
-if [[ -n "${R_MAJOR}" ]] && (( R_MAJOR < 4 || (R_MAJOR == 4 && R_MINOR < 2) )); then
+if [[ "${R_MAJOR}" =~ ^[0-9]+$ ]] && [[ "${R_MINOR}" =~ ^[0-9]+$ ]] \
+   && (( R_MAJOR < 4 || (R_MAJOR == 4 && R_MINOR < 2) )); then
   # R < 4.2: Rscript binary ignores R_HOME env var and uses compiled-in paths.
   # Replace entirely with a shell script that calls bin/R (r-builds PR #280 approach).
   if [ -f "${RSCRIPT_BIN}" ]; then

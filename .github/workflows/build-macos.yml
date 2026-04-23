@@ -100,11 +100,11 @@ jobs:
             esac
             built_versions="${built_versions:+${built_versions},}${version}"
             for arch in $archs; do
-              if [ "${arch}" = "arm64" ]; then
-                runner="macos-14"
-              else
-                runner="macos-13"
-              fi
+              # Both arches run on macos-14 (arm64). x86_64 R runs under
+              # Rosetta 2, which is pre-installed on GitHub's macos-14 images.
+              # This matches the r-build-standalone reference and avoids the
+              # GitHub-deprecated macos-13 runner.
+              runner="macos-14"
               includes=$(echo "$includes" | jq --arg v "$version" --arg a "$arch" --arg o "$runner" \
                 '. + [{"r_version": $v, "arch": $a, "os": $o}]')
             done
