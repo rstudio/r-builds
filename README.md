@@ -32,6 +32,16 @@ can be found on the [Posit Platform Support](https://posit.co/about/platform-sup
 page. When an operating system has reached its end of support, builds for it
 will be discontinued, but existing binaries will continue to be available.
 
+### Portable builds (experimental)
+
+Portable R builds are also available that work across Linux distributions
+without distro-specific packages. These builds bundle most library dependencies
+and are relocatable to any install path.
+
+- **manylinux** - any Linux distro with glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+,
+  Debian 12+, Amazon Linux 2023+, Arch Linux, etc.)
+- **musllinux** - Alpine Linux 3.20+ and other musl-based distros
+
 ## Supported R Versions
 
 R binaries are primarily supported for the current R version and previous four minor versions of R.
@@ -182,6 +192,165 @@ Then install the package:
 sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
+#### Portable (manylinux) - any Linux distro with glibc >= 2.34
+
+Portable builds are available that work across Linux distributions without
+distro-specific packages. Most library dependencies are bundled; R auto-detects
+its install location so it can be extracted to any path.
+
+These portable builds are useful for Linux distributions that don't have
+dedicated r-builds packages, such as:
+
+- Amazon Linux 2023
+- Arch Linux
+- Other glibc-based distros not in the supported platform list
+
+Three package formats are available: **tar.gz** (universal), **DEB**
+(Debian/Ubuntu-based distros), and **RPM** (RHEL/Fedora/SUSE-based distros).
+The DEB and RPM packages automatically install `ca-certificates` and `fontconfig`
+as dependencies, and install R to `/opt/R/<version>/`. On distros that don't use
+DEB or RPM, use the tarball. The tarball is also the right choice if you need R
+installed to a custom path or without root access, since it can be extracted
+anywhere (R auto-detects its location at runtime).
+
+The portable builds require glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+,
+Amazon Linux 2023+, Arch Linux, etc.). RHEL 8 and Ubuntu 20.04 are not supported;
+use the distro-specific packages above instead.
+
+Portable builds bundle most shared library dependencies (including OpenSSL and
+libcurl). Unlike distro-specific builds, updating system packages on the host
+does not update the bundled copies; users must reinstall R to receive updates
+for bundled libraries. Each build includes a CycloneDX SBOM at
+`$R_HOME/sbom.cdx.json` listing all bundled libraries and their source packages.
+See the [portable-r README](builder/portable-r/README.md) for details.
+
+##### Install via DEB package (Debian/Ubuntu and derivatives)
+
+```bash
+curl -O https://cdn.posit.co/r/manylinux_2_34/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
+sudo apt-get install -y ./r-${R_VERSION}_1_$(dpkg --print-architecture).deb
+```
+
+##### Install via RPM package (RHEL/Fedora/Rocky/Amazon Linux/SUSE)
+
+```bash
+curl -O https://cdn.posit.co/r/manylinux_2_34/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
+sudo dnf install -y R-${R_VERSION}-1-1.$(arch).rpm       # RHEL/Fedora/Rocky/Amazon Linux
+sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.$(arch).rpm  # openSUSE/SLES
+```
+
+##### Install via tarball (any Linux distro)
+
+Download and extract:
+```bash
+# x86_64
+curl -O https://cdn.posit.co/r/manylinux_2_34/R-${R_VERSION}-manylinux_2_34.tar.gz
+
+# arm64
+curl -O https://cdn.posit.co/r/manylinux_2_34/R-${R_VERSION}-manylinux_2_34-arm64.tar.gz
+
+sudo mkdir -p /opt/R
+sudo tar xzf R-${R_VERSION}-manylinux_2_34*.tar.gz -C /opt/R
+
+# Or install to a user-writable directory (no root required):
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-manylinux_2_34*.tar.gz -C ~/R
+~/R/${R_VERSION}/bin/R --version
+```
+
+Install system dependencies (only needed for tarballs; DEB/RPM handle this automatically):
+```bash
+# SSL/TLS certificates (for HTTPS, e.g. install.packages)
+# Ubuntu/Debian
+sudo apt-get install -y ca-certificates
+# RHEL/Fedora/Rocky/Amazon Linux
+sudo dnf install -y ca-certificates which
+# openSUSE/SLES
+sudo zypper install -y ca-certificates which
+# Arch Linux
+sudo pacman -S ca-certificates which
+
+# Font configuration and fonts (for plotting with cairo graphics devices)
+# Ubuntu/Debian
+sudo apt-get install -y fontconfig
+# RHEL/Fedora/Rocky/Amazon Linux
+sudo dnf install -y fontconfig
+# openSUSE/SLES (fontconfig does not pull in fonts automatically)
+sudo zypper install -y fontconfig dejavu-fonts
+# Arch Linux
+sudo pacman -S fontconfig
+```
+
+Optional - for installing R packages from source (`R CMD INSTALL`):
+```bash
+# Ubuntu/Debian
+sudo apt-get install -y build-essential gfortran \
+  libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev
+  # For R 3.x, also install: libpcre3-dev
+
+# RHEL/Fedora/Rocky/Amazon Linux
+sudo dnf install -y gcc gcc-c++ gcc-gfortran make \
+  pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
+  # For R 3.x, also install: pcre-devel
+
+# openSUSE/SLES
+sudo zypper install -y gcc gcc-c++ gcc-fortran make \
+  pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
+  # For R 3.x, also install: pcre-devel
+
+# Arch Linux
+sudo pacman -S base-devel gcc-fortran pcre2 xz bzip2 zlib icu
+```
+
+#### Portable (musllinux) - Alpine Linux and musl-based distros
+
+Portable builds are available for Linux distributions that use musl libc
+instead of glibc, such as Alpine Linux. Most library dependencies are bundled,
+and R auto-detects its install location so it can be extracted to any path.
+
+These builds require musl >= 1.2 (Alpine 3.20+, Void Linux musl, etc.).
+
+Two package formats are available: **APK** (Alpine Linux) and **tar.gz**
+(universal). The APK package automatically installs `ca-certificates`,
+`fontconfig`, and `ttf-dejavu` as dependencies, and installs R to
+`/opt/R/<version>/`. On non-Alpine musl distros, use the tarball.
+
+##### Install via APK package (Alpine Linux)
+
+```bash
+curl -O https://cdn.posit.co/r/musllinux_1_2/pkgs/r-${R_VERSION}_1_$(apk --print-arch).apk
+sudo apk add --allow-untrusted ./r-${R_VERSION}_1_$(apk --print-arch).apk
+```
+
+##### Install via tarball
+
+Download and extract:
+```bash
+# x86_64
+curl -O https://cdn.posit.co/r/musllinux_1_2/R-${R_VERSION}-musllinux_1_2.tar.gz
+
+# arm64
+curl -O https://cdn.posit.co/r/musllinux_1_2/R-${R_VERSION}-musllinux_1_2-arm64.tar.gz
+
+sudo mkdir -p /opt/R
+sudo tar xzf R-${R_VERSION}-musllinux_1_2*.tar.gz -C /opt/R
+
+# Or install to a user-writable directory (no root required):
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-musllinux_1_2*.tar.gz -C ~/R
+~/R/${R_VERSION}/bin/R --version
+```
+
+Install system dependencies (only needed for tarballs; APK handles this automatically):
+```bash
+# Runtime dependencies
+sudo apk add --no-cache ca-certificates fontconfig ttf-dejavu
+
+# Optional: build tools for installing R packages from source
+sudo apk add --no-cache \
+  gcc g++ gfortran make \
+  pcre2-dev xz-dev bzip2-dev zlib-dev zstd-dev icu-dev
+```
 
 
 ### Verify R installation
