@@ -43,8 +43,10 @@ See [builder/patches/README.md](builder/patches/README.md).
 
 - macOS build scripts live in `macos/`, Windows scripts in `windows/`
 - These use CRAN binaries + post-processing (not compiled from source like Linux builds)
+- See [`macos/README.md`](macos/README.md) and [`windows/README.md`](windows/README.md) for technical details (Mach-O patching pipeline, code signing, Inno Setup extraction, IDE compatibility, troubleshooting)
 - CI workflows are `.github/workflows/build-macos.yml` and `.github/workflows/build-windows.yml`
 - Makefile targets: `build-r-macos`, `test-r-macos`, `build-r-windows`, `test-r-windows`
+- Portable-R startup hooks live in the **base Rprofile** (`library/base/R/Rprofile`), not `etc/Rprofile.site`, so they survive `R --vanilla` and IDE-embedded R sessions. This matches the manylinux PR #280 pattern.
 
 ## Code style
 

@@ -34,13 +34,18 @@ will be discontinued, but existing binaries will continue to be available.
 
 ### Portable builds (experimental)
 
-Portable R builds are also available that work across Linux distributions
-without distro-specific packages. These builds bundle most library dependencies
-and are relocatable to any install path.
+Portable R builds are also available that bundle most library dependencies
+and are relocatable to any install path. The Linux variants work across
+distributions without distro-specific packages; the macOS and Windows
+variants post-process the official CRAN binaries so they can be extracted
+anywhere instead of installed system-wide.
 
 - **manylinux** - any Linux distro with glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+,
   Debian 12+, Amazon Linux 2023+, Arch Linux, etc.)
 - **musllinux** - Alpine Linux 3.20+ and other musl-based distros
+- **macOS** - arm64 (Apple Silicon) and x86_64 (Intel; also runs under
+  Rosetta 2), R 4.1.0+
+- **Windows** - x86_64, R 3.6.3+
 
 ## Supported R Versions
 
@@ -353,28 +358,91 @@ sudo apk add --no-cache \
 ```
 
 
-#### macOS
+#### Portable macOS (experimental)
+
+Portable, relocatable macOS R builds are available for arm64 (Apple Silicon)
+and x86_64 (Intel). These are post-processed CRAN binaries: the official
+`.pkg` installer is downloaded, extracted without installing, and patched so
+all hardcoded `/Library/Frameworks/R.framework/...` paths in Mach-O load
+commands and config files are rewritten to `@rpath`/`@loader_path`
+references. The result is a tarball that can be extracted to any directory
+and run from there — no admin rights, no Gatekeeper installer prompts, no
+side effects on the system R installation.
+
+These macOS builds are available for R 4.1.0 and later. R 4.0.x and R 3.x
+are not supported because CRAN does not host a macOS `.pkg` installer for
+those versions on either the main mirror or the CRAN archive. Use the
+official CRAN installer for those versions instead.
+
+Bundled libraries (Tcl/Tk, gfortran runtime, etc.) come from the CRAN `.pkg`,
+so behavior matches CRAN's official binary R for macOS. Each `.so` and
+`.dylib` is signed (ad-hoc on staging, Developer ID + notarized on
+production); when the production secrets are configured, downloaded tarballs
+pass Gatekeeper without quarantine. See [`macos/README.md`](macos/README.md)
+for the full technical breakdown.
+
+##### Install via tarball
 
 ```bash
-# arm64 (Apple Silicon)
-curl -LO https://cdn.posit.co/r/macos-arm64/R-4.4.1-macos-arm64.tar.gz
-tar xzf R-4.4.1-macos-arm64.tar.gz
-./R-4.4.1/bin/R --version
+R_VERSION=4.4.3
 
-# x86_64 (Intel)
-curl -LO https://cdn.posit.co/r/macos-x86_64/R-4.4.1-macos-x86_64.tar.gz
-tar xzf R-4.4.1-macos-x86_64.tar.gz
-./R-4.4.1/bin/R --version
+# arm64 (Apple Silicon)
+curl -O https://cdn.posit.co/r/macos-arm64/R-${R_VERSION}-macos-arm64.tar.gz
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-macos-arm64.tar.gz -C ~/R
+~/R/R-${R_VERSION}/bin/R --version
+
+# x86_64 (Intel; also runs under Rosetta 2 on Apple Silicon)
+curl -O https://cdn.posit.co/r/macos-x86_64/R-${R_VERSION}-macos-x86_64.tar.gz
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-macos-x86_64.tar.gz -C ~/R
+~/R/R-${R_VERSION}/bin/R --version
 ```
 
-#### Windows
+If you downloaded an unsigned/un-notarized tarball with `curl`, macOS
+attaches a quarantine attribute on extracted files. Strip it once with:
+
+```bash
+xattr -dr com.apple.quarantine ~/R/R-${R_VERSION}
+```
+
+Optional — for installing R packages that require compilation from source,
+install the Xcode Command Line Tools:
+
+```bash
+xcode-select --install
+```
+
+#### Portable Windows (experimental)
+
+Portable, relocatable Windows R builds are available for x86_64. The
+official CRAN `.exe` installer is downloaded and extracted with
+[`innoextract`](https://github.com/dscharrer/innoextract) (with a
+`/VERYSILENT /CURRENTUSER` silent-install fallback if `innoextract` is
+unavailable), so no admin rights, no registry changes, and no side effects
+on the system R installation. Windows R is already largely self-contained
+(all DLLs bundled, paths largely relative), so unlike macOS no Mach-O
+patching pipeline is needed — extraction + a portable site-library and
+default repo configuration is all that's required.
+
+These Windows builds are available for R 3.6.3 and later, with R 3.6.3
+included as a long-term compatibility anchor (matching the existing Linux
+builds). See [`windows/README.md`](windows/README.md) for the full technical
+breakdown.
+
+##### Install via zip
 
 ```powershell
-# Download and extract
-Invoke-WebRequest -Uri https://cdn.posit.co/r/windows/R-4.4.1-windows.zip -OutFile R-4.4.1-windows.zip
-Expand-Archive R-4.4.1-windows.zip -DestinationPath .
-.\R-4.4.1\bin\R.exe --version
+$RVersion = "4.4.3"
+
+Invoke-WebRequest -Uri "https://cdn.posit.co/r/windows/R-$RVersion-windows.zip" -OutFile "R-$RVersion-windows.zip"
+Expand-Archive "R-$RVersion-windows.zip" -DestinationPath C:\
+& "C:\R-$RVersion\bin\R.exe" --version
 ```
+
+Optional — for installing R packages that require compilation from source,
+install [Rtools](https://cran.r-project.org/bin/windows/Rtools/) (the
+version that matches your R minor version, e.g. Rtools 4.4 for R 4.4.x).
 
 ### Verify R installation
 
