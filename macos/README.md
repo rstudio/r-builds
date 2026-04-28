@@ -190,11 +190,17 @@ A cleaner long-term fix would be an upstream change in Positron to fall back to 
 
 ### IDE-specific notes from end-to-end testing
 
-Validated end-to-end on macOS arm64 with R 4.4.3 in both RStudio and Positron:
+Validated end-to-end on macOS arm64 with R 4.4.3 in both RStudio and Positron, and on macOS x86_64 (under Rosetta 2 on Apple Silicon) with R 4.4.3 in RStudio:
 
-- **RStudio** attaches `tools:rstudio` at search position 2 during session init. It does *not* include an `install.packages` override.
+- **RStudio** attaches `tools:rstudio` at search position 2 during session init. It does *not* include an `install.packages` override. Works equally on arm64-native R and x86_64-under-Rosetta R because RStudio launches R as a subprocess (`rsession` execs `bin/R`), so macOS handles the architecture transition transparently.
 - **Positron** attaches both `tools:rstudio` (compatibility shim) and `tools:positron` above us; neither defines `install.packages`.
 - In both IDEs, our `setHook(packageEvent("stats", "attach"), ...)` mechanism re-attaches `.portable` at search position 2, which gets pushed down by the IDE's later attaches but still wins for `install.packages()` resolution because the IDE envs are transparent for that name. Result: `find('install.packages')` returns `.portable package:utils` from both IDE consoles, the `.portable` wrapper's `install_name_tool` patch runs after `install.packages("jsonlite")`, and `library(jsonlite)` loads cleanly with zero remaining `/Library/Frameworks/R.framework` references in the installed `.so`.
+
+### Architecture matching for Positron
+
+Positron's R kernel (`ark`) loads `libR.dylib` *in-process* rather than spawning R as a subprocess. macOS's dynamic linker can't `dlopen` a Mach-O dylib of a different architecture into the calling process, so the architectures of Positron and the R install must match. On Apple Silicon, an arm64-native Positron loading an x86_64 R dies during startup with `SIGABRT` (`exit code -1`, signal 6) — discovery succeeds and the install passes every validation check, but the kernel can't load.
+
+The fix is to match architectures: install the x86_64 build of Positron alongside arm64 if you need to use x86_64 R, or use the arm64 build of R when running arm64 Positron. This is not specific to our portable R — CRAN's stock x86_64 R installed at the canonical framework path has the same limitation. RStudio doesn't hit this because it launches R as a subprocess, where macOS handles the arch transition through Rosetta 2.
 
 ## Adding support for a new R minor version
 

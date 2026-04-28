@@ -431,8 +431,15 @@ sudo ln -s ~/R/R-${R_VERSION} \
 
 Don't run this on a host that already has a real R install at that
 version-arch — it'll shadow the framework `Resources` for that version.
-RStudio and command-line use don't need this step. See
-[`macos/README.md`](macos/README.md) for the technical reasoning.
+RStudio and command-line use don't need this step.
+
+The architectures of Positron and the R install must match: Positron's R
+kernel loads `libR.dylib` in-process, and macOS dyld cannot `dlopen` a
+dylib of a different architecture. On Apple Silicon, install x86_64
+Positron alongside arm64 if you need to use the x86_64 portable R build,
+or stick with the arm64 build. RStudio does not have this constraint
+because it launches R as a subprocess. See [`macos/README.md`](macos/README.md)
+for the technical reasoning.
 
 #### Portable Windows (experimental)
 
