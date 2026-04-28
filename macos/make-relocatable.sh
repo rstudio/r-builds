@@ -46,8 +46,16 @@ R_HOME_DIR="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/
 sed -i '' 's|^R_SHARE_DIR=.*|R_SHARE_DIR="${R_HOME_DIR}/share"|' "${R_HOME}/bin/R"
 sed -i '' 's|^R_INCLUDE_DIR=.*|R_INCLUDE_DIR="${R_HOME_DIR}/include"|' "${R_HOME}/bin/R"
 sed -i '' 's|^R_DOC_DIR=.*|R_DOC_DIR="${R_HOME_DIR}/doc"|' "${R_HOME}/bin/R"
-# Replace any remaining references to the hardcoded path in bin/R
-sed -i '' "s|${HARDCODED_PATH}|\${R_HOME}|g" "${R_HOME}/bin/R"
+# Replace any remaining references to the hardcoded path in bin/R, but
+# skip lines that start with `R_HOME_DIR=`. Positron's getRHomePathDarwin
+# (and RStudio's analogous parser) reads the FIRST line containing
+# R_HOME_DIR and uses that string as the R home — so the static
+# `R_HOME_DIR=/Library/Frameworks/...` assignment must survive intact for
+# IDE discovery to work, even though our runtime override (inserted
+# above) is what actually executes. Without this exclusion the line gets
+# rewritten to `R_HOME_DIR=${R_HOME}` and Positron rejects the install
+# with "Can't find DESCRIPTION for the utils package at ${R_HOME}/...".
+sed -i '' "/^R_HOME_DIR=/!s|${HARDCODED_PATH}|\${R_HOME}|g" "${R_HOME}/bin/R"
 echo "  bin/R: R_HOME_DIR overridden at runtime (original preserved for IDE compat)"
 
 # ── 2. Set up Rscript — version-aware strategy ───────────────────

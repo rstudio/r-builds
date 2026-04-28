@@ -163,10 +163,32 @@ Required CI secrets for production:
 
 Both RStudio and Positron discover R installations by parsing `bin/R` as a text file rather than executing it. Two things must be true for IDE discovery to succeed:
 
-- **`bin/R` must contain a parseable static `R_HOME_DIR=` line.** This is why `make-relocatable.sh` *inserts* a runtime override above the static line rather than replacing it. The IDE's parser finds the static line and is happy; the runtime override fires at exec time and pins `R_HOME_DIR` to the actual extracted path.
+- **`bin/R` must contain a parseable static `R_HOME_DIR=` line.** This is why `make-relocatable.sh` *inserts* a runtime override above the static line rather than replacing it. The IDE's parser finds the static line and is happy; the runtime override fires at exec time and pins `R_HOME_DIR` to the actual extracted path. The catch-all `sed` that converts other framework references to `${R_HOME}` excludes any line starting with `R_HOME_DIR=` so this static value survives intact — without that exclusion the static line gets rewritten to `R_HOME_DIR=${R_HOME}` and Positron rejects the install with `Can't find DESCRIPTION for the utils package at ${R_HOME}/library/utils/DESCRIPTION`.
 - **Startup hooks must live in the base Rprofile** (`library/base/R/Rprofile`), not in `etc/Rprofile.site`. `etc/Rprofile.site` is skipped under `R --vanilla` and may be skipped or sourced at an unexpected time when the IDE embeds R via `libR.dylib`. The base Rprofile is sourced unconditionally during R's own startup sequence.
 
-For RStudio specifically, the IDE wraps `install.packages()` with its own override at startup. This currently shadows the `.portable` hook described above. The interaction has not been tested end-to-end; if it turns out RStudio's wrapper bypasses our fix-up, the path forward is either (a) wrapping `dyn.load` instead of `install.packages` so we run when the package's `.so` actually loads, or (b) directing users to `bin/fix-dylibs` as the explicit recovery step. Update this section once IDE testing establishes the actual behavior.
+### Positron's "orthogonal install" check requires the framework path to exist
+
+Positron (`getRHomePathDarwin` in `extensions/positron-r/src/r-installation.ts`) extracts the value of the first `R_HOME_DIR=` line and then validates that path on disk by looking for `library/utils/DESCRIPTION` inside it. Our portable R's static line points at the canonical framework path (e.g. `/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources`), which only resolves on a host that has a real R 4.4 install at that location. On a host that has, say, only R 4.5 installed, Positron rejects our portable R as an "invalid installation" even though it works fine from the command line, RStudio, and any embedded R consumer that doesn't go through Positron's discovery path.
+
+Workarounds for end users who need Positron compatibility:
+
+- **Symlink the canonical path** to the portable install:
+  ```bash
+  sudo mkdir -p /Library/Frameworks/R.framework/Versions/<ver>-<arch>
+  sudo ln -s /path/to/extracted/R-<ver> \
+    /Library/Frameworks/R.framework/Versions/<ver>-<arch>/Resources
+  ```
+  Test-only, requires sudo. Don't do this on a system with a real R install at the same version.
+- **Install the portable R *at* the canonical path** in the first place. Defeats the "extract anywhere" design but does work transparently with Positron.
+- **Use a different IDE** (RStudio, Positron-Pro Server, plain console) that doesn't have the same discovery requirement.
+
+A cleaner long-term fix would be to either upstream a relaxation of Positron's path check (allow `bin/R`-relative discovery as a fallback when the parsed `R_HOME_DIR` doesn't resolve) or to ship the build's static `R_HOME_DIR=` line as a placeholder Positron is willing to accept. Both are deferred until the design is past the experimental phase.
+
+### RStudio's `install.packages` wrapper
+
+RStudio attaches a `tools:rstudio` environment at search position 2 during session init. `tools:rstudio` does **not** include an `install.packages` override (verified by `find('install.packages')` returning `.portable package:utils` from inside an RStudio session, with the `.portable` wrapper's `fix_pkgs` body present). So our `setHook(packageEvent("stats", "attach"), ...)` mechanism that re-attaches `.portable` at search position 2 ends up at position 3 after RStudio's own attach, but still wins for `install.packages()` resolution — search-path lookup walks the path top-down and `tools:rstudio` is transparent for that name.
+
+Validated end-to-end on RStudio macOS arm64 with R 4.4.3: `install.packages("jsonlite")` from the RStudio console correctly downloaded the CRAN binary `.tgz`, the `.portable` wrapper's `install_name_tool` patch ran, and `library(jsonlite)` loaded cleanly with zero remaining `/Library/Frameworks/R.framework` references in the installed `.so`.
 
 ## Adding support for a new R minor version
 
