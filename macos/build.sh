@@ -67,13 +67,21 @@ echo "Output dir: ${OUTPUT_DIR_BASE}"
 # exists as of 2026-04, probed and recorded:
 #
 # Release versions (on cloud.r-project.org):
-#   R >= 4.3   arm64  : bin/macosx/big-sur-arm64/base/R-{ver}-arm64.pkg
-#   R >= 4.3   x86_64 : bin/macosx/big-sur-x86_64/base/R-{ver}-x86_64.pkg
+#   R 4.6+     arm64  : bin/macosx/sonoma-arm64/base/R-{ver}-arm64.pkg
+#   R 4.3-4.5  arm64  : bin/macosx/big-sur-arm64/base/R-{ver}-arm64.pkg
+#   R 4.6+     x86_64 : bin/macosx/big-sur-x86_64/base/R-{ver}-x86_64.pkg
+#   R 4.3-4.5  x86_64 : bin/macosx/big-sur-x86_64/base/R-{ver}-x86_64.pkg
 #   R 4.1-4.2  arm64  : bin/macosx/big-sur-arm64/base/R-{ver}-arm64.pkg
 #   R 4.1-4.2  x86_64 : bin/macosx/base/R-{ver}.pkg
 #   R < 4.0    arm64  : not available
 #   R 3.6.x    x86_64 : cran-archive.r-project.org/bin/macosx/base/R-{ver}.nn.pkg
 #   R <= 3.5   x86_64 : cran-archive.r-project.org/bin/macosx/base/R-{ver}.pkg
+#
+# arm64 migrated from big-sur-arm64 → sonoma-arm64 for R 4.6+, matching
+# the same migration the devel branch made earlier. x86_64 stayed on
+# big-sur-x86_64 (CRAN doesn't ship sonoma-x86_64). We probe sonoma-arm64
+# first for arm64 so new releases land there without code changes; the
+# big-sur-arm64 fallback covers R 4.1-4.5.
 #
 # Nightly "devel" builds (on mac.r-project.org):
 #   The old /last-success/ scheme is gone. Current layout is:
@@ -122,6 +130,10 @@ resolve_pkg_url() {
           return 1
         fi
         candidates+=(
+          # sonoma-arm64 first — R 4.6+ live here. R 4.5 and earlier 404
+          # on this prefix, then fall through to big-sur-arm64.
+          "${mirror}/bin/macosx/sonoma-arm64/base/R-${ver}-arm64.pkg"
+          "${mirror}/bin/macosx/sonoma-arm64/base/R-${ver}.pkg"
           "${mirror}/bin/macosx/big-sur-arm64/base/R-${ver}-arm64.pkg"
           "${mirror}/bin/macosx/big-sur-arm64/base/R-${ver}.pkg"
         )

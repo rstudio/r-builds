@@ -63,12 +63,16 @@ CRAN's macOS URL layout has shifted multiple times. As of 2026-04, the candidate
 
 | R version | arch | URL pattern |
 |---|---|---|
-| R >= 4.3 | arm64 | `cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-{ver}-arm64.pkg` |
-| R >= 4.3 | x86_64 | `cloud.r-project.org/bin/macosx/big-sur-x86_64/base/R-{ver}-x86_64.pkg` |
-| R 4.1 - 4.2 | arm64 | same as R >= 4.3 |
+| R 4.6+ | arm64 | `cloud.r-project.org/bin/macosx/sonoma-arm64/base/R-{ver}-arm64.pkg` |
+| R 4.3 - 4.5 | arm64 | `cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-{ver}-arm64.pkg` |
+| R 4.6+ | x86_64 | `cloud.r-project.org/bin/macosx/big-sur-x86_64/base/R-{ver}-x86_64.pkg` |
+| R 4.3 - 4.5 | x86_64 | same as R 4.6+ |
+| R 4.1 - 4.2 | arm64 | `cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-{ver}-arm64.pkg` |
 | R 4.1 - 4.2 | x86_64 | `cloud.r-project.org/bin/macosx/base/R-{ver}.pkg` |
 | R 3.6.x | x86_64 | `cran-archive.r-project.org/bin/macosx/base/R-{ver}.nn.pkg` (note: not built) |
 | devel | both | `mac.r-project.org/{sonoma,big-sur}-{arch}/R-{branch}-branch/...` |
+
+For arm64, sonoma-arm64 is probed first; if it 404s (R ≤ 4.5), the script falls through to big-sur-arm64. CRAN does not ship a sonoma-x86_64 prefix — x86_64 stays on big-sur-x86_64 across the matrix.
 
 Devel builds at `mac.r-project.org` use a per-branch subdirectory. The branch number rolls forward (4.6 → 4.7 → ...), so `build.sh` iterates a list of plausible branches newest-first, picks the first that returns 200 OK, and uses that. Update the `branches` array in `resolve_pkg_url()` when R rolls a major branch.
 
