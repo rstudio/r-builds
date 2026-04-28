@@ -34,10 +34,28 @@ echo "Detected hardcoded path: ${HARDCODED_PATH}"
 # file as text), but insert a dynamic override before R_HOME assignment.
 echo "--- Patching bin/R ---"
 
-# Insert dynamic R_HOME_DIR override before the R_HOME assignment line.
-# This preserves the original static R_HOME_DIR= for IDE parsers while
-# ensuring runtime behavior derives the path dynamically.
-sed -i '' '/^R_HOME="${R_HOME_DIR}"$/i\
+# Insert dynamic R_HOME_DIR override IMMEDIATELY AFTER the static
+# `R_HOME_DIR=/Library/Frameworks/...` assignment. The static line is
+# preserved (Positron's getRHomePathDarwin reads the FIRST line
+# containing R_HOME_DIR as text, and that's what we want it to find);
+# the runtime override fires next so every subsequent reference in the
+# script — including the `if test "${R_HOME}" != "${R_HOME_DIR}"`
+# warning check, the R_SHARE_DIR / R_INCLUDE_DIR / R_DOC_DIR
+# assignments, and the final exec — sees the actual extracted path.
+#
+# Inserting the override AFTER the warning check (the previous
+# approach) caused R to emit "WARNING: ignoring environment value of
+# R_HOME" to stdout when bin/R was invoked with R_HOME already exported
+# (e.g., by our bin/Rscript wrapper for R >= 4.2). The warning fired
+# because at that point R_HOME_DIR was still the framework path, while
+# the Rscript wrapper had set env R_HOME to the actual path. Inserting
+# the override earlier eliminates the mismatch.
+#
+# The address `^R_HOME_DIR=\/` matches only the static absolute-path
+# assignment (line 4 in CRAN's bin/R). The conditional fallback lines
+# `R_HOME_DIR="/Library/${libnn}/R"` start with a double quote after
+# `=`, so they do not match.
+sed -i '' '/^R_HOME_DIR=\//a\
 # Override R_HOME_DIR for relocatable installation\
 R_HOME_DIR="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")/.." \&\& pwd)"
 ' "${R_HOME}/bin/R"
