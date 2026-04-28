@@ -159,6 +159,14 @@ jobs:
         run: make unit-test
 
   docker-images:
+    # Skip when no Linux platforms remain (e.g. workflow_dispatch with
+    # platforms=macos,windows). GHA expands an empty matrix to 0 jobs, but
+    # without this guard the workflow run conclusion is reported as failure
+    # even though every actual job succeeded — a known quirk of empty
+    # matrices in workflow_dispatch runs. The same guard exists on the
+    # build job below, and on the build/update jobs in build-macos.yml and
+    # build-windows.yml.
+    if: ${{ toJson(fromJson(needs.setup-matrix.outputs.platforms)) != '[]' && toJson(fromJson(needs.setup-matrix.outputs.arch)) != '[]' }}
     needs: setup-matrix
     strategy:
       matrix:
@@ -206,6 +214,8 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   build:
+    # See docker-images above for why this guard is needed.
+    if: ${{ fromJson(needs.setup-matrix.outputs.matrix).include != null && toJson(fromJson(needs.setup-matrix.outputs.matrix).include) != '[]' }}
     needs: [setup-matrix, docker-images]
     strategy:
       fail-fast: false

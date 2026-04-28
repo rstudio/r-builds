@@ -188,6 +188,17 @@ jobs:
       - name: Test R
         run: bash macos/test.sh "${{ steps.extract.outputs.r_home }}"
 
+      - name: Upload tarball as workflow artifact
+        # Always upload (regardless of publish state) so `gh run download`
+        # can pull builds for testing without needing S3 access. 7-day
+        # retention keeps storage cost negligible.
+        uses: actions/upload-artifact@v4
+        with:
+          name: R-${{ matrix.r_version }}-macos-${{ matrix.arch }}
+          path: ${{ steps.build.outputs.tarball }}
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Notarize R (production only)
         # Requires Developer ID signed binaries — Apple rejects ad-hoc
         # signatures — so gate on HAS_DEVELOPER_CERTIFICATE too.

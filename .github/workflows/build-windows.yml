@@ -105,6 +105,17 @@ jobs:
         shell: pwsh
         run: .\windows\test.ps1 -RHome "${{ steps.extract.outputs.r_home }}"
 
+      - name: Upload zip as workflow artifact
+        # Always upload (regardless of publish state) so `gh run download`
+        # can pull builds for testing without needing S3 access. 7-day
+        # retention keeps storage cost negligible.
+        uses: actions/upload-artifact@v4
+        with:
+          name: R-${{ matrix.r_version }}-windows
+          path: ${{ steps.build.outputs.zip }}
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Configure AWS Credentials
         if: ${{ inputs.publish != '' }}
         uses: aws-actions/configure-aws-credentials@v4
