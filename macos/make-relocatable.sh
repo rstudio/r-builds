@@ -20,13 +20,40 @@ fi
 echo "=== Making R relocatable in ${R_HOME} ==="
 
 # Detect the hardcoded framework path from bin/R (CRAN .pkg sets R_HOME_DIR
-# to e.g. /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources).
+# to e.g. /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources for
+# orthogonal installs, or /Library/Frameworks/R.framework/Resources for
+# non-orthogonal ones — observed on R 4.4.3 macOS arm64 .pkg).
 HARDCODED_PATH="$(grep '^R_HOME_DIR=' "${R_HOME}/bin/R" | head -1 | sed 's/^R_HOME_DIR=//' | tr -d '"' | tr -d "'")"
 if [ -z "${HARDCODED_PATH}" ]; then
   echo "ERROR: Could not detect hardcoded path from bin/R" >&2
   exit 1
 fi
 echo "Detected hardcoded path: ${HARDCODED_PATH}"
+
+# Force the static R_HOME_DIR= line to the orthogonal "Versions/<ver>-<arch>/
+# Resources" form regardless of what CRAN shipped. Positron's RInstallation
+# constructor classifies an install as orthogonal iff its homepath does NOT
+# match /R\.framework\/Resources/ (see extensions/positron-r/src/r-installation.ts),
+# and a non-orthogonal install is only usable when it's also the system's
+# "current" R — which our portable R isn't. Without this rewrite, Positron
+# rejects the install with "Non-orthogonal installation that is also not the
+# current version" even after symlinking the canonical path.
+#
+# Detect arch from the actual Mach-O binary; the build is single-arch so this
+# returns one definitive value.
+ARCH_DETECTED=$(file -b "${R_HOME}/bin/exec/R" 2>/dev/null | grep -oE 'arm64|x86_64' | head -1)
+if [ -z "${ARCH_DETECTED}" ]; then
+  echo "ERROR: Could not detect arch from ${R_HOME}/bin/exec/R" >&2
+  exit 1
+fi
+ORTHOGONAL_PATH="/Library/Frameworks/R.framework/Versions/${R_MAJOR}.${R_MINOR}-${ARCH_DETECTED}/Resources"
+echo "Rewriting static R_HOME_DIR to orthogonal path: ${ORTHOGONAL_PATH}"
+
+# Match only the static unquoted assignment (the lib/lib64 fallback lines
+# `R_HOME_DIR="/Library/${libnn}/R"` start with a double quote after the
+# `=` and so are skipped by the [^"] character class). The runtime override
+# we insert below also starts with a quote and is therefore skipped.
+sed -i '' "s|^R_HOME_DIR=/[^\"]*$|R_HOME_DIR=${ORTHOGONAL_PATH}|" "${R_HOME}/bin/R"
 
 # ── 1. Patch bin/R — dynamic R_HOME derivation ─────────────────────
 # Strategy (following r-builds PR #280): preserve the original static
