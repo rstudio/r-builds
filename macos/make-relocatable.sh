@@ -49,11 +49,16 @@ fi
 ORTHOGONAL_PATH="/Library/Frameworks/R.framework/Versions/${R_MAJOR}.${R_MINOR}-${ARCH_DETECTED}/Resources"
 echo "Rewriting static R_HOME_DIR to orthogonal path: ${ORTHOGONAL_PATH}"
 
-# Match only the static unquoted assignment (the lib/lib64 fallback lines
-# `R_HOME_DIR="/Library/${libnn}/R"` start with a double quote after the
-# `=` and so are skipped by the [^"] character class). The runtime override
-# we insert below also starts with a quote and is therefore skipped.
-sed -i '' "s|^R_HOME_DIR=/[^\"]*$|R_HOME_DIR=${ORTHOGONAL_PATH}|" "${R_HOME}/bin/R"
+# Match the static assignment in either quote style. CRAN's R.sh.in
+# template has historically written the value either unquoted (R 4.4
+# and earlier on macOS arm64: `R_HOME_DIR=/Library/...`) or quoted
+# (R 4.6+: `R_HOME_DIR="/Library/..."`). The lib/lib64 conditional
+# fallback lines `R_HOME_DIR="/Library/${libnn}/R"` are indented (so
+# the leading-anchor `^` excludes them) and also contain `${`, so the
+# `[^$"]*` body class would stop short of the closing quote. The
+# runtime override we insert below has the form `R_HOME_DIR="$(...)"`
+# — value starts with `$`, not `/`, so it doesn't match either.
+sed -i '' -E "s|^R_HOME_DIR=\"?/[^\$\"]*\"?\$|R_HOME_DIR=${ORTHOGONAL_PATH}|" "${R_HOME}/bin/R"
 
 # ── 1. Patch bin/R — dynamic R_HOME derivation ─────────────────────
 # Strategy (following r-builds PR #280): preserve the original static
@@ -78,11 +83,14 @@ echo "--- Patching bin/R ---"
 # the Rscript wrapper had set env R_HOME to the actual path. Inserting
 # the override earlier eliminates the mismatch.
 #
-# The address `^R_HOME_DIR=\/` matches only the static absolute-path
-# assignment (line 4 in CRAN's bin/R). The conditional fallback lines
-# `R_HOME_DIR="/Library/${libnn}/R"` start with a double quote after
-# `=`, so they do not match.
-sed -i '' '/^R_HOME_DIR=\//a\
+# The address `^R_HOME_DIR="?/` matches the static absolute-path
+# assignment in either quote style — `R_HOME_DIR=/Library/...`
+# (R 4.4 and earlier) or `R_HOME_DIR="/Library/..."` (R 4.6+). The
+# conditional libnn fallback lines `R_HOME_DIR="/Library/${libnn}/R"`
+# are indented so the leading-anchor `^` excludes them. Our runtime
+# override line has the form `R_HOME_DIR="$(...)"` — no `/` follows
+# the `="`, so the `?/` requirement excludes it.
+sed -i '' -E '/^R_HOME_DIR="?\//a\
 # Override R_HOME_DIR for relocatable installation\
 R_HOME_DIR="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")/.." \&\& pwd)"
 ' "${R_HOME}/bin/R"
