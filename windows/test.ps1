@@ -114,7 +114,34 @@ if ("$movedOut" -eq "relocated OK") {
 }
 Remove-Item $movedDir -Recurse -Force
 
-# ── 5. Binary package install ────────────────────────────────────────
+# ── 5. Base Rprofile hooks survive --vanilla ────────────────────────
+# Invoke-RExpr always passes --vanilla, so this run also proves the hooks
+# survive --vanilla (the whole reason we use the base Rprofile rather than
+# etc/Rprofile.site, which --vanilla skips). Asserts:
+#   - default CRAN repo is p3m.dev (PPM)
+#   - the portable site-library is on .libPaths() pointing into R_HOME
+Write-Host "--- Test: Base Rprofile hooks under --vanilla ---"
+$hookExpr = @'
+cat("repo=", getOption("repos")["CRAN"], "\n", sep="")
+site_lib <- file.path(Sys.getenv("R_HOME"), "site-library")
+cat("site_lib_on_path=", normalizePath(site_lib, mustWork=FALSE) %in% normalizePath(.libPaths(), mustWork=FALSE), "\n", sep="")
+'@
+$hookResult = Invoke-RExpr -Binary $RExe -Expression $hookExpr
+$hookOut = $hookResult.Output | Out-String
+if ($hookOut -match "repo=https://p3m\.dev/") {
+    Test-Pass "default CRAN repo set to p3m.dev under --vanilla"
+} else {
+    Test-Fail "default CRAN repo not p3m.dev under --vanilla"
+    $hookOut -split "`n" | Where-Object { $_ -match "^repo=" } | ForEach-Object { Write-Host "    $_" }
+}
+if ($hookOut -match "site_lib_on_path=TRUE") {
+    Test-Pass "portable site-library on .libPaths() under --vanilla"
+} else {
+    Test-Fail "portable site-library not on .libPaths() under --vanilla"
+    $hookOut -split "`n" | Where-Object { $_ -match "^site_lib_on_path=" } | ForEach-Object { Write-Host "    $_" }
+}
+
+# ── 6. Binary package install ────────────────────────────────────────
 # Use Posit Package Manager because CRAN's Windows contrib/3.6/ is empty
 # (CRAN only keeps installers for old R, not compiled packages). PPM serves
 # Windows binaries for every R minor from 3.6 onward.

@@ -1,29 +1,56 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# install-rprofile-hook.sh -- Install portable-R startup hooks into the base
+# Rprofile so they apply in every R launch context.
+#
+# Why the base Rprofile and not etc/Rprofile.site?
+#   etc/Rprofile.site is skipped under `R --vanilla` and is also bypassed
+#   when an embedding host (RStudio's rsession, Positron's R kernel) loads
+#   libR.so directly without going through bin/R. The base Rprofile at
+#   library/base/R/Rprofile is sourced by R itself during startup, so it
+#   runs in every launch context.
+#
+# This file appends three local() blocks to the base Rprofile:
+#   1. Default CRAN repo -> p3m.dev (Posit Public Package Manager)
+#   2. TCL_LIBRARY / TK_LIBRARY env vars pointing at our bundled lib/tcl8.6
+#      and lib/tk8.6 directories (R < 4.3 needs these; R >= 4.3 ignores them
+#      because Tcl/Tk is bundled inside R.framework)
+#   3. A .portable environment that wraps install.packages() to rewrite
+#      hardcoded /Library/Frameworks/R.framework/... load commands in
+#      newly-installed CRAN binary packages. This is macOS-specific and
+#      gated on Sys.info()[["sysname"]] == "Darwin".
+#
+# The existing Rprofile content from CRAN is preserved (we append, not
+# overwrite). bin/fix-dylibs is also installed as a manual escape hatch
+# in case the install.packages wrapper is shadowed by an IDE.
+
 R_HOME="${1:?Usage: install-rprofile-hook.sh <r-home>}"
 R_HOME="$(cd "${R_HOME}" && pwd)"
 
-echo "=== Installing Rprofile.site hook in ${R_HOME} ==="
+BASE_RPROFILE="${R_HOME}/library/base/R/Rprofile"
+if [[ ! -f "${BASE_RPROFILE}" ]]; then
+  echo "ERROR: base Rprofile not found at ${BASE_RPROFILE}" >&2
+  exit 1
+fi
 
-cat > "${R_HOME}/etc/Rprofile.site" << 'RPROFILE'
-# Rprofile.site — rstudio/r-builds portable R distribution
-# This file is sourced at R startup. It provides:
-# 1. Automatic patching of CRAN binary packages for macOS portability
-# 2. Posit Package Manager as default repository
+echo "=== Appending portable-R hooks to ${BASE_RPROFILE} ==="
 
-# ── Default repository: Posit Package Manager ──────────────────────
+cat >> "${BASE_RPROFILE}" <<'RPROFILE'
+
+## ── rstudio/r-builds portable R hooks ─────────────────────────────────
+## Appended by install-rprofile-hook.sh. Lives in the base Rprofile so it
+## runs in every launch context, including R --vanilla and IDE-embedded R.
+
+## Default CRAN mirror: Posit Public Package Manager
 local({
   r <- getOption("repos")
-  r["CRAN"] <- "https://packagemanager.posit.co/cran/latest"
+  r["CRAN"] <- "https://p3m.dev/cran/latest"
   options(repos = r)
 })
 
-# ── Tcl/Tk library paths (for bundled Tcl/Tk) ────────────────────
-# CRAN binary packages and older .pkg installers expect Tcl/Tk at a
-# system path. When we bundle Tcl/Tk in our lib/ directory, we need
-# to tell R where to find the script files (init.tcl, etc.).
-# Following r-builds PR #280 pattern.
+## Tcl/Tk library paths for bundled scripts (R < 4.3; R >= 4.3 bundles
+## these inside R.framework and ignores the env vars).
 local({
   r_home <- Sys.getenv("R_HOME", R.home())
   tcl_dir <- file.path(r_home, "lib", "tcl8.6")
@@ -34,11 +61,19 @@ local({
     Sys.setenv(TK_LIBRARY = tk_dir)
 })
 
-# ── .portable environment: CRAN binary package compatibility ───────
-# CRAN binary packages (.tgz) embed absolute Mach-O paths from the
-# CRAN build machine (/Library/Frameworks/R.framework/...). This hook
-# transparently rewrites them after install.packages() completes.
-
+## .portable environment: macOS CRAN binary package fix-up.
+##
+## CRAN binary .tgz packages embed absolute Mach-O paths from the CRAN
+## build host (/Library/Frameworks/R.framework/...). When R is installed
+## anywhere else, those paths don't resolve and `library(pkg)` fails with
+## "image not found." This wrapper runs install_name_tool on each .so
+## immediately after install.packages() returns, rewriting the framework
+## paths to @rpath references that resolve via R's lib/ directory.
+##
+## Known limitation: IDEs (RStudio, Positron) install their own
+## install.packages() override that may shadow this wrapper. If you hit
+## "image not found" errors after installing a package via an IDE, run
+## `R_HOME/bin/fix-dylibs` manually to patch the installed package.
 if (Sys.info()[["sysname"]] == "Darwin") local({
   .portable <- new.env(parent = baseenv())
 
@@ -92,8 +127,9 @@ if (Sys.info()[["sysname"]] == "Darwin") local({
   }
 
   # Attach .portable above package:utils so it masks install.packages.
-  # Default packages load after Rprofile.site (pushing any early attach down),
-  # so we hook into the last default package (stats) to re-attach at position 2.
+  # Default packages load after the base Rprofile runs (pushing any early
+  # attach down), so we hook into the last default package (stats) to
+  # re-attach at position 2.
   setHook(packageEvent("stats", "attach"), function(...) {
     if (".portable" %in% search()) try(detach(".portable"), silent = TRUE)
     attach(.portable, name = ".portable", pos = 2L, warn.conflicts = FALSE)
@@ -101,7 +137,12 @@ if (Sys.info()[["sysname"]] == "Darwin") local({
 })
 RPROFILE
 
-# ── Also create bin/fix-dylibs for manual use ──────────────────────
+echo "  Appended portable-R hooks to base Rprofile"
+
+# ── Manual escape hatch: bin/fix-dylibs ────────────────────────────
+# If the .portable install.packages wrapper is shadowed by an IDE, the
+# user can run this script to fix any unpatched .so files in their
+# library tree.
 echo "--- Creating bin/fix-dylibs ---"
 cat > "${R_HOME}/bin/fix-dylibs" << 'FIXDYLIBS'
 #!/usr/bin/env bash
@@ -130,4 +171,4 @@ echo "Done. Patched ${count} files."
 FIXDYLIBS
 chmod +x "${R_HOME}/bin/fix-dylibs"
 
-echo "=== Rprofile.site hook installed ==="
+echo "=== Portable-R hooks installed ==="

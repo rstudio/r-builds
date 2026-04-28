@@ -264,9 +264,11 @@ fi
 # The CRAN .pkg hardcodes /Library/Frameworks/R.framework/... throughout
 # its Mach-O binaries and config files. Our existing pipeline handles
 # all of this:
-#   patch-mach-o.sh      - rewrites dylib load commands to @rpath / @loader_path
-#   make-relocatable.sh  - patches bin/R, bin/Rscript, etc/Makeconf, etc/Renviron
-#   install-rprofile-hook.sh - installs Rprofile.site with .portable env
+#   patch-mach-o.sh         - rewrites dylib load commands to @rpath / @loader_path
+#   make-relocatable.sh     - patches bin/R, bin/Rscript, etc/Makeconf, etc/Renviron
+#   install-rprofile-hook.sh - appends portable-R hooks to library/base/R/Rprofile
+#                              (PPM repo, Tcl/Tk paths, .portable env for binary
+#                              package fix-up; see macos/README.md for details)
 echo "--- Running post-build patching pipeline ---"
 
 bash "${SCRIPT_DIR}/patch-mach-o.sh"          "${WORK_OUTPUT_DIR}"

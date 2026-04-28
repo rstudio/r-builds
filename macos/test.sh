@@ -130,7 +130,29 @@ else
   fail "source package compilation failed (may need Xcode CLT)"
 fi
 
-# 11. Binary package install — exercises the .portable Rprofile hook's
+# 11. Base Rprofile hooks survive --vanilla — the whole reason we install
+# them in library/base/R/Rprofile rather than etc/Rprofile.site (which
+# --vanilla skips) is so they work in every launch context including
+# IDE-embedded R sessions. This test asserts:
+#   - default CRAN repo is p3m.dev (PPM)
+#   - .portable environment is attached at position 2 above package:utils
+echo "--- Test: Base Rprofile hooks under --vanilla ---"
+HOOK_OUT=$("${R_HOME}/bin/R" --vanilla --no-echo -e '
+  cat("repo=", getOption("repos")["CRAN"], "\n", sep="")
+  cat("portable_attached=", ".portable" %in% search(), "\n", sep="")
+' 2>/dev/null)
+if echo "${HOOK_OUT}" | grep -q '^repo=https://p3m\.dev/'; then
+  pass "default CRAN repo set to p3m.dev under --vanilla"
+else
+  fail "default CRAN repo not p3m.dev under --vanilla: $(echo "${HOOK_OUT}" | grep '^repo=')"
+fi
+if echo "${HOOK_OUT}" | grep -q '^portable_attached=TRUE'; then
+  pass ".portable env attached under --vanilla"
+else
+  fail ".portable env not attached under --vanilla: $(echo "${HOOK_OUT}" | grep '^portable_attached=')"
+fi
+
+# 12. Binary package install — exercises the .portable Rprofile hook's
 # post-install dylib fix-up (install_name_tool + codesign).
 #
 # Use CRAN + PPM together so install.packages picks whichever has the

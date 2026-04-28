@@ -135,26 +135,47 @@ Get-ChildItem $StagingDir -Filter "unins*" | Remove-Item -Force -ErrorAction Sil
 Get-ChildItem $StagingDir -Filter "*.iss" | Remove-Item -Force -ErrorAction SilentlyContinue
 Write-Host "  Removed installer artifacts"
 
-Write-Host "--- Configuring Rprofile.site ---"
-$RprofilePath = Join-Path $StagingDir "etc\Rprofile.site"
+Write-Host "--- Appending portable-R hooks to base Rprofile ---"
+# We append to library/base/R/Rprofile rather than writing etc/Rprofile.site
+# so the hooks run in every R launch context, including R --vanilla and
+# IDE-embedded R (RStudio's rsession, Positron's R kernel) which can bypass
+# Rprofile.site by loading R via libR directly.
+$BaseRprofilePath = Join-Path $StagingDir "library\base\R\Rprofile"
+if (-not (Test-Path $BaseRprofilePath)) {
+    throw "Base Rprofile not found at $BaseRprofilePath"
+}
 
-$RprofileContent = @"
-# Rprofile.site -- rstudio/r-builds portable R distribution
+$RprofileAppend = @"
 
-# Portable package library: install packages within this R directory
-local_lib <- file.path(Sys.getenv("R_HOME"), "site-library")
-if (!dir.exists(local_lib)) dir.create(local_lib, recursive = TRUE)
-.libPaths(c(local_lib, .libPaths()))
+## ── rstudio/r-builds portable R hooks ─────────────────────────────────
+## Appended by build.ps1. Lives in the base Rprofile so it runs in every
+## launch context, including R --vanilla and IDE-embedded R.
 
-# Default repository: Posit Package Manager
+## Portable package library: install user packages within the R install
+## tree so they travel with the R folder when copied/moved.
+local({
+  local_lib <- file.path(Sys.getenv("R_HOME"), "site-library")
+  if (!dir.exists(local_lib)) {
+    ok <- tryCatch(dir.create(local_lib, recursive = TRUE, showWarnings = FALSE),
+                   error = function(e) FALSE)
+    if (!isTRUE(ok)) return(invisible())
+  }
+  .libPaths(c(local_lib, .libPaths()))
+})
+
+## Default CRAN mirror: Posit Public Package Manager
 local({
   r <- getOption("repos")
-  r["CRAN"] <- "https://packagemanager.posit.co/cran/latest"
+  r["CRAN"] <- "https://p3m.dev/cran/latest"
   options(repos = r)
 })
 "@
-[System.IO.File]::WriteAllText($RprofilePath, $RprofileContent, (New-Object System.Text.UTF8Encoding $false))
-Write-Host "  Rprofile.site configured"
+
+# Append while preserving the existing file's line endings (CRAN's base
+# Rprofile is plain LF; AppendAllText writes our content as-is rather than
+# mixing in CRLF the way Add-Content would).
+[System.IO.File]::AppendAllText($BaseRprofilePath, $RprofileAppend, (New-Object System.Text.UTF8Encoding $false))
+Write-Host "  Hooks appended to: $BaseRprofilePath"
 
 Write-Host "--- Packaging ---"
 # PowerShell's Join-Path naively concatenates even when the second arg is
