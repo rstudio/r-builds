@@ -413,6 +413,27 @@ install the Xcode Command Line Tools:
 xcode-select --install
 ```
 
+**Using the portable R inside Positron** — Positron's R discovery requires
+each R installation to live at the canonical
+`/Library/Frameworks/R.framework/Versions/<ver>-<arch>/Resources` path on
+disk (or be reachable via that path through a symlink). For the portable R
+to appear in Positron's interpreter picker, either install the tarball
+directly at that path, or symlink it once after extraction:
+
+```bash
+ARCH=arm64       # or x86_64
+RVER_MM=4.4      # major.minor of the R you extracted
+
+sudo mkdir -p /Library/Frameworks/R.framework/Versions/${RVER_MM}-${ARCH}
+sudo ln -s ~/R/R-${R_VERSION} \
+  /Library/Frameworks/R.framework/Versions/${RVER_MM}-${ARCH}/Resources
+```
+
+Don't run this on a host that already has a real R install at that
+version-arch — it'll shadow the framework `Resources` for that version.
+RStudio and command-line use don't need this step. See
+[`macos/README.md`](macos/README.md) for the technical reasoning.
+
 #### Portable Windows (experimental)
 
 Portable, relocatable Windows R builds are available for x86_64. The
