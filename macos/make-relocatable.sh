@@ -125,8 +125,14 @@ if [ -f "${R_HOME}/etc/ldpaths" ]; then
 fi
 
 # ── 6. Patch other shell scripts in bin/ ────────────────────────────
+# Skip bin/R itself — Phase 1 already patched it with the correct
+# exclusion that preserves the static R_HOME_DIR= line for IDE parsers.
+# Without this skip, the unconditional global sed below would re-clobber
+# that static line back to `R_HOME_DIR=${R_HOME}` and break Positron's
+# discovery (the same DESCRIPTION-not-found rejection the Phase 1 fix
+# was meant to prevent).
 echo "--- Patching other bin/ scripts ---"
-find "${R_HOME}/bin" -type f ! -name "*.bin" | while read -r f; do
+find "${R_HOME}/bin" -type f ! -name "*.bin" ! -name "R" | while read -r f; do
   if file "${f}" | grep -q "text" && grep -q "${HARDCODED_PATH}" "${f}" 2>/dev/null; then
     sed -i '' "s|${HARDCODED_PATH}|\${R_HOME}|g" "${f}"
     echo "  $(basename "${f}"): hardcoded paths replaced"
