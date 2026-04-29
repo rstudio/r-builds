@@ -298,7 +298,9 @@ jobs:
           python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"
 
   build-macos:
-    if: ${{ inputs.platforms == 'all' || contains(inputs.platforms, 'macos') }}
+    # Empty inputs.platforms means a push event (workflow input defaults don't apply to push).
+    # Treat that as "all", matching get_matrix.py's behavior for the Linux jobs.
+    if: ${{ inputs.platforms == '' || inputs.platforms == 'all' || contains(inputs.platforms, 'macos') }}
     needs: [setup-matrix]
     uses: ./.github/workflows/build-macos.yml
     with:
@@ -320,7 +322,8 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
   build-windows:
-    if: ${{ inputs.platforms == 'all' || contains(inputs.platforms, 'windows') }}
+    # See note on build-macos above re: empty inputs.platforms on push events.
+    if: ${{ inputs.platforms == '' || inputs.platforms == 'all' || contains(inputs.platforms, 'windows') }}
     needs: [setup-matrix]
     uses: ./.github/workflows/build-windows.yml
     with:
