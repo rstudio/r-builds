@@ -7,7 +7,16 @@ ENV OS_IDENTIFIER opensuse-156
 # https://download.opensuse.org/repositories/devel:/languages:/R:/released/openSUSE_Leap_42.3/src/R-base-3.5.3-103.1.src.rpm
 
 RUN zypper --non-interactive update
-RUN zypper --non-interactive --gpg-auto-import-keys -n install \
+# --allow-downgrade is needed because the opensuse/leap:15.6 base image
+# periodically gets libncurses6 maintenance updates from SUSE's SLE
+# channel before the matching ncurses-devel reaches the public Leap
+# repos, leaving the dev package one or two point releases behind the
+# installed runtime. readline-devel transitively requires ncurses-devel,
+# so without --allow-downgrade zypper presents an interactive solver
+# prompt and the build fails with exit code 4 (default answer cancel).
+# Letting zypper accept the suggested downgrade of libncurses6 to the
+# version that has a matching dev package resolves cleanly.
+RUN zypper --non-interactive --gpg-auto-import-keys --allow-downgrade -n install \
     bzip2 \
     cairo-devel \
     curl \
