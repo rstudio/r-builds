@@ -15,9 +15,7 @@ RUN zypper --non-interactive update
 # so without --allow-downgrade zypper presents an interactive solver
 # prompt and the build fails with exit code 4 (default answer cancel).
 # Letting zypper accept the suggested downgrade of libncurses6 to the
-# version that has a matching dev package resolves cleanly. The flag
-# is a subcommand option of `install`, so it must appear after the
-# subcommand name (zypper rejects it as global with "flag is not known").
+# version that has a matching dev package resolves cleanly.
 RUN zypper --non-interactive --gpg-auto-import-keys -n install --allow-downgrade \
     bzip2 \
     cairo-devel \
