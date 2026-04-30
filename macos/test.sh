@@ -23,6 +23,20 @@ else
   fail "R --version did not report R version"
 fi
 
+# 1b. bin/R static R_HOME_DIR= line is well-formed for IDE discovery.
+# Positron's getRHomePathDarwin parses this line as text and validates the
+# resulting path on disk, so a malformed slot (e.g. ".-arm64" from a broken
+# version-introspection fallback) would silently break IDE discovery even
+# though CLI execution still works via the runtime override on the next line.
+echo "--- Test: static R_HOME_DIR= slot is well-formed ---"
+STATIC_LINE=$(grep '^R_HOME_DIR=' "${R_HOME}/bin/R" | head -1)
+SLOT_RE='^R_HOME_DIR=/Library/Frameworks/R\.framework/Versions/(devel|patched|next|[0-9]+\.[0-9]+)-(arm64|x86_64)/Resources$'
+if [[ "${STATIC_LINE}" =~ ${SLOT_RE} ]]; then
+  pass "static R_HOME_DIR= slot: ${STATIC_LINE#R_HOME_DIR=/Library/Frameworks/R.framework/Versions/}"
+else
+  fail "static R_HOME_DIR= is malformed: ${STATIC_LINE}"
+fi
+
 # 2. R_HOME derivation
 echo "--- Test: R_HOME derivation ---"
 R_HOME_REPORTED=$("${R_HOME}/bin/R" --vanilla --no-echo -e 'cat(R.home())' 2>/dev/null)

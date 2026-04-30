@@ -5,17 +5,47 @@ R_HOME="${1:?Usage: make-relocatable.sh <r-home> [r-version]}"
 R_HOME="$(cd "${R_HOME}" && pwd)"
 R_VERSION="${2:-}"
 
-# Parse major.minor for version-specific handling. R_VERSION may be "devel",
-# "patched", or "next" — non-numeric — so fall back to introspecting the binary
-# in that case (and when R_VERSION is unset entirely).
-if [[ -n "${R_VERSION}" ]] && [[ "${R_VERSION}" =~ ^[0-9]+\.[0-9]+ ]]; then
-  R_MAJOR="${R_VERSION%%.*}"
-  R_MINOR="${R_VERSION#*.}"; R_MINOR="${R_MINOR%%.*}"
-else
-  R_VER_STRING=$("${R_HOME}/bin/exec/R" --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "")
-  R_MAJOR="${R_VER_STRING%%.*}"
-  R_MINOR="${R_VER_STRING#*.}"; R_MINOR="${R_MINOR%%.*}"
-fi
+# Determine the version slot used in the orthogonal R_HOME_DIR= rewrite
+# (`Versions/<slot>-<arch>/Resources`). Three tiers in priority order:
+#
+#   1. Aliases — devel/patched/next: use the alias literally. R_VERSION
+#      doesn't carry a numeric branch for these, and trying to derive one
+#      means the slot would change across R branch rollovers (4.6→4.7…)
+#      from identical input. The literal alias is also free of any
+#      collision with numeric `<minor>-<arch>` slots used by CRAN/rig.
+#   2. Numeric R_VERSION (4.4.3, 4.6.0, …) — parse major.minor.
+#   3. Fallback for direct invocation without R_VERSION — introspect via
+#      `bin/R --version`. Use the shell wrapper, NOT `bin/exec/R`: the
+#      raw Mach-O errors out with "Fatal error: R home directory is not
+#      defined" when called without R_HOME in the environment, leaving
+#      the regex with no digits to match. The wrapper sets R_HOME itself.
+#
+# R_MAJOR/R_MINOR remain set after this block for the Rscript R<4.2
+# branch below; for tier 1 they stay empty (devel/patched/next are
+# always modern R, and the regex guard there skips the <4.2 branch).
+R_MAJOR=""
+R_MINOR=""
+case "${R_VERSION}" in
+  devel|patched|next)
+    SLOT_VERSION="${R_VERSION}"
+    ;;
+  *)
+    if [[ "${R_VERSION}" =~ ^[0-9]+\.[0-9]+ ]]; then
+      R_MAJOR="${R_VERSION%%.*}"
+      R_MINOR="${R_VERSION#*.}"; R_MINOR="${R_MINOR%%.*}"
+    else
+      R_VER_STRING=$("${R_HOME}/bin/R" --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "")
+      if [ -z "${R_VER_STRING}" ]; then
+        echo "ERROR: Could not determine R version for slot computation" >&2
+        echo "       R_VERSION='${R_VERSION}', bin/R --version produced no version digits" >&2
+        exit 1
+      fi
+      R_MAJOR="${R_VER_STRING%%.*}"
+      R_MINOR="${R_VER_STRING#*.}"; R_MINOR="${R_MINOR%%.*}"
+    fi
+    SLOT_VERSION="${R_MAJOR}.${R_MINOR}"
+    ;;
+esac
 
 echo "=== Making R relocatable in ${R_HOME} ==="
 
@@ -30,7 +60,7 @@ if [ -z "${HARDCODED_PATH}" ]; then
 fi
 echo "Detected hardcoded path: ${HARDCODED_PATH}"
 
-# Force the static R_HOME_DIR= line to the orthogonal "Versions/<ver>-<arch>/
+# Force the static R_HOME_DIR= line to the orthogonal "Versions/<slot>-<arch>/
 # Resources" form regardless of what CRAN shipped. Positron's RInstallation
 # constructor classifies an install as orthogonal iff its homepath does NOT
 # match /R\.framework\/Resources/ (see extensions/positron-r/src/r-installation.ts),
@@ -46,7 +76,7 @@ if [ -z "${ARCH_DETECTED}" ]; then
   echo "ERROR: Could not detect arch from ${R_HOME}/bin/exec/R" >&2
   exit 1
 fi
-ORTHOGONAL_PATH="/Library/Frameworks/R.framework/Versions/${R_MAJOR}.${R_MINOR}-${ARCH_DETECTED}/Resources"
+ORTHOGONAL_PATH="/Library/Frameworks/R.framework/Versions/${SLOT_VERSION}-${ARCH_DETECTED}/Resources"
 echo "Rewriting static R_HOME_DIR to orthogonal path: ${ORTHOGONAL_PATH}"
 
 # Match the static assignment in either quote style. CRAN's R.sh.in

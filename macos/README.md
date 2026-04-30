@@ -169,13 +169,15 @@ Both RStudio and Positron discover R installations by parsing `bin/R` as a text 
 
 ### Required end-user step on macOS to use in Positron
 
-Positron (`getRHomePathDarwin`) extracts the parsed `R_HOME_DIR` and additionally requires that `library/utils/DESCRIPTION` actually exist at that path on disk. Our portable R's static line is now an orthogonal `Versions/<ver>-<arch>/Resources` path, so the on-disk requirement is "the canonical CRAN-style version-arch directory must resolve to *some* valid R installation tree." For an end user who extracts the portable tarball outside the canonical path, that requirement is satisfied by a one-time symlink:
+Positron (`getRHomePathDarwin`) extracts the parsed `R_HOME_DIR` and additionally requires that `library/utils/DESCRIPTION` actually exist at that path on disk. Our portable R's static line is now an orthogonal `Versions/<slot>-<arch>/Resources` path, so the on-disk requirement is "the canonical CRAN-style version-arch directory must resolve to *some* valid R installation tree." For an end user who extracts the portable tarball outside the canonical path, that requirement is satisfied by a one-time symlink:
 
 ```bash
-sudo mkdir -p /Library/Frameworks/R.framework/Versions/<ver>-<arch>
+sudo mkdir -p /Library/Frameworks/R.framework/Versions/<slot>-<arch>
 sudo ln -s /path/to/extracted/R-<ver> \
-  /Library/Frameworks/R.framework/Versions/<ver>-<arch>/Resources
+  /Library/Frameworks/R.framework/Versions/<slot>-<arch>/Resources
 ```
+
+`<slot>` is the major.minor for numeric builds (e.g. `4.4` for R 4.4.3) and the literal alias for `devel` / `patched` / `next` builds (e.g. `Versions/devel-arm64/Resources`). The alias slot keeps devel installs from colliding with the same-numbered release build (a `devel` snapshot whose `Built:` field happens to read `R 4.6.0 Patched` would otherwise contend with the real R 4.6.0 install for `Versions/4.6-arm64/`).
 
 After this, Positron's discovery walks `Versions/`, parses the orthogonal static line, validates `library/utils/DESCRIPTION` through the symlink (which now resolves to the portable R's actual `library/utils/DESCRIPTION`), reads the correct R version from the `Built:` field, and accepts the install.
 
