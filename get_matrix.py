@@ -9,6 +9,15 @@ import json
 import subprocess
 
 
+# Platforms whose builds are handled by dedicated reusable workflows
+# (build-macos.yml, build-windows.yml) rather than the Linux Docker pipeline.
+_NON_LINUX_PREFIXES = ('macos', 'windows')
+
+
+def _is_non_linux(platform):
+    return any(platform == p or platform.startswith(p + '-') for p in _NON_LINUX_PREFIXES)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Print R-builds platforms as JSON.")
     parser.add_argument(
@@ -46,6 +55,10 @@ def _get_matrix(platforms=['all'], versions=[], arch=['amd64', 'arm64']):
         supported_platforms = subprocess.check_output(['make', 'print-platforms'], text=True)
         supported_platforms = supported_platforms.split()
         platforms = supported_platforms
+
+    # Strip macOS/Windows selectors — they flow through build-macos.yml /
+    # build-windows.yml, not the Linux Docker matrix this script feeds.
+    platforms = [p for p in platforms if not _is_non_linux(p)]
 
     # Put all combinations in the "include" list, which allows complex matrix configurations
     include = []

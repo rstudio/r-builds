@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Allow R to JIT-compile code (e.g., the byte-code compiler) -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <!-- Allow R to allocate writable+executable memory (required by some
+         packages that generate machine code at runtime, e.g. Rcpp) -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <!-- Allow loading CRAN binary packages (.so) signed by other teams
+         or ad-hoc signed after install_name_tool patching -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    <!-- Allow DYLD_LIBRARY_PATH / DYLD_INSERT_LIBRARIES so users and
+         R itself can override library load paths at runtime -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+</dict>
+</plist>

@@ -1,0 +1,204 @@
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$Version,
+
+    [string]$OutputDir = "output"
+)
+
+$ErrorActionPreference = "Stop"
+# Suppress the PS 5.1 progress bar; it slows Invoke-WebRequest / Expand-Archive
+# by 50-100x when running non-interactively.
+$ProgressPreference = "SilentlyContinue"
+$StagingDir = "$env:TEMP\r-build\R-$Version"
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot = Split-Path -Parent $ScriptDir
+
+try {
+
+Write-Host "=== Building R $Version for Windows ==="
+
+Write-Host "--- Downloading CRAN installer ---"
+$InstallerPath = "$env:TEMP\R-$Version-win.exe"
+if (Test-Path $InstallerPath) {
+    Write-Host "  Using cached installer: $InstallerPath"
+} else {
+    # URL locations, tried newest-first:
+    #   current       — cloud.r-project.org/bin/windows/base/R-$Version-win.exe
+    #   main archive  — cloud.r-project.org/bin/windows/base/old/$Version/...
+    #   cran-archive  — cran-archive.r-project.org/bin/windows/base/old/$Version/...
+    # devel uses its own stable URL; all other versions walk the list.
+    if ($Version -eq "devel") {
+        $candidates = @("https://cloud.r-project.org/bin/windows/base/R-devel-win.exe")
+    } else {
+        $candidates = @(
+            "https://cloud.r-project.org/bin/windows/base/R-$Version-win.exe",
+            "https://cloud.r-project.org/bin/windows/base/old/$Version/R-$Version-win.exe",
+            "https://cran-archive.r-project.org/bin/windows/base/old/$Version/R-$Version-win.exe"
+        )
+    }
+
+    $InstallerUrl = $null
+    foreach ($url in $candidates) {
+        Write-Host "  Trying: $url"
+        try {
+            Invoke-WebRequest -Uri $url -OutFile $InstallerPath -UseBasicParsing
+            $InstallerUrl = $url
+            break
+        } catch {
+            Write-Host "    -> $($_.Exception.Message)"
+        }
+    }
+    if (-not $InstallerUrl) {
+        throw "Could not download R $Version installer from any known URL"
+    }
+    Write-Host "  Downloaded: $InstallerUrl"
+}
+
+Write-Host "--- Extracting installer ---"
+if (Test-Path $StagingDir) { Remove-Item $StagingDir -Recurse -Force }
+New-Item -ItemType Directory -Path $StagingDir -Force | Out-Null
+
+$extracted = $false
+
+# Primary method: innoextract (fast, no side effects, no admin)
+$innoextract = Get-Command innoextract -ErrorAction SilentlyContinue
+if (-not $innoextract) {
+    # Try choco first
+    $choco = Get-Command choco -ErrorAction SilentlyContinue
+    if ($choco) {
+        Write-Host "  Installing innoextract via choco..."
+        choco install innoextract -y --no-progress 2>&1 | Out-Null
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+        $innoextract = Get-Command innoextract -ErrorAction SilentlyContinue
+    }
+    # Fallback: download innoextract from GitHub releases
+    if (-not $innoextract) {
+        Write-Host "  Downloading innoextract from GitHub..."
+        $innoDir = Join-Path $env:TEMP "innoextract"
+        New-Item -ItemType Directory -Path $innoDir -Force | Out-Null
+        $innoZip = Join-Path $env:TEMP "innoextract.zip"
+        Invoke-WebRequest -Uri "https://github.com/dscharrer/innoextract/releases/download/1.9/innoextract-1.9-windows.zip" -OutFile $innoZip -UseBasicParsing
+        Expand-Archive -Path $innoZip -DestinationPath $innoDir -Force
+        $innoExe = Get-ChildItem -Path $innoDir -Recurse -Filter "innoextract.exe" | Select-Object -First 1
+        if ($innoExe) {
+            $env:PATH = "$($innoExe.DirectoryName);$env:PATH"
+        }
+        $innoextract = Get-Command innoextract -ErrorAction SilentlyContinue
+    }
+}
+
+if ($innoextract) {
+    Write-Host "  Extracting with innoextract..."
+    $output = & innoextract -d $StagingDir --extract $InstallerPath 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        $AppDir = Join-Path $StagingDir "app"
+        if (Test-Path $AppDir) {
+            Get-ChildItem $AppDir | Move-Item -Destination $StagingDir -Force
+            Remove-Item $AppDir -Force -ErrorAction SilentlyContinue
+        }
+        $extracted = $true
+        Write-Host "  Extracted with innoextract to: $StagingDir"
+    } else {
+        Write-Host "  innoextract failed (exit $LASTEXITCODE), falling back to silent install..."
+        if (Test-Path $StagingDir) { Remove-Item $StagingDir -Recurse -Force }
+        New-Item -ItemType Directory -Path $StagingDir -Force | Out-Null
+    }
+}
+
+# Fallback: run the Inno Setup installer silently (aligns with portable-r-windows)
+if (-not $extracted) {
+    Write-Host "  Using silent install fallback (/VERYSILENT /DIR=...)..."
+    $proc = Start-Process -PassThru -FilePath $InstallerPath -ArgumentList @(
+        "/VERYSILENT",
+        "/SUPPRESSMSGBOXES",
+        "/CURRENTUSER",
+        "/NOICONS",
+        "/DIR=$StagingDir"
+    )
+    $finished = $proc.WaitForExit(600000)  # 10 minute timeout
+    if (-not $finished) {
+        $proc.Kill()
+        throw "Silent install timed out after 10 minutes"
+    }
+    if ($proc.ExitCode -ne 0) {
+        throw "Installer exited with code $($proc.ExitCode)"
+    }
+    # Clean up installer artifacts left by silent install
+    Remove-Item -Path (Join-Path $StagingDir "unins*.exe") -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $StagingDir "unins*.dat") -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $StagingDir "unins*.msg") -Force -ErrorAction SilentlyContinue
+    Write-Host "  Extracted via silent install to: $StagingDir"
+}
+
+Write-Host "--- Cleaning up installer artifacts ---"
+Get-ChildItem $StagingDir -Filter "unins*" | Remove-Item -Force -ErrorAction SilentlyContinue
+Get-ChildItem $StagingDir -Filter "*.iss" | Remove-Item -Force -ErrorAction SilentlyContinue
+Write-Host "  Removed installer artifacts"
+
+Write-Host "--- Appending portable-R hooks to base Rprofile ---"
+# We append to library/base/R/Rprofile rather than writing etc/Rprofile.site
+# so the hooks run in every R launch context, including R --vanilla and
+# IDE-embedded R (RStudio's rsession, Positron's R kernel) which can bypass
+# Rprofile.site by loading R via libR directly.
+$BaseRprofilePath = Join-Path $StagingDir "library\base\R\Rprofile"
+if (-not (Test-Path $BaseRprofilePath)) {
+    throw "Base Rprofile not found at $BaseRprofilePath"
+}
+
+$RprofileAppend = @"
+
+## ── rstudio/r-builds portable R hooks ─────────────────────────────────
+## Appended by build.ps1. Lives in the base Rprofile so it runs in every
+## launch context, including R --vanilla and IDE-embedded R.
+
+## Portable package library: install user packages within the R install
+## tree so they travel with the R folder when copied/moved.
+local({
+  local_lib <- file.path(Sys.getenv("R_HOME"), "site-library")
+  if (!dir.exists(local_lib)) {
+    ok <- tryCatch(dir.create(local_lib, recursive = TRUE, showWarnings = FALSE),
+                   error = function(e) FALSE)
+    if (!isTRUE(ok)) return(invisible())
+  }
+  .libPaths(c(local_lib, .libPaths()))
+})
+
+## Default CRAN mirror: Posit Public Package Manager
+local({
+  r <- getOption("repos")
+  r["CRAN"] <- "https://p3m.dev/cran/latest"
+  options(repos = r)
+})
+"@
+
+# Append while preserving the existing file's line endings (CRAN's base
+# Rprofile is plain LF; AppendAllText writes our content as-is rather than
+# mixing in CRLF the way Add-Content would).
+[System.IO.File]::AppendAllText($BaseRprofilePath, $RprofileAppend, (New-Object System.Text.UTF8Encoding $false))
+Write-Host "  Hooks appended to: $BaseRprofilePath"
+
+Write-Host "--- Packaging ---"
+# PowerShell's Join-Path naively concatenates even when the second arg is
+# absolute, producing e.g. 'D:\repo\D:\temp\out'. Handle both cases: use
+# $OutputDir directly when it's already rooted (CI passes $RUNNER_TEMP), and
+# resolve relative to the repo for local 'output/' usage.
+if ([System.IO.Path]::IsPathRooted($OutputDir)) {
+    $OutputPath = $OutputDir
+} else {
+    $OutputPath = Join-Path $RepoRoot $OutputDir
+}
+if (-not (Test-Path $OutputPath)) { New-Item -ItemType Directory -Path $OutputPath | Out-Null }
+$ZipName = "R-$Version-windows.zip"
+$ZipPath = Join-Path $OutputPath $ZipName
+
+if (Test-Path $ZipPath) { Remove-Item $ZipPath }
+Compress-Archive -Path $StagingDir -DestinationPath $ZipPath
+Write-Host "=== Package created: $ZipPath ==="
+Get-Item $ZipPath | Select-Object Name, Length
+
+} finally {
+    # Keep the installer cached at $InstallerPath so re-runs of the same R
+    # version skip the ~80 MB download (see the "Using cached installer" branch
+    # above). Only the staging tree is removed.
+    Remove-Item $StagingDir -Recurse -Force -ErrorAction SilentlyContinue
+}
