@@ -387,15 +387,15 @@ for the full technical breakdown.
 R_VERSION=4.4.3
 
 # arm64 (Apple Silicon)
-curl -O https://cdn.posit.co/r/macos-arm64/R-${R_VERSION}-macos-arm64.tar.gz
+curl -O https://cdn.posit.co/r/macos/R-${R_VERSION}-macos-arm64.tar.gz
 mkdir -p ~/R
 tar xzf R-${R_VERSION}-macos-arm64.tar.gz -C ~/R
 ~/R/R-${R_VERSION}/bin/R --version
 
 # x86_64 (Intel; also runs under Rosetta 2 on Apple Silicon)
-curl -O https://cdn.posit.co/r/macos-x86_64/R-${R_VERSION}-macos-x86_64.tar.gz
+curl -O https://cdn.posit.co/r/macos/R-${R_VERSION}-macos.tar.gz
 mkdir -p ~/R
-tar xzf R-${R_VERSION}-macos-x86_64.tar.gz -C ~/R
+tar xzf R-${R_VERSION}-macos.tar.gz -C ~/R
 ~/R/R-${R_VERSION}/bin/R --version
 ```
 

@@ -172,7 +172,10 @@ jobs:
           output_dir="${RUNNER_TEMP}/r-builds-output"
           mkdir -p "${output_dir}"
           bash macos/build.sh "${{ matrix.r_version }}" "${{ matrix.arch }}" "${output_dir}"
-          tarball="${output_dir}/R-${{ matrix.r_version }}-macos-${{ matrix.arch }}.tar.gz"
+          # Filename matches Linux: x86_64 unsuffixed, arm64 carries -arm64.
+          arch_suffix=""
+          [[ "${{ matrix.arch }}" == "arm64" ]] && arch_suffix="-arm64"
+          tarball="${output_dir}/R-${{ matrix.r_version }}-macos${arch_suffix}.tar.gz"
           echo "tarball=${tarball}" >> $GITHUB_OUTPUT
           echo "output_dir=${output_dir}" >> $GITHUB_OUTPUT
 
@@ -225,7 +228,12 @@ jobs:
         run: |
           tarball="${{ steps.build.outputs.tarball }}"
           s3_bucket="${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
-          s3_key="r/macos-${{ matrix.arch }}/R-${{ matrix.r_version }}-macos-${{ matrix.arch }}.tar.gz"
+          # Both arches share the /r/macos/ prefix, matching the Linux
+          # convention of one prefix per platform with arm64 distinguished
+          # only by an `-arm64` filename suffix.
+          arch_suffix=""
+          [[ "${{ matrix.arch }}" == "arm64" ]] && arch_suffix="-arm64"
+          s3_key="r/macos/R-${{ matrix.r_version }}-macos${arch_suffix}.tar.gz"
           echo "Publishing R ${{ matrix.r_version }} (macos-${{ matrix.arch }}) to s3://${s3_bucket}/${s3_key}"
           aws s3 cp "${tarball}" "s3://${s3_bucket}/${s3_key}" --acl public-read
 
