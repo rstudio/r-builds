@@ -63,7 +63,7 @@ build-r-macos:
 
 test-r-macos:
 	@rm -rf output/R-$(R_VERSION)
-	tar xzf output/R-$(R_VERSION)-macos-$(ARCH).tar.gz -C output/
+	tar xzf output/R-$(R_VERSION)-macos$(if $(filter arm64,$(ARCH)),-arm64).tar.gz -C output/
 	bash macos/test.sh output/R-$(R_VERSION)
 
 build-r-windows:

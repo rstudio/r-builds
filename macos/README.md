@@ -12,7 +12,7 @@ Unlike the Linux portable builds (which compile R from source and bundle system 
 4. Patch `bin/R`, `bin/Rscript`, `etc/Makeconf`, `etc/Renviron` to derive `R_HOME` at runtime.
 5. Append portable-R hooks (default CRAN repo, Tcl/Tk paths, CRAN binary package fix-up) to the base Rprofile.
 6. Codesign all Mach-O binaries (ad-hoc on staging, Developer ID + notarized on production).
-7. Package as `R-{version}-macos-{arch}.tar.gz`.
+7. Package as `R-{version}-macos.tar.gz` (x86_64) or `R-{version}-macos-arm64.tar.gz` (arm64).
 
 Output: a self-contained tarball where `bin/R --version` works regardless of where the directory is extracted.
 
@@ -48,11 +48,12 @@ Portable macOS builds are useful for:
 
 Both arm64 (Apple Silicon) and x86_64 (Intel; runs under Rosetta 2 on Apple Silicon hosts) for R 4.1.0 onwards. The build matrix in `build-macos.yml` defaults to the last 5 R minor versions plus `devel`, with R < 4.1 skipped.
 
-Output paths on the CDN follow the existing pattern:
+Output paths on the CDN match the Linux convention — one prefix per
+platform with arm64 distinguished only by a filename suffix:
 
 ```
-cdn.posit.co/r/macos-arm64/R-{version}-macos-arm64.tar.gz
-cdn.posit.co/r/macos-x86_64/R-{version}-macos-x86_64.tar.gz
+cdn.posit.co/r/macos/R-{version}-macos.tar.gz          # x86_64
+cdn.posit.co/r/macos/R-{version}-macos-arm64.tar.gz    # arm64
 ```
 
 ## How it works

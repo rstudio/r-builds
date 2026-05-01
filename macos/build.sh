@@ -288,9 +288,14 @@ bash "${SCRIPT_DIR}/make-relocatable.sh"       "${WORK_OUTPUT_DIR}" "${R_VERSION
 bash "${SCRIPT_DIR}/install-rprofile-hook.sh"  "${WORK_OUTPUT_DIR}"
 
 # ── 6. Package tarball ───────────────────────────────────────────────
+# Filename convention matches Linux: x86_64 is the unsuffixed default,
+# arm64 carries an explicit `-arm64` suffix. CDN layout puts both arches
+# under a single /r/macos/ prefix, mirroring /r/<linux-platform>/.
 echo "--- Packaging tarball ---"
 mkdir -p "${OUTPUT_DIR_BASE}"
-TARBALL="${OUTPUT_DIR_BASE}/R-${R_VERSION}-macos-${ARCH}.tar.gz"
+ARCH_SUFFIX=""
+[[ "${ARCH}" == "arm64" ]] && ARCH_SUFFIX="-arm64"
+TARBALL="${OUTPUT_DIR_BASE}/R-${R_VERSION}-macos${ARCH_SUFFIX}.tar.gz"
 tar czf "${TARBALL}" -C "${WORK_OUTPUT_PARENT}" "R-${R_VERSION}"
 echo "=== Tarball created: ${TARBALL} ==="
 
