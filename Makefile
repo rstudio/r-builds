@@ -12,8 +12,15 @@ docker-build-r: docker-build
 docker-shell-r-env:
 	@cd builder && docker compose run --entrypoint /bin/bash ubuntu-2004
 
-unit-test:
+unit-test: unit-test-builder unit-test-manifest
+
+unit-test-builder:
 	cd builder/portable-r && python3 -m pytest test_delocate_r.py test_generate_sbom.py -v
+
+unit-test-manifest:
+	uv run --with pytest --with boto3 -m pytest test_build_manifest.py -v
+
+.PHONY: unit-test unit-test-builder unit-test-manifest
 
 define GEN_TARGETS
 # Use PLATFORM_ARCH to override the architecture, e.g. PLATFORM_ARCH=linux/arm64 or PLATFORM_ARCH=linux/amd64

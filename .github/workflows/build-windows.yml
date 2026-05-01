@@ -35,7 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.setup-matrix.outputs.matrix }}
-      r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
     steps:
       - uses: actions/checkout@v4
 
@@ -65,9 +64,6 @@ jobs:
           matrix=$(echo "$includes" | jq -c '{"include": .}')
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "Using matrix: $matrix"
-
-          r_versions_json=$(echo "$r_versions" | jq -Rc 'split(",") | map(select(length > 0))')
-          echo "r_versions=$r_versions_json" >> $GITHUB_OUTPUT
 
   build:
     needs: setup-matrix
@@ -128,36 +124,16 @@ jobs:
         shell: pwsh
         run: |
           $zip = "${{ steps.build.outputs.zip }}"
+          $basename = Split-Path -Leaf $zip
+          $sidecar = "$zip.sha256"
+          # sha256sum -c expects "<hex>  <basename>". Get-FileHash returns
+          # uppercase; lowercase it to match GNU sha256sum output.
+          $hash = (Get-FileHash -Algorithm SHA256 -Path $zip).Hash.ToLower()
+          # Append `n (Unix LF) so the sidecar matches `sha256sum -c` format on Linux/macOS.
+          # Out-File on PowerShell would default to CRLF; -NoNewline + explicit `n keeps it LF-only.
+          "${hash}  ${basename}`n" | Out-File -FilePath $sidecar -Encoding ascii -NoNewline
           $s3Bucket = "${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
           $s3Key = "r/windows/R-${{ matrix.r_version }}-windows.zip"
           Write-Host "Publishing R ${{ matrix.r_version }} (windows) to s3://$s3Bucket/$s3Key"
           aws s3 cp "$zip" "s3://$s3Bucket/$s3Key" --acl public-read
-
-  update-versions-json:
-    if: ${{ inputs.publish != '' && !cancelled() }}
-    needs: [build, setup-matrix]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Update versions.json
-        run: |
-          echo "Publishing versions.json for ${{ inputs.publish }}"
-          s3_bucket="${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
-          versions=$(echo '${{ needs.setup-matrix.outputs.r_versions }}' | jq -r 'join(",")')
-          python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"
+          aws s3 cp "$sidecar" "s3://$s3Bucket/$s3Key.sha256" --acl public-read
