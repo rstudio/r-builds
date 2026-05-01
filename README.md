@@ -43,8 +43,7 @@ anywhere instead of installed system-wide.
 - **manylinux** - any Linux distro with glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+,
   Debian 12+, Amazon Linux 2023+, Arch Linux, etc.)
 - **musllinux** - Alpine Linux 3.20+ and other musl-based distros
-- **macOS** - arm64 (Apple Silicon) and x86_64 (Intel; also runs under
-  Rosetta 2), R 4.1.0+
+- **macOS** - arm64 (Apple Silicon) and x86_64 (Intel), R 4.1.0+
 - **Windows** - x86_64, R 3.6.3+
 
 ## Supported R Versions
@@ -392,7 +391,7 @@ mkdir -p ~/R
 tar xzf R-${R_VERSION}-macos-arm64.tar.gz -C ~/R
 ~/R/R-${R_VERSION}/bin/R --version
 
-# x86_64 (Intel; also runs under Rosetta 2 on Apple Silicon)
+# x86_64 (Intel)
 curl -O https://cdn.posit.co/r/macos/R-${R_VERSION}-macos.tar.gz
 mkdir -p ~/R
 tar xzf R-${R_VERSION}-macos.tar.gz -C ~/R
