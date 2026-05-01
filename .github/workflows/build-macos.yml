@@ -49,7 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.setup-matrix.outputs.matrix }}
-      r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
     steps:
       - uses: actions/checkout@v4
 
@@ -84,7 +83,6 @@ jobs:
           #   2. arm64 is additionally unsupported on R < 4.1 (no arm64 .pkg),
           #      but rule 1 already covers this — kept as a defensive comment.
           includes="[]"
-          built_versions=""
           for version in $(echo "$r_versions" | tr ',' ' '); do
             case "${version}" in
               devel|patched|next)
@@ -98,7 +96,6 @@ jobs:
                 fi
                 ;;
             esac
-            built_versions="${built_versions:+${built_versions},}${version}"
             for arch in $archs; do
               # Both arches run on macos-14 (arm64). x86_64 R runs under
               # Rosetta 2, which is pre-installed on GitHub's macos-14 images.
@@ -113,10 +110,6 @@ jobs:
           matrix=$(echo "$includes" | jq -c '{"include": .}')
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "Using matrix: $matrix"
-
-          # Only publish versions we actually built; filtering happens above.
-          r_versions_json=$(echo "$built_versions" | jq -Rc 'split(",") | map(select(length > 0))')
-          echo "r_versions=$r_versions_json" >> $GITHUB_OUTPUT
 
   build:
     needs: setup-matrix
@@ -227,41 +220,17 @@ jobs:
         if: ${{ inputs.publish != '' }}
         run: |
           tarball="${{ steps.build.outputs.tarball }}"
+          basename="$(basename "${tarball}")"
+          sidecar="${tarball}.sha256"
+          # Sidecar format: "<hex>  <basename>" — matches `sha256sum -c`.
+          shasum -a 256 "${tarball}" | awk -v b="${basename}" '{print $1"  "b}' > "${sidecar}"
           s3_bucket="${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
+          arch_suffix=""
+          [[ "${{ matrix.arch }}" == "arm64" ]] && arch_suffix="-arm64"
           # Both arches share the /r/macos/ prefix, matching the Linux
           # convention of one prefix per platform with arm64 distinguished
           # only by an `-arm64` filename suffix.
-          arch_suffix=""
-          [[ "${{ matrix.arch }}" == "arm64" ]] && arch_suffix="-arm64"
           s3_key="r/macos/R-${{ matrix.r_version }}-macos${arch_suffix}.tar.gz"
           echo "Publishing R ${{ matrix.r_version }} (macos-${{ matrix.arch }}) to s3://${s3_bucket}/${s3_key}"
           aws s3 cp "${tarball}" "s3://${s3_bucket}/${s3_key}" --acl public-read
-
-  update-versions-json:
-    if: ${{ inputs.publish != '' && !cancelled() }}
-    needs: [build, setup-matrix]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Update versions.json
-        run: |
-          echo "Publishing versions.json for ${{ inputs.publish }}"
-          s3_bucket="${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
-          versions=$(echo '${{ needs.setup-matrix.outputs.r_versions }}' | jq -r 'join(",")')
-          python manage_r_versions.py publish --s3-bucket="$s3_bucket" --versions="$versions"
+          aws s3 cp "${sidecar}" "s3://${s3_bucket}/${s3_key}.sha256" --acl public-read

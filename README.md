@@ -73,6 +73,14 @@ bash -c "$(curl -L https://rstd.io/r-install)"
 
 Define the version of R that you want to install. Available versions
 of R can be found here: https://cdn.posit.co/r/versions.json
+
+For programmatic discovery of all available builds across platforms and
+architectures (including portable manylinux, musllinux, macOS, and Windows
+builds), fetch the manifest at https://cdn.posit.co/r/manifest.json. Each
+build entry includes the download URL, sha256, and size. Every artifact also
+has a `<artifact>.sha256` sidecar published next to it for verification with
+`sha256sum -c`.
+
 ```bash
 R_VERSION=4.4.3
 ```

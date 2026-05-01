@@ -1,0 +1,59 @@
+name: Update r-builds manifest
+
+on:
+  workflow_call:
+    inputs:
+      publish:
+        description: |
+          Which S3 bucket to read and write. "staging" or "production".
+        required: true
+        type: string
+    secrets:
+      AWS_PUBLISH_ROLE:
+        required: true
+      AWS_REGION:
+        required: true
+      S3_BUCKET_STAGING:
+        required: true
+      S3_BUCKET_PRODUCTION:
+        required: true
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Which S3 bucket to read and write.'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  update-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        # uv provisions Python and reads the PEP 723 inline script
+        # metadata in build_manifest.py to install boto3 in an ephemeral env.
+        uses: astral-sh/setup-uv@v6
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Build and upload manifest.json + versions.json
+        run: |
+          s3_bucket="${{ inputs.publish == 'staging' && secrets.S3_BUCKET_STAGING || secrets.S3_BUCKET_PRODUCTION }}"
+          # Both staging and production are served at cdn.posit.co. If staging
+          # is ever served at a different host, parameterize this here.
+          uv run build_manifest.py write \
+            --s3-bucket "$s3_bucket" \
+            --cdn-base "https://cdn.posit.co"
