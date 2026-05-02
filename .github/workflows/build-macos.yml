@@ -218,7 +218,7 @@ jobs:
 
       - name: Configure AWS Credentials
         if: ${{ inputs.publish != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
           aws-region: ${{ secrets.AWS_REGION }}
@@ -254,7 +254,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
           aws-region: ${{ secrets.AWS_REGION }}
