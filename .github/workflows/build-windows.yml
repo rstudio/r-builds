@@ -37,7 +37,7 @@ jobs:
       matrix: ${{ steps.setup-matrix.outputs.matrix }}
       r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Python
         uses: actions/setup-python@v5
@@ -78,7 +78,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: windows (R ${{ matrix.r_version }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build R ${{ matrix.r_version }} for Windows
         id: build
@@ -138,7 +138,7 @@ jobs:
     needs: [build, setup-matrix]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Python
         uses: actions/setup-python@v5
