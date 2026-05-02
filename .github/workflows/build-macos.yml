@@ -51,7 +51,7 @@ jobs:
       matrix: ${{ steps.setup-matrix.outputs.matrix }}
       r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Python
         uses: actions/setup-python@v5
@@ -132,7 +132,7 @@ jobs:
       HAS_DEVELOPER_CERTIFICATE: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE != '' }}
       HAS_NOTARIZATION_CREDENTIALS: ${{ secrets.MACOS_NOTARIZATION_USER_NAME != '' && secrets.MACOS_NOTARIZATION_USER_PASSWORD != '' && secrets.APPLE_TEAM_ID != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Import Developer Certificate into keychain
         # An unset secret evaluates to empty string in GitHub Actions expressions,
@@ -242,7 +242,7 @@ jobs:
     needs: [build, setup-matrix]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Python
         uses: actions/setup-python@v5

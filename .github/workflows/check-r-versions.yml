@@ -26,7 +26,7 @@ jobs:
       new_r_versions: ${{ steps.check_r_versions.outputs.new_r_versions }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Python
         uses: actions/setup-python@v6
