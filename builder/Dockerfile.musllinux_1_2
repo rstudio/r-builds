@@ -1,6 +1,6 @@
 FROM alpine:3.21
 
-ENV OS_IDENTIFIER musllinux_1_2
+ENV OS_IDENTIFIER=musllinux_1_2
 
 RUN apk update && apk add --no-cache \
     autoconf \

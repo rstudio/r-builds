@@ -1,6 +1,6 @@
 FROM ubuntu:focal
 
-ENV OS_IDENTIFIER ubuntu-2004
+ENV OS_IDENTIFIER=ubuntu-2004
 
 RUN set -x \
   && sed -i "s|# deb-src|deb-src|g" /etc/apt/sources.list \
@@ -16,7 +16,7 @@ RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_
 RUN chmod 0777 /opt
 
 # Override the default pager used by R
-ENV PAGER /usr/bin/pager
+ENV PAGER=/usr/bin/pager
 
 COPY package.ubuntu-2004 /package.sh
 COPY build.sh .

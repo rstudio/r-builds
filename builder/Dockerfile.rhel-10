@@ -1,6 +1,6 @@
 FROM rockylinux/rockylinux:10
 
-ENV OS_IDENTIFIER rhel-10
+ENV OS_IDENTIFIER=rhel-10
 
 RUN dnf -y upgrade \
     && dnf -y install dnf-plugins-core \

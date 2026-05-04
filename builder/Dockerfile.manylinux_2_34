@@ -1,6 +1,6 @@
 FROM rockylinux:9
 
-ENV OS_IDENTIFIER manylinux_2_34
+ENV OS_IDENTIFIER=manylinux_2_34
 
 RUN dnf -y upgrade \
     && dnf -y install dnf-plugins-core \
