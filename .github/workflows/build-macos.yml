@@ -195,7 +195,7 @@ jobs:
         # Always upload (regardless of publish state) so `gh run download`
         # can pull builds for testing without needing S3 access. 7-day
         # retention keeps storage cost negligible.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: R-${{ matrix.r_version }}-macos-${{ matrix.arch }}
           path: ${{ steps.build.outputs.tarball }}
