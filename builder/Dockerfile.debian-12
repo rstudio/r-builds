@@ -1,6 +1,6 @@
 FROM debian:bookworm
 
-ENV OS_IDENTIFIER debian-12
+ENV OS_IDENTIFIER=debian-12
 
 RUN set -x \
   && export DEBIAN_FRONTEND=noninteractive \
@@ -17,7 +17,7 @@ RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_
     rm "nfpm_$(dpkg --print-architecture).deb"
 
 # Override the default pager used by R
-ENV PAGER /usr/bin/pager
+ENV PAGER=/usr/bin/pager
 
 # R 3.x requires PCRE2 for Pango support on Debian 12
 ENV INCLUDE_PCRE2_IN_R_3 yes

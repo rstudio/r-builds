@@ -1,6 +1,6 @@
 FROM ubuntu:noble
 
-ENV OS_IDENTIFIER ubuntu-2404
+ENV OS_IDENTIFIER=ubuntu-2404
 
 RUN set -x \
   && sed -i "s|Types: deb|Types: deb deb-src|g" /etc/apt/sources.list.d/ubuntu.sources \
@@ -23,7 +23,7 @@ RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.18.1/nfpm_
 RUN chmod 0777 /opt
 
 # Override the default pager used by R
-ENV PAGER /usr/bin/pager
+ENV PAGER=/usr/bin/pager
 
 # R 3.x requires PCRE2 for Pango support on Ubuntu 24
 ENV INCLUDE_PCRE2_IN_R_3 yes

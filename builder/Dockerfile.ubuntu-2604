@@ -1,6 +1,6 @@
 FROM ubuntu:resolute
 
-ENV OS_IDENTIFIER ubuntu-2604
+ENV OS_IDENTIFIER=ubuntu-2604
 
 RUN set -x \
   && sed -i "s|Types: deb|Types: deb deb-src|g" /etc/apt/sources.list.d/ubuntu.sources \
@@ -23,7 +23,7 @@ RUN curl -LO "https://github.com/goreleaser/nfpm/releases/download/v2.46.1/nfpm_
 RUN chmod 0777 /opt
 
 # Override the default pager used by R
-ENV PAGER /usr/bin/pager
+ENV PAGER=/usr/bin/pager
 
 # Note: Ubuntu 26 does not have PCRE1 (libpcre3), so R 3.x is not supported
 

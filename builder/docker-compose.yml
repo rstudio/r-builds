@@ -3,7 +3,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -16,7 +16,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -29,7 +29,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -42,7 +42,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -55,7 +55,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -68,7 +68,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -81,7 +81,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -94,7 +94,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -107,7 +107,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -120,7 +120,7 @@ services:
     command: bash ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -133,7 +133,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -146,7 +146,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -159,7 +159,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -172,7 +172,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -185,7 +185,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
@@ -198,7 +198,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
     build:
       context: .
