@@ -270,7 +270,9 @@ The Makefile's `build-r-macos` target also extracts the tarball before running t
 
 **`bin/R` works but the IDE can't find R** — verify `bin/R` still contains a static `R_HOME_DIR=...` line. If it was overwritten (e.g. by an extra sed pass), the IDE's text parser can't extract a path. The runtime override should be *inserted before* the static line, not replace it.
 
-## Related projects
+## Acknowledgements
 
-- **[portable-r/portable-r-macos](https://github.com/portable-r/portable-r-macos)** — independent prototype of the same approach. Used as a reference; this pipeline shares its core idea (CRAN .pkg + post-process) but adds CI integration, Developer ID signing, the version-aware Rscript wrapper, and the base-Rprofile hook design.
-- **[builder/portable-r/](../builder/portable-r/README.md)** — the Linux portable builds. Different mechanism (compile from source + bundle libs via `delocate_r.py`) but the same goal of relocatable, distribution-independent R.
+This pipeline is based on [portable-r/portable-r-macos](https://github.com/portable-r/portable-r-macos) by James Balamuta. The approach of producing a portable macOS R from the official
+CRAN `.pkg`, the Mach-O install-name rewriting that replaces
+`/Library/Frameworks/R.framework/...` paths with `@rpath`, `@loader_path`, and
+`@executable_path` references, and the `Rprofile` hook installs a `.portable` R environment wrapping `install.packages()` to patch CRAN binary packages after install, all originated in that project. The techniques in this directory are adapted from that work.

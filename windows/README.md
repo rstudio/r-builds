@@ -165,8 +165,11 @@ The Makefile's `build-r-windows` target also extracts the zip before running tes
 
 **Build is extremely slow on PowerShell 5.1** — `$ProgressPreference = 'SilentlyContinue'` is set in `build.ps1`, but if you're invoking the script with `-NoProfile` and overriding the variable, restore it. The PS 5.1 progress bar is a known bottleneck for `Invoke-WebRequest` and `Expand-Archive`.
 
-## Related projects
+## Acknowledgements
 
-- **[portable-r/portable-r-windows](https://github.com/portable-r/portable-r-windows)** — independent prototype of the same approach. Used as a reference; this pipeline shares its core idea (CRAN .exe extraction + minimal post-process) but adds CI integration, the innoextract+silent-install fallback chain, and the base-Rprofile hook design.
-- **[`macos/README.md`](../macos/README.md)** — companion macOS portable builds. Same goals, much heavier post-processing because CRAN macOS binaries embed framework paths.
-- **[`builder/portable-r/`](../builder/portable-r/README.md)** — the Linux portable builds. Different mechanism (compile from source + bundle libs via `delocate_r.py`) but the same goal of relocatable, distribution-independent R.
+This pipeline is based on [portable-r/portable-r-windows](https://github.com/portable-r/portable-r-windows)
+by James Balamuta. The approach of producing a portable Windows R from the
+official CRAN Inno Setup installer (extracting it with innoextract, falling
+back to a silent install), and configuring a portable site-library and CRAN
+mirror via an `Rprofile` hook, originated in that project. The techniques in
+this directory are adapted from that work.
