@@ -56,8 +56,15 @@ jobs:
           echo "Resolved R versions: $r_versions"
 
           # Build matrix JSON (Windows is x86_64 only — no arch filtering needed)
+          # CRAN only publishes R-devel-win.exe, not R-next-win.exe, so skip "next".
           includes="[]"
+          built_versions=""
           for version in $(echo "$r_versions" | tr ',' ' '); do
+            if [ "$version" = "next" ]; then
+              echo "Skipping Windows build for R next — CRAN does not publish R-next-win.exe"
+              continue
+            fi
+            built_versions="${built_versions:+${built_versions},}${version}"
             includes=$(echo "$includes" | jq --arg v "$version" \
               '. + [{"r_version": $v, "os": "windows-latest"}]')
           done
@@ -66,7 +73,8 @@ jobs:
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "Using matrix: $matrix"
 
-          r_versions_json=$(echo "$r_versions" | jq -Rc 'split(",") | map(select(length > 0))')
+          # Only publish versions we actually built (filtering happens above)
+          r_versions_json=$(echo "$built_versions" | jq -Rc 'split(",") | map(select(length > 0))')
           echo "r_versions=$r_versions_json" >> $GITHUB_OUTPUT
 
   build:
