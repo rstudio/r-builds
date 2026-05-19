@@ -179,8 +179,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-        with:
-          install: true
 
       # Enable Docker layer caching without having to push to a registry.
       # https://docs.docker.com/build/ci/github-actions/examples/#local-cache
@@ -227,8 +225,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-        with:
-          install: true
 
       - name: Restore cached Docker layers
         uses: actions/cache@v5
