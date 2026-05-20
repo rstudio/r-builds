@@ -26,9 +26,24 @@ if (Test-Path $InstallerPath) {
     #   current       — cloud.r-project.org/bin/windows/base/R-$Version-win.exe
     #   main archive  — cloud.r-project.org/bin/windows/base/old/$Version/...
     #   cran-archive  — cran-archive.r-project.org/bin/windows/base/old/$Version/...
-    # devel uses its own stable URL; all other versions walk the list.
+    # devel uses its own stable URL; "next" (R-patched, matching the
+    # base-prerelease/R-patched.tar.gz source used by the Linux build) needs
+    # the current release filename resolved from rpatched.html because the
+    # filename embeds the current major.minor.patch (e.g. R-4.6.0patched-win.exe)
+    # and changes with each release. All other versions walk the candidate list.
     if ($Version -eq "devel") {
         $candidates = @("https://cloud.r-project.org/bin/windows/base/R-devel-win.exe")
+    } elseif ($Version -eq "next") {
+        $rpatchedUrl = "https://cloud.r-project.org/bin/windows/base/rpatched.html"
+        Write-Host "  Resolving R-patched installer filename from $rpatchedUrl"
+        $resp = Invoke-WebRequest -Uri $rpatchedUrl -UseBasicParsing
+        $match = [regex]::Match($resp.Content, 'href="(R-[^"]+patched-win\.exe)"')
+        if (-not $match.Success) {
+            throw "Could not find patched installer link in $rpatchedUrl"
+        }
+        $patchedFile = $match.Groups[1].Value
+        Write-Host "  Resolved: $patchedFile"
+        $candidates = @("https://cloud.r-project.org/bin/windows/base/$patchedFile")
     } else {
         $candidates = @(
             "https://cloud.r-project.org/bin/windows/base/R-$Version-win.exe",
