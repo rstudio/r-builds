@@ -17,15 +17,8 @@ fi
 # Run unattended; show no questions, assume default answers.
 # May also be set by the '-y'/'yes' options on the install action.
 RUN_UNATTENDED=${RUN_UNATTENDED:-0}
-if [[ "$3" == "-y" || "$3" == "yes" || "$4" == "-y" || "$4" == "yes" ]]; then
+if [[ "$3" == "-y" || "$3" == "yes" ]]; then
   RUN_UNATTENDED=1
-fi
-
-# Keep the downloaded installer file after a successful install.
-# May also be set by the '-k'/'keep' options on the install action.
-KEEP_INSTALLER=${KEEP_INSTALLER:-0}
-if [[ "$3" == "-k" || "$3" == "keep" || "$4" == "-k" || "$4" == "keep" ]]; then
-  KEEP_INSTALLER=1
 fi
 
 SUDO=
@@ -543,9 +536,9 @@ do_install () {
   installer_type=$(detect_installer_type "${os}")
   install "${installer_type}" "${installer_file_name}" "${os}" "${os_ver}"
 
-  # Clean up the downloaded installer unless asked to keep it. If the URL is
-  # empty, the file existed before this run, so leave the user's file alone.
-  if [[ -n "${url}" && "${KEEP_INSTALLER}" -eq "0" ]]; then
+  # Clean up the downloaded installer. If the URL is empty, the file existed
+  # before this run, so leave the user's file alone.
+  if [[ -n "${url}" ]]; then
     echo "Removing downloaded installer ${installer_file_name}..."
     rm -f "${installer_file_name}"
   fi
@@ -555,9 +548,8 @@ do_show_usage() {
   echo "r-builds quick install version ${THIS_VERSION}"
   echo "Usage: `basename $0` [-i|-r|-v|-h|install|rversions|version|help]"
   echo "Where:"
-  echo "'-i' or 'install' [version] [-y|yes] [-k|keep] (default) list R versions available for quick install and prompt for one"
+  echo "'-i' or 'install' [version] [-y|yes] (default) list R versions available for quick install and prompt for one"
   echo "If a version is provided, the installation proceeds without prompting, confirmations can be optionally skipped"
-  echo "'-k' or 'keep' (or set KEEP_INSTALLER=1) to keep the downloaded installer file after installation"
   echo "'-r' or 'rversions' list the R versions available for quick install, one per line"
   echo "'-v' or 'version' shows the version of this command"
   echo "'-h' or 'help' show this info"
