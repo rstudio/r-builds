@@ -1,5 +1,5 @@
 #!/bin/bash
-THIS_VERSION="1.1.0"
+THIS_VERSION="1.2.0"
 
 # Call with:
 #   bash -c "$(curl -L https://rstd.io/r-install)"
@@ -535,6 +535,13 @@ do_install () {
   # Install R
   installer_type=$(detect_installer_type "${os}")
   install "${installer_type}" "${installer_file_name}" "${os}" "${os_ver}"
+
+  # Clean up the downloaded installer. If the URL is empty, the file existed
+  # before this run, so leave the user's file alone.
+  if [[ -n "${url}" ]]; then
+    echo "Removing downloaded installer ${installer_file_name}..."
+    rm -f "${installer_file_name}"
+  fi
 }
 
 do_show_usage() {
