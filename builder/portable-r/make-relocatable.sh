@@ -90,7 +90,7 @@ while [ $# -gt 0 ]; do
       exit 0
       ;;
     --version)
-      exec "${R_HOME}/bin/R" --slave -e 'cat(sprintf("Rscript (R) version %s.%s (%s)\n", R.version$major, R.version$minor, R.version$date))'
+      exec "${R_HOME}/bin/R" --slave -e 'cat(sprintf("Rscript (R) version %s.%s (%s-%s-%s)\n", R.version$major, R.version$minor, R.version$year, R.version$month, R.version$day))'
       ;;
     --default-packages=*)
       R_DEFAULT_PACKAGES="${1#--default-packages=}"

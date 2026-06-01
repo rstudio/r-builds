@@ -160,6 +160,11 @@ echo "=== Rscript wrapper tests ==="
 # regressions if upstream Rscript changes its CLI interface.
 RSCRIPT="${R_PREFIX}/bin/Rscript"
 
+# --version should output a version string (regression test for #309)
+version_out=$("$RSCRIPT" --version 2>&1)
+echo "$version_out" | grep -qE '[0-9]+\.[0-9]+\.[0-9]+' || { echo "FAIL: Rscript --version produced no version number: '$version_out'"; exit 1; }
+echo "  Rscript --version: OK ($version_out)"
+
 # -e expression
 result=$("$RSCRIPT" -e 'cat("hello")')
 [ "$result" = "hello" ] || { echo "FAIL: Rscript -e"; exit 1; }
