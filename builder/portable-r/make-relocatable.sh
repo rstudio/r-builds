@@ -82,7 +82,10 @@ export R_HOME
 # R understands --verbose, --vanilla, --no-environ, --no-site-file, etc.
 # directly, so we only need to handle --default-packages (env var conversion)
 # and file argument conversion (first positional arg -> --file=).
-r_opts=""
+r_exprs=""
+r_opts=( "--slave" "--no-restore" )
+r_file=""
+r_args=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --help|-h)
@@ -98,39 +101,54 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     -e)
-      # -e starts expressions -- stop processing options, pass rest to R
-      break
+      # Collect R expressions - each -e is followed by an expression
+      # Note that bin/R only accepts one -e arg, whereas Rscript accepts multiple; so we have to concatenate into a single expression
+      if [ -z "$r_exprs" ]; then
+        r_exprs="$2"
+      else
+        r_exprs="$r_exprs; $2"
+      fi
+      shift 2
       ;;
     --*)
       # Collect R options (--verbose, --vanilla, --no-environ, etc.)
-      r_opts="$r_opts $1"
+      r_opts+=( "$1" )
       shift
       ;;
     *)
-      # First positional arg is the script file
-      break
+      # Positional args - first one is the file to execute iff we don't have any -e expressions
+      if [ -z "$r_file" -a -z "$r_exprs" ]; then
+        r_file="$1"
+      else
+        r_args+=( "$1" )
+      fi
+      shift
       ;;
   esac
 done
 
-# $@ now contains: [-e expr ...] or [file [args...]] or nothing
+# Start composing the command to execute
+r_cmd=("${R_HOME}/bin/R")
+
 # r_opts contains collected --options (no spaces in individual options)
-if [ $# -eq 0 ]; then
-  # No file or -e: just R options
-  exec "${R_HOME}/bin/R" --slave --no-restore $r_opts
-elif [ "$1" = "-e" ]; then
-  # -e expressions: pass through directly (preserves quoting via "$@")
-  exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "$@"
-else
-  # File argument: convert to --file=, remaining args become --args
-  file="$1"
-  shift
-  if [ $# -gt 0 ]; then
-    exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "--file=$file" --args "$@"
-  else
-    exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "--file=$file"
-  fi
+if [ "${#r_opts[@]}" -gt 0 ]; then
+  r_cmd+=( "${r_opts[@]}" )
 fi
+
+# r_exprs is, after earlier concatenation, a single R expression
+if [ -n "$r_exprs" ]; then
+  r_cmd+=( "-e" "$r_exprs" )
+elif [ -n "$r_file" ]; then
+  # If we didn't have any -e expressions, but we did have positional args, then we assumed the first arg was the file to execute
+  r_cmd+=( "--file=$r_file" )
+fi
+
+# r_args contains [args...] - note that for bin/R these follow --args, whereas for Rscript they just trail
+if [ "${#r_args[@]}" -gt 0 ]; then
+  r_cmd+=( "--args" "${r_args[@]}" )
+fi
+
+exec "${r_cmd[@]}"
 RSCRIPT_EOF
   chmod +x "$rscript"
   echo "  Replaced $(basename "$(dirname "$rscript")")/Rscript with relocatable wrapper"
