@@ -82,7 +82,7 @@ export R_HOME
 # R understands --verbose, --vanilla, --no-environ, --no-site-file, etc.
 # directly, so we only need to handle --default-packages (env var conversion)
 # and file argument conversion (first positional arg -> --file=).
-r_exprs=""
+r_exprs=()
 r_opts=( "--slave" "--no-restore" )
 r_file=""
 r_args=()
@@ -102,12 +102,7 @@ while [ $# -gt 0 ]; do
       ;;
     -e)
       # Collect R expressions - each -e is followed by an expression
-      # Note that bin/R only accepts one -e arg, whereas Rscript accepts multiple; so we have to concatenate into a single expression
-      if [ -z "$r_exprs" ]; then
-        r_exprs="$2"
-      else
-        r_exprs="$r_exprs; $2"
-      fi
+      r_exprs+=( "$1" "$2" )
       shift 2
       ;;
     --*)
@@ -116,8 +111,8 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     *)
-      # Positional args - first one is the file to execute iff we don't have any -e expressions
-      if [ -z "$r_file" -a -z "$r_exprs" ]; then
+      # Positional args - first one is the file to execute iff we don't have any -e expressions yet
+      if [ -z "$r_file" -a "${#r_exprs[@]}" -eq 0 ]; then
         r_file="$1"
       else
         r_args+=( "$1" )
@@ -135,9 +130,9 @@ if [ "${#r_opts[@]}" -gt 0 ]; then
   r_cmd+=( "${r_opts[@]}" )
 fi
 
-# r_exprs is, after earlier concatenation, a single R expression
-if [ -n "$r_exprs" ]; then
-  r_cmd+=( "-e" "$r_exprs" )
+# r_exprs contains collected R expressions
+if [ "${#r_exprs[@]}" -gt 0  ]; then
+  r_cmd+=( "${r_exprs[@]}" )
 elif [ -n "$r_file" ]; then
   # If we didn't have any -e expressions, but we did have positional args, then we assumed the first arg was the file to execute
   r_cmd+=( "--file=$r_file" )
