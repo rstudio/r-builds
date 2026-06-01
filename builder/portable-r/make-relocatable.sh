@@ -87,39 +87,54 @@ r_opts=( "--slave" "--no-restore" )
 r_file=""
 r_args=()
 while [ $# -gt 0 ]; do
-  case "$1" in
-    --help|-h)
-      echo "Usage: Rscript [options] [-e expr [-e expr2 ...] | file] [args]"
-      exit 0
-      ;;
-    --version)
-      exec "${R_HOME}/bin/R" --slave -e 'cat(sprintf("Rscript (R) version %s.%s (%s)\n", R.version$major, R.version$minor, R.version$date))'
-      ;;
-    --default-packages=*)
-      R_DEFAULT_PACKAGES="${1#--default-packages=}"
-      export R_DEFAULT_PACKAGES
-      shift
-      ;;
-    -e)
-      # Collect R expressions - each -e is followed by an expression
+  if [ -n "$r_file" ]; then
+    # Everything after the filename is a trailing arg
+    r_args+=( "$1" )
+    shift
+  elif [ "${#r_exprs[@]}" -gt 0 ]; then
+    # Everything after the first -e arg, except for other -e args, is a trailing arg
+    if [ "$1" = "-e" ]; then
       r_exprs+=( "$1" "$2" )
       shift 2
-      ;;
-    --*)
-      # Collect R options (--verbose, --vanilla, --no-environ, etc.)
-      r_opts+=( "$1" )
+    else
+      r_args+=( "$1" )
       shift
-      ;;
-    *)
-      # Positional args - first one is the file to execute iff we don't have any -e expressions yet
-      if [ -z "$r_file" -a "${#r_exprs[@]}" -eq 0 ]; then
-        r_file="$1"
-      else
-        r_args+=( "$1" )
-      fi
-      shift
-      ;;
-  esac
+    fi
+  else
+    case "$1" in
+      --help|-h)
+        echo "Usage: Rscript [options] [-e expr [-e expr2 ...] | file] [args]"
+        exit 0
+        ;;
+      --version)
+        exec "${R_HOME}/bin/R" --slave -e 'cat(sprintf("Rscript (R) version %s.%s (%s)\n", R.version$major, R.version$minor, R.version$date))'
+        ;;
+      --default-packages=*)
+        R_DEFAULT_PACKAGES="${1#--default-packages=}"
+        export R_DEFAULT_PACKAGES
+        shift
+        ;;
+      -e)
+        # Collect R expressions - each -e is followed by an expression
+        r_exprs+=( "$1" "$2" )
+        shift 2
+        ;;
+      --*)
+        # Collect R options (--verbose, --vanilla, --no-environ, etc.)
+        r_opts+=( "$1" )
+        shift
+        ;;
+      *)
+        # Positional args - first one is the file to execute iff we don't have any -e expressions yet
+        if [ -z "$r_file" -a "${#r_exprs[@]}" -eq 0 ]; then
+          r_file="$1"
+        else
+          r_args+=( "$1" )
+        fi
+        shift
+        ;;
+    esac
+  fi
 done
 
 # Start composing the command to execute
