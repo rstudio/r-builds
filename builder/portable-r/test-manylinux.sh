@@ -209,6 +209,11 @@ result=$("$RSCRIPT" -e 'cat("a")' -e 'cat("b")')
 [ "$result" = "ab" ] || { echo "FAIL: Rscript -e -e"; exit 1; }
 echo "  Rscript -e -e: OK"
 
+# -e expressions with trailing arguments (regression test for #311)
+result=$("RSCRIPT" -e 'cat("one/"); cat("two three/")' -e 'cat(commandArgs(trailingOnly = TRUE), sep = " ")' ARG1 ARG2)
+[ "$result" = "one/two three/ARG1 ARG2" ] || { echo "FAIL: Rscript -e ARGS"; exit 1; }
+echo "  Rscript -e ARGS: OK"
+
 # File execution with arguments
 tmpscript=$(mktemp /tmp/test_rscript_XXXXXX.R)
 echo 'args <- commandArgs(trailingOnly=TRUE); cat(paste(args, collapse=","))' > "$tmpscript"
