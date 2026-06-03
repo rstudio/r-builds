@@ -123,7 +123,9 @@ elif [ "$1" = "-e" ]; then
   # We can have multiple -e args, but once we have a trailing arg, all subsequent args are also trailing
   is_e=0
   is_trailing=0
+  # Cycle through "$@", dropping each arg from the front and replacing appropriately at the back
   for arg in "$@"; do
+    shift
     if [ $is_trailing = 1 ]; then
       set -- "$@" "$arg"
     elif [ "$arg" = "-e" ]; then
@@ -135,7 +137,6 @@ elif [ "$1" = "-e" ]; then
       set -- "$@" "--args" "$arg"
       is_trailing=1
     fi
-    shift
   done
   exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "$@"
 else
