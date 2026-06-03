@@ -210,7 +210,7 @@ result=$("$RSCRIPT" -e 'cat("a")' -e 'cat("b")')
 echo "  Rscript -e -e: OK"
 
 # -e expressions with trailing arguments (regression test for #311)
-result=$("RSCRIPT" -e 'cat("one/"); cat("two three/")' -e 'cat(commandArgs(trailingOnly = TRUE), sep = " ")' ARG1 ARG2)
+result=$("$RSCRIPT" -e 'cat("one/"); cat("two three/")' -e 'cat(commandArgs(trailingOnly = TRUE), sep = " ")' ARG1 ARG2)
 [ "$result" = "one/two three/ARG1 ARG2" ] || { echo "FAIL: Rscript -e ARGS"; exit 1; }
 echo "  Rscript -e ARGS: OK"
 
