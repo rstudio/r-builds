@@ -494,7 +494,6 @@ jobs:
           echo "Publishing $pkg_file to $CLOUDSMITH_REPO/$DISTRO"
 
           cloudsmith push "$PKG_TYPE" \
-            --republish \
             --verbose \
             $DRY_RUN_FLAG \
             "$CLOUDSMITH_REPO/$DISTRO" \
