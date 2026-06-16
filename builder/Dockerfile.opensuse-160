@@ -1,6 +1,6 @@
 FROM opensuse/leap:16.0
 
-ENV OS_IDENTIFIER opensuse-160
+ENV OS_IDENTIFIER=opensuse-160
 
 # Most of these packages, and also the configure options that follow were determined
 # by reviewing "R-base.spec" from the following OpenSUSE RPM:

@@ -3,7 +3,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -17,7 +17,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -31,7 +31,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -41,11 +41,24 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
+  ubuntu-2604:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu-2604
+    image: r-builds:ubuntu-2604
+    volumes:
+      - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   debian-12:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -59,7 +72,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -73,7 +86,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -87,7 +100,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -97,11 +110,37 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
+  manylinux_2_34:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.manylinux_2_34
+    image: r-builds:manylinux_2_34
+    volumes:
+      - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
+  musllinux_1_2:
+    command: bash ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
+      - LOCAL_STORE=/tmp/output
+    build:
+      context: .
+      dockerfile: Dockerfile.musllinux_1_2
+    image: r-builds:musllinux_1_2
+    volumes:
+      - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}
   rhel-9:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -115,7 +154,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -129,7 +168,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -143,7 +182,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -153,25 +192,11 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
-  fedora-41:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
-      - LOCAL_STORE=/tmp/output
-      - PACKAGE_VERSION=${PACKAGE_VERSION}
-    build:
-      context: .
-      dockerfile: Dockerfile.fedora-41
-    image: r-builds:fedora-41
-    volumes:
-      - ./integration/tmp:/tmp/output
-    platform: ${PLATFORM_ARCH}
   fedora-42:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
@@ -185,7 +210,7 @@ services:
     command: ./build.sh
     environment:
       - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
       - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:

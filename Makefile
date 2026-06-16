@@ -1,4 +1,4 @@
-PLATFORMS := ubuntu-2004 ubuntu-2204 ubuntu-2404 debian-12 debian-13 centos-7 centos-8 rhel-9 rhel-10 opensuse-156 opensuse-160 fedora-41 fedora-42 fedora-43
+PLATFORMS := ubuntu-2004 ubuntu-2204 ubuntu-2404 ubuntu-2604 debian-12 debian-13 centos-7 centos-8 manylinux_2_34 musllinux_1_2 rhel-9 rhel-10 opensuse-156 opensuse-160 fedora-42 fedora-43
 
 docker-build:
 	@cd builder && docker compose build --parallel
@@ -11,6 +11,9 @@ docker-build-r: docker-build
 
 docker-shell-r-env:
 	@cd builder && docker compose run --entrypoint /bin/bash ubuntu-2004
+
+unit-test:
+	cd builder/portable-r && python3 -m pytest test_delocate_r.py test_generate_sbom.py -v
 
 define GEN_TARGETS
 # Use PLATFORM_ARCH to override the architecture, e.g. PLATFORM_ARCH=linux/arm64 or PLATFORM_ARCH=linux/amd64
@@ -50,4 +53,24 @@ bash:
 		-w /r-builds \
 		${TARGET_IMAGE} /bin/bash
 
-.PHONY: docker-build docker-down print-platforms
+# macOS/Windows targets build CRAN binaries rather than compiling from source,
+# so they don't use the Linux docker-compose pipeline. ARCH defaults to the host
+# architecture for local dev; CI always sets it explicitly.
+ARCH ?= $(shell uname -m)
+
+build-r-macos:
+	bash macos/build.sh $(R_VERSION) $(ARCH) output
+
+test-r-macos:
+	@rm -rf output/R-$(R_VERSION)
+	tar xzf output/R-$(R_VERSION)-macos$(if $(filter arm64,$(ARCH)),-arm64).tar.gz -C output/
+	bash macos/test.sh output/R-$(R_VERSION)
+
+build-r-windows:
+	powershell.exe -File windows/build.ps1 -Version $(R_VERSION) -OutputDir output
+
+test-r-windows:
+	powershell.exe -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue output/R-$(R_VERSION)-windows; Expand-Archive -Path output/R-$(R_VERSION)-windows.zip -DestinationPath output/R-$(R_VERSION)-windows -Force"
+	powershell.exe -File windows/test.ps1 -RHome output/R-$(R_VERSION)-windows/R-$(R_VERSION)
+
+.PHONY: docker-build docker-down print-platforms build-r-macos test-r-macos build-r-windows test-r-windows

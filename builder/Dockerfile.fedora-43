@@ -1,6 +1,6 @@
 FROM fedora:43
 
-ENV OS_IDENTIFIER fedora-43
+ENV OS_IDENTIFIER=fedora-43
 
 RUN dnf -y upgrade \
     && dnf -y install dnf-plugins-core \

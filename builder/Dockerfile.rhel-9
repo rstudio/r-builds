@@ -1,6 +1,6 @@
 FROM rockylinux:9
 
-ENV OS_IDENTIFIER rhel-9
+ENV OS_IDENTIFIER=rhel-9
 
 RUN dnf -y upgrade \
     && dnf -y install dnf-plugins-core \

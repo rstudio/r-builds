@@ -19,18 +19,32 @@ bug, or ask questions on [Posit Community](https://forum.posit.co/).
 
 R binaries are built for the following Linux operating systems:
 
-- Ubuntu 20.04, 22.04, 24.04
+- Ubuntu 20.04, 22.04, 24.04, 26.04
 - Debian 12, 13
 - CentOS 7
 - Red Hat Enterprise Linux 7, 8, 9, 10
 - openSUSE 15.6, 16.0
 - SUSE Linux Enterprise 15 SP6
-- Fedora 41, 42, 43
+- Fedora 42, 43
 
 Operating systems are supported until their vendor end-of-support dates, which
 can be found on the [Posit Platform Support](https://posit.co/about/platform-support/)
 page. When an operating system has reached its end of support, builds for it
 will be discontinued, but existing binaries will continue to be available.
+
+### Portable builds (experimental)
+
+Portable R builds are also available that bundle most library dependencies
+and are relocatable to any install path. The Linux variants work across
+distributions without distro-specific packages; the macOS and Windows
+variants post-process the official CRAN binaries so they can be extracted
+anywhere instead of installed system-wide.
+
+- **manylinux** - any Linux distro with glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+,
+  Debian 12+, Amazon Linux 2023+, Arch Linux, etc.)
+- **musllinux** - Alpine Linux 3.20+ and other musl-based distros
+- **macOS** - arm64 (Apple Silicon) and x86_64 (Intel), R 4.1.0+
+- **Windows** - x86_64, R 3.6.3+
 
 ## Supported R Versions
 
@@ -76,6 +90,9 @@ curl -O https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${R_VERSION}_1_$(dpkg --print-
 
 # Ubuntu 24.04
 curl -O https://cdn.posit.co/r/ubuntu-2404/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
+
+# Ubuntu 26.04
+curl -O https://cdn.posit.co/r/ubuntu-2604/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 
 # Debian 12
 curl -O https://cdn.posit.co/r/debian-12/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
@@ -167,9 +184,6 @@ sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.$(arch).rpm
 
 Download the rpm package:
 ```bash
-# Fedora 41
-curl -O https://cdn.posit.co/r/fedora-41/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
-
 # Fedora 42
 curl -O https://cdn.posit.co/r/fedora-42/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
 
@@ -182,22 +196,280 @@ Then install the package:
 sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
-## Cloudsmith Package Repositories
+#### Portable (manylinux) - any Linux distro with glibc >= 2.34
 
-In addition to direct downloads from the CDN, R builds are also available through Cloudsmith package repositories,
-which provide signed packages that can be installed and updated using your system's native package manager.
+Portable builds are available that work across Linux distributions without
+distro-specific packages. Most library dependencies are bundled; R auto-detects
+its install location so it can be extracted to any path.
 
-### Repository Setup
+These portable builds are useful for Linux distributions that don't have
+dedicated r-builds packages, such as:
 
-Visit the Cloudsmith repository page for detailed setup instructions for your distribution:
-https://cloudsmith.io/~posit/repos/open/setup/
+- Amazon Linux 2023
+- Arch Linux
+- Other glibc-based distros not in the supported platform list
 
-### Package Versions
+Three package formats are available: **tar.gz** (universal), **DEB**
+(Debian/Ubuntu-based distros), and **RPM** (RHEL/Fedora/SUSE-based distros).
+The DEB and RPM packages automatically install `ca-certificates` and `fontconfig`
+as dependencies, and install R to `/opt/R/<version>/`. On distros that don't use
+DEB or RPM, use the tarball. The tarball is also the right choice if you need R
+installed to a custom path or without root access, since it can be extracted
+anywhere (R auto-detects its location at runtime).
 
-- **Stable releases**: Packages are versioned per-platform and per-R-version in `package-versions.json`. Only builds that need a version bump get an entry; everything else defaults to version `1`.
-- **Development builds**: Packages use date-based versions (e.g., `r-devel_20251027`)
+The portable builds require glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+,
+Amazon Linux 2023+, Arch Linux, etc.). RHEL 8 and Ubuntu 20.04 are not supported;
+use the distro-specific packages above instead.
 
-New development builds are published daily at 4 AM UTC and can be updated in place using your package manager.
+Portable builds bundle most shared library dependencies (including OpenSSL and
+libcurl). Unlike distro-specific builds, updating system packages on the host
+does not update the bundled copies; users must reinstall R to receive updates
+for bundled libraries. Each build includes a CycloneDX SBOM at
+`$R_HOME/sbom.cdx.json` listing all bundled libraries and their source packages.
+See the [portable-r README](builder/portable-r/README.md) for details.
+
+##### Install via DEB package (Debian/Ubuntu and derivatives)
+
+```bash
+curl -O https://cdn.posit.co/r/manylinux_2_34/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb
+sudo apt-get install -y ./r-${R_VERSION}_1_$(dpkg --print-architecture).deb
+```
+
+##### Install via RPM package (RHEL/Fedora/Rocky/Amazon Linux/SUSE)
+
+```bash
+curl -O https://cdn.posit.co/r/manylinux_2_34/pkgs/R-${R_VERSION}-1-1.$(arch).rpm
+sudo dnf install -y R-${R_VERSION}-1-1.$(arch).rpm       # RHEL/Fedora/Rocky/Amazon Linux
+sudo zypper --no-gpg-checks install R-${R_VERSION}-1-1.$(arch).rpm  # openSUSE/SLES
+```
+
+##### Install via tarball (any Linux distro)
+
+Download and extract:
+```bash
+# x86_64
+curl -O https://cdn.posit.co/r/manylinux_2_34/R-${R_VERSION}-manylinux_2_34.tar.gz
+
+# arm64
+curl -O https://cdn.posit.co/r/manylinux_2_34/R-${R_VERSION}-manylinux_2_34-arm64.tar.gz
+
+sudo mkdir -p /opt/R
+sudo tar xzf R-${R_VERSION}-manylinux_2_34*.tar.gz -C /opt/R
+
+# Or install to a user-writable directory (no root required):
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-manylinux_2_34*.tar.gz -C ~/R
+~/R/${R_VERSION}/bin/R --version
+```
+
+Install system dependencies (only needed for tarballs; DEB/RPM handle this automatically):
+```bash
+# SSL/TLS certificates (for HTTPS, e.g. install.packages)
+# Ubuntu/Debian
+sudo apt-get install -y ca-certificates
+# RHEL/Fedora/Rocky/Amazon Linux
+sudo dnf install -y ca-certificates which
+# openSUSE/SLES
+sudo zypper install -y ca-certificates which
+# Arch Linux
+sudo pacman -S ca-certificates which
+
+# Font configuration and fonts (for plotting with cairo graphics devices)
+# Ubuntu/Debian
+sudo apt-get install -y fontconfig
+# RHEL/Fedora/Rocky/Amazon Linux
+sudo dnf install -y fontconfig
+# openSUSE/SLES (fontconfig does not pull in fonts automatically)
+sudo zypper install -y fontconfig dejavu-fonts
+# Arch Linux
+sudo pacman -S fontconfig
+```
+
+Optional - for installing R packages from source (`R CMD INSTALL`):
+```bash
+# Ubuntu/Debian
+sudo apt-get install -y build-essential gfortran \
+  libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev
+  # For R 3.x, also install: libpcre3-dev
+
+# RHEL/Fedora/Rocky/Amazon Linux
+sudo dnf install -y gcc gcc-c++ gcc-gfortran make \
+  pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
+  # For R 3.x, also install: pcre-devel
+
+# openSUSE/SLES
+sudo zypper install -y gcc gcc-c++ gcc-fortran make \
+  pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
+  # For R 3.x, also install: pcre-devel
+
+# Arch Linux
+sudo pacman -S base-devel gcc-fortran pcre2 xz bzip2 zlib icu
+```
+
+#### Portable (musllinux) - Alpine Linux and musl-based distros
+
+Portable builds are available for Linux distributions that use musl libc
+instead of glibc, such as Alpine Linux. Most library dependencies are bundled,
+and R auto-detects its install location so it can be extracted to any path.
+
+These builds require musl >= 1.2 (Alpine 3.20+, Void Linux musl, etc.).
+
+Two package formats are available: **APK** (Alpine Linux) and **tar.gz**
+(universal). The APK package automatically installs `ca-certificates`,
+`fontconfig`, and `ttf-dejavu` as dependencies, and installs R to
+`/opt/R/<version>/`. On non-Alpine musl distros, use the tarball.
+
+##### Install via APK package (Alpine Linux)
+
+```bash
+curl -O https://cdn.posit.co/r/musllinux_1_2/pkgs/r-${R_VERSION}_1_$(apk --print-arch).apk
+sudo apk add --allow-untrusted ./r-${R_VERSION}_1_$(apk --print-arch).apk
+```
+
+##### Install via tarball
+
+Download and extract:
+```bash
+# x86_64
+curl -O https://cdn.posit.co/r/musllinux_1_2/R-${R_VERSION}-musllinux_1_2.tar.gz
+
+# arm64
+curl -O https://cdn.posit.co/r/musllinux_1_2/R-${R_VERSION}-musllinux_1_2-arm64.tar.gz
+
+sudo mkdir -p /opt/R
+sudo tar xzf R-${R_VERSION}-musllinux_1_2*.tar.gz -C /opt/R
+
+# Or install to a user-writable directory (no root required):
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-musllinux_1_2*.tar.gz -C ~/R
+~/R/${R_VERSION}/bin/R --version
+```
+
+Install system dependencies (only needed for tarballs; APK handles this automatically):
+```bash
+# Runtime dependencies
+sudo apk add --no-cache ca-certificates fontconfig ttf-dejavu
+
+# Optional: build tools for installing R packages from source
+sudo apk add --no-cache \
+  gcc g++ gfortran make \
+  pcre2-dev xz-dev bzip2-dev zlib-dev zstd-dev icu-dev
+```
+
+
+#### Portable macOS (experimental)
+
+Portable, relocatable macOS R builds are available for arm64 (Apple Silicon)
+and x86_64 (Intel). These are post-processed CRAN binaries: the official
+`.pkg` installer is downloaded, extracted without installing, and patched so
+all hardcoded `/Library/Frameworks/R.framework/...` paths in Mach-O load
+commands and config files are rewritten to `@rpath`/`@loader_path`
+references. The result is a tarball that can be extracted to any directory
+and run from there — no admin rights, no Gatekeeper installer prompts, no
+side effects on the system R installation.
+
+These macOS builds are available for R 4.1.0 and later. R 4.0.x and R 3.x
+are not supported because CRAN does not host a macOS `.pkg` installer for
+those versions on either the main mirror or the CRAN archive. Use the
+official CRAN installer for those versions instead.
+
+Bundled libraries (Tcl/Tk, gfortran runtime, etc.) come from the CRAN `.pkg`,
+so behavior matches CRAN's official binary R for macOS. Each `.so` and
+`.dylib` is signed (ad-hoc on staging, Developer ID + notarized on
+production); when the production secrets are configured, downloaded tarballs
+pass Gatekeeper without quarantine. See [`macos/README.md`](macos/README.md)
+for the full technical breakdown.
+
+##### Install via tarball
+
+```bash
+R_VERSION=4.4.3
+
+# arm64 (Apple Silicon)
+curl -O https://cdn.posit.co/r/macos/R-${R_VERSION}-macos-arm64.tar.gz
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-macos-arm64.tar.gz -C ~/R
+~/R/R-${R_VERSION}/bin/R --version
+
+# x86_64 (Intel)
+curl -O https://cdn.posit.co/r/macos/R-${R_VERSION}-macos.tar.gz
+mkdir -p ~/R
+tar xzf R-${R_VERSION}-macos.tar.gz -C ~/R
+~/R/R-${R_VERSION}/bin/R --version
+```
+
+If you downloaded an unsigned/un-notarized tarball with `curl`, macOS
+attaches a quarantine attribute on extracted files. Strip it once with:
+
+```bash
+xattr -dr com.apple.quarantine ~/R/R-${R_VERSION}
+```
+
+Optional — for installing R packages that require compilation from source,
+install the Xcode Command Line Tools:
+
+```bash
+xcode-select --install
+```
+
+**Using the portable R inside Positron** — Positron's R discovery requires
+each R installation to live at the canonical
+`/Library/Frameworks/R.framework/Versions/<ver>-<arch>/Resources` path on
+disk (or be reachable via that path through a symlink). For the portable R
+to appear in Positron's interpreter picker, either install the tarball
+directly at that path, or symlink it once after extraction:
+
+```bash
+ARCH=arm64       # or x86_64
+RVER_MM=4.4      # major.minor of the R you extracted
+
+sudo mkdir -p /Library/Frameworks/R.framework/Versions/${RVER_MM}-${ARCH}
+sudo ln -s ~/R/R-${R_VERSION} \
+  /Library/Frameworks/R.framework/Versions/${RVER_MM}-${ARCH}/Resources
+```
+
+Don't run this on a host that already has a real R install at that
+version-arch — it'll shadow the framework `Resources` for that version.
+RStudio and command-line use don't need this step.
+
+The architectures of Positron and the R install must match: Positron's R
+kernel loads `libR.dylib` in-process, and macOS dyld cannot `dlopen` a
+dylib of a different architecture. On Apple Silicon, install x86_64
+Positron alongside arm64 if you need to use the x86_64 portable R build,
+or stick with the arm64 build. RStudio does not have this constraint
+because it launches R as a subprocess. See [`macos/README.md`](macos/README.md)
+for the technical reasoning.
+
+#### Portable Windows (experimental)
+
+Portable, relocatable Windows R builds are available for x86_64. The
+official CRAN `.exe` installer is downloaded and extracted with
+[`innoextract`](https://github.com/dscharrer/innoextract) (with a
+`/VERYSILENT /CURRENTUSER` silent-install fallback if `innoextract` is
+unavailable), so no admin rights, no registry changes, and no side effects
+on the system R installation. Windows R is already largely self-contained
+(all DLLs bundled, paths largely relative), so unlike macOS no Mach-O
+patching pipeline is needed — extraction + a portable site-library and
+default repo configuration is all that's required.
+
+These Windows builds are available for R 3.6.3 and later, with R 3.6.3
+included as a long-term compatibility anchor (matching the existing Linux
+builds). See [`windows/README.md`](windows/README.md) for the full technical
+breakdown.
+
+##### Install via zip
+
+```powershell
+$RVersion = "4.4.3"
+
+Invoke-WebRequest -Uri "https://cdn.posit.co/r/windows/R-$RVersion-windows.zip" -OutFile "R-$RVersion-windows.zip"
+Expand-Archive "R-$RVersion-windows.zip" -DestinationPath C:\
+& "C:\R-$RVersion\bin\R.exe" --version
+```
+
+Optional — for installing R packages that require compilation from source,
+install [Rtools](https://cran.r-project.org/bin/windows/Rtools/) (the
+version that matches your R minor version, e.g. Rtools 4.4 for R 4.4.x).
 
 ### Verify R installation
 
@@ -225,6 +497,23 @@ or TeX Live) and Pandoc. For more information on system dependencies, see
 
 If you want to install multiple versions of R on the same system, you can
 repeat these steps to install a different version of R alongside existing versions.
+
+## Cloudsmith Package Repositories
+
+In addition to direct downloads from the CDN, R builds are also available through Cloudsmith package repositories,
+which provide signed packages that can be installed and updated using your system's native package manager.
+
+### Repository Setup
+
+Visit the Cloudsmith repository page for detailed setup instructions for your distribution:
+https://cloudsmith.io/~posit/repos/open/setup/
+
+### Package Versions
+
+- **Stable releases**: Packages are versioned per-platform and per-R-version in `package-versions.json`. Only builds that need a version bump get an entry; everything else defaults to version `1`.
+- **Development builds**: Packages use date-based versions (e.g., `r-devel_20251027`)
+
+New development builds are published daily at 4 AM UTC and can be updated in place using your package manager.
 
 ---
 

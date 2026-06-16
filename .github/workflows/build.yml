@@ -122,6 +122,16 @@ on:
         required: false
       CLOUDSMITH_API_KEY:
         required: false
+      MACOS_DEVELOPER_CERTIFICATE:
+        required: false
+      MACOS_DEVELOPER_CERTIFICATE_PASSWORD:
+        required: false
+      MACOS_NOTARIZATION_USER_NAME:
+        required: false
+      MACOS_NOTARIZATION_USER_PASSWORD:
+        required: false
+      APPLE_TEAM_ID:
+        required: false
 
 permissions:
   id-token: write
@@ -136,10 +146,10 @@ jobs:
       r_versions: ${{ steps.setup-matrix.outputs.r_versions }}
       arch: ${{ steps.setup-matrix.outputs.arch }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Install Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.x'
         cache: 'pip'
@@ -174,7 +184,32 @@ jobs:
         echo "arch=$arch" >> $GITHUB_OUTPUT
         echo "Using architectures: $arch"
 
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Unit tests
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run unit tests
+        run: make unit-test
+
   docker-images:
+    # Skip when no Linux platforms remain (e.g. workflow_dispatch with
+    # platforms=macos,windows). GHA expands an empty matrix to 0 jobs, but
+    # without this guard the workflow run conclusion is reported as failure
+    # even though every actual job succeeded — a known quirk of empty
+    # matrices in workflow_dispatch runs. The same guard exists on the
+    # build job below, and on the build/update jobs in build-macos.yml and
+    # build-windows.yml.
+    if: ${{ toJson(fromJson(needs.setup-matrix.outputs.platforms)) != '[]' && toJson(fromJson(needs.setup-matrix.outputs.arch)) != '[]' }}
     needs: setup-matrix
     strategy:
       matrix:
@@ -183,12 +218,10 @@ jobs:
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     name: Docker image (${{ matrix.platform }}-${{ matrix.arch }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          install: true
+        uses: docker/setup-buildx-action@v4
 
       # Enable Docker layer caching without having to push to a registry.
       # https://docs.docker.com/build/ci/github-actions/examples/#local-cache
@@ -196,7 +229,7 @@ jobs:
       # which is still considered experimental.
       # https://github.com/moby/buildkit#github-actions-cache-experimental
       - name: Cache Docker layers
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: /tmp/.buildx-cache
           key: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-${{ github.sha }}
@@ -222,6 +255,8 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   build:
+    # See docker-images above for why this guard is needed.
+    if: ${{ fromJson(needs.setup-matrix.outputs.matrix).include != null && toJson(fromJson(needs.setup-matrix.outputs.matrix).include) != '[]' }}
     needs: [setup-matrix, docker-images]
     strategy:
       fail-fast: false
@@ -229,15 +264,13 @@ jobs:
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     name: ${{ matrix.platform }}-${{ matrix.arch }} (R ${{ matrix.r_version }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          install: true
+        uses: docker/setup-buildx-action@v4
 
       - name: Restore cached Docker layers
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: /tmp/.buildx-cache
           key: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-${{ github.sha }}
@@ -285,7 +318,7 @@ jobs:
 
       - name: Configure AWS Credentials
         if: ${{ inputs.publish != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
           aws-region: ${{ secrets.AWS_REGION }}
@@ -302,10 +335,10 @@ jobs:
     needs: [build, setup-matrix]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
           cache: 'pip'
@@ -315,7 +348,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
           aws-region: ${{ secrets.AWS_REGION }}
@@ -406,11 +439,6 @@ jobs:
               echo "pkg_type=rpm" >> $GITHUB_OUTPUT
               echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
               ;;
-            fedora-41)
-              echo "distro=fedora/41" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
             fedora-42)
               echo "distro=fedora/42" >> $GITHUB_OUTPUT
               echo "pkg_type=rpm" >> $GITHUB_OUTPUT
@@ -452,3 +480,41 @@ jobs:
             $DRY_RUN_FLAG \
             ${{ inputs.publish_cloudsmith }}/${{ steps.pkg-info.outputs.distro }} \
             "$pkg_file"
+
+  build-macos:
+    # Empty inputs.platforms means a push event (workflow input defaults don't apply to push).
+    # Treat that as "all", matching get_matrix.py's behavior for the Linux jobs.
+    if: ${{ inputs.platforms == '' || inputs.platforms == 'all' || contains(inputs.platforms, 'macos') }}
+    needs: [setup-matrix]
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      r_versions: ${{ inputs.r_versions }}
+      arch: >-
+        ${{ contains(inputs.platforms, 'macos-arm64') && !contains(inputs.platforms, 'macos-x86_64') && 'arm64'
+            || !contains(inputs.platforms, 'macos-arm64') && contains(inputs.platforms, 'macos-x86_64') && 'x86_64'
+            || 'both' }}
+      publish: ${{ inputs.publish }}
+    secrets:
+      AWS_PUBLISH_ROLE: ${{ secrets.AWS_PUBLISH_ROLE }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET_STAGING: ${{ secrets.S3_BUCKET_STAGING }}
+      S3_BUCKET_PRODUCTION: ${{ secrets.S3_BUCKET_PRODUCTION }}
+      MACOS_DEVELOPER_CERTIFICATE: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE }}
+      MACOS_DEVELOPER_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_DEVELOPER_CERTIFICATE_PASSWORD }}
+      MACOS_NOTARIZATION_USER_NAME: ${{ secrets.MACOS_NOTARIZATION_USER_NAME }}
+      MACOS_NOTARIZATION_USER_PASSWORD: ${{ secrets.MACOS_NOTARIZATION_USER_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+  build-windows:
+    # See note on build-macos above re: empty inputs.platforms on push events.
+    if: ${{ inputs.platforms == '' || inputs.platforms == 'all' || contains(inputs.platforms, 'windows') }}
+    needs: [setup-matrix]
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      r_versions: ${{ inputs.r_versions }}
+      publish: ${{ inputs.publish }}
+    secrets:
+      AWS_PUBLISH_ROLE: ${{ secrets.AWS_PUBLISH_ROLE }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET_STAGING: ${{ secrets.S3_BUCKET_STAGING }}
+      S3_BUCKET_PRODUCTION: ${{ secrets.S3_BUCKET_PRODUCTION }}
