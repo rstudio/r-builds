@@ -286,24 +286,33 @@ jobs:
 
       - name: Resolve package version
         id: pkg-version
+        env:
+          PACKAGE_VERSION_INPUT: ${{ inputs.package_version }}
+          PLATFORM: ${{ matrix.platform }}
+          R_VERSION: ${{ matrix.r_version }}
         run: |
-          if [[ -n "${{ inputs.package_version }}" ]]; then
-            echo "version=${{ inputs.package_version }}" >> $GITHUB_OUTPUT
+          if [[ -n "$PACKAGE_VERSION_INPUT" ]]; then
+            version="$PACKAGE_VERSION_INPUT"
           else
-            version=$(jq -r '."${{ matrix.platform }}"."${{ matrix.r_version }}" // 1' package-versions.json)
-            echo "version=$version" >> $GITHUB_OUTPUT
+            version=$(jq -r --arg platform "$PLATFORM" --arg r_version "$R_VERSION" '.[$platform][$r_version] // 1' package-versions.json)
           fi
-          echo "Using package version: $(cat $GITHUB_OUTPUT | grep version= | cut -d= -f2)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Using package version: $version"
 
       - name: Build R
+        env:
+          R_VERSION: ${{ matrix.r_version }}
+          PACKAGE_VERSION: ${{ steps.pkg-version.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
-          R_VERSION=${{ matrix.r_version }} \
-          PACKAGE_VERSION=${{ steps.pkg-version.outputs.version }} \
-          make build-r-${{ matrix.platform }}
+          make build-r-"$PLATFORM"
 
       - name: Test R
+        env:
+          R_VERSION: ${{ matrix.r_version }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
-          R_VERSION=${{ matrix.r_version }} make test-r-${{ matrix.platform }}
+          make test-r-"$PLATFORM"
       
       - name: Upload packages for Cloudsmith
         if: ${{ inputs.publish_cloudsmith != '' }}
@@ -382,8 +391,10 @@ jobs:
 
       - name: Determine package type and Cloudsmith distro
         id: pkg-info
+        env:
+          PLATFORM: ${{ matrix.platform }}
         run: |
-          case "${{ matrix.platform }}" in
+          case "$PLATFORM" in
             ubuntu-2004)
               echo "distro=ubuntu/focal" >> $GITHUB_OUTPUT
               echo "pkg_type=deb" >> $GITHUB_OUTPUT
@@ -450,7 +461,7 @@ jobs:
               echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
               ;;
             *)
-              echo "::error::Unknown platform: ${{ matrix.platform }}"
+              echo "::error::Unknown platform: $PLATFORM"
               exit 1
               ;;
           esac
@@ -458,27 +469,35 @@ jobs:
       - name: Find and publish package
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          PLATFORM: ${{ matrix.platform }}
+          R_VERSION: ${{ matrix.r_version }}
+          ARCH: ${{ matrix.arch }}
+          PKG_PATTERN: ${{ steps.pkg-info.outputs.pkg_pattern }}
+          PKG_TYPE: ${{ steps.pkg-info.outputs.pkg_type }}
+          DISTRO: ${{ steps.pkg-info.outputs.distro }}
+          CLOUDSMITH_REPO: ${{ inputs.publish_cloudsmith }}
+          DRY_RUN: ${{ inputs.cloudsmith_dry_run }}
         run: |
-          pkg_file=$(find packages/ -name "${{ steps.pkg-info.outputs.pkg_pattern }}" -type f | head -1)
-          
+          pkg_file=$(find packages/ -name "$PKG_PATTERN" -type f | head -1)
+
           if [[ -z "$pkg_file" || ! -f "$pkg_file" ]]; then
-            echo "::warning::Package not found for ${{ matrix.platform }}, R ${{ matrix.r_version }}, ${{ matrix.arch }}"
+            echo "::warning::Package not found for $PLATFORM, R $R_VERSION, $ARCH"
             exit 0
           fi
 
           DRY_RUN_FLAG=""
-          if [[ "${{ inputs.cloudsmith_dry_run }}" == "true" ]]; then
+          if [[ "$DRY_RUN" == "true" ]]; then
             echo "Running in dry-run mode"
             DRY_RUN_FLAG="--dry-run"
           fi
 
-          echo "Publishing $pkg_file to ${{ inputs.publish_cloudsmith }}/${{ steps.pkg-info.outputs.distro }}"
-          
-          cloudsmith push ${{ steps.pkg-info.outputs.pkg_type }} \
+          echo "Publishing $pkg_file to $CLOUDSMITH_REPO/$DISTRO"
+
+          cloudsmith push "$PKG_TYPE" \
             --republish \
             --verbose \
             $DRY_RUN_FLAG \
-            ${{ inputs.publish_cloudsmith }}/${{ steps.pkg-info.outputs.distro }} \
+            "$CLOUDSMITH_REPO/$DISTRO" \
             "$pkg_file"
 
   build-macos:

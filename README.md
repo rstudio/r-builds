@@ -649,6 +649,15 @@ A new service in the `test/docker-compose.yml` file named according to the `plat
 
 Update the quick install script at [`install.sh`](install.sh), if necessary, to support the new platform.
 
+### Cloudsmith distro mapping
+
+If the platform is published to Cloudsmith, add a `case` entry for it in the
+`cloudsmith-publish` job in [`.github/workflows/build.yml`](.github/workflows/build.yml).
+This maps the `platform-version` to its Cloudsmith distribution slug (e.g.
+`fedora-43` → `fedora/43`), package type (`deb`/`rpm`), and package glob. This
+list is maintained by hand, so it must be updated whenever a platform is added
+or removed.
+
 Once you've followed the steps above, submit a pull request.
 
 ## R builds tarballs
