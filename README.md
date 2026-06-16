@@ -688,7 +688,7 @@ the workflow can be rerun for `production` to build new binaries or rebuild exis
 
 R builds can be published to Cloudsmith repositories in addition to S3. To publish to Cloudsmith:
 
-1. Set `publish_cloudsmith` to your Cloudsmith repository (e.g., `posit/open/r-builds`)
+1. Set `publish_cloudsmith` to your Cloudsmith repository (e.g., `posit/open`)
 2. Optionally set `cloudsmith_dry_run: true` for testing
 
 Package versions for stable releases are managed in `package-versions.json`, keyed by
@@ -712,7 +712,7 @@ The `package_version` workflow input can override all versions with a single val
 platforms: all
 r_versions: 4.4.2
 publish: production          # Also publish to S3
-publish_cloudsmith: posit/open/r-builds
+publish_cloudsmith: posit/open
 cloudsmith_dry_run: false
 # package_version is read from package-versions.json per platform/R-version
 ```
@@ -722,7 +722,7 @@ cloudsmith_dry_run: false
 platforms: ubuntu-2204
 r_versions: 4.4.1
 package_version: 999         # Overrides package-versions.json
-publish_cloudsmith: posit/open/r-builds-test
+publish_cloudsmith: posit/open
 cloudsmith_dry_run: true
 ```
 

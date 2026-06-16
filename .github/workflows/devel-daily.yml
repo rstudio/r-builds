@@ -7,9 +7,9 @@ on:
     inputs:
       publish_cloudsmith:
         description: |
-          Publish to Cloudsmith? Specify repository (e.g., "posit/r-builds") or leave empty to skip.
+          Publish to Cloudsmith? Specify repository (e.g., "posit/open") or leave empty to skip.
         required: false
-        default: 'posit/r-builds'
+        default: 'posit/open'
         type: string
       cloudsmith_dry_run:
         description: |
@@ -44,6 +44,6 @@ jobs:
       r_versions: 'devel,next'
       publish: production
       package_version: ${{ needs.generate-version.outputs.package_version }}
-      publish_cloudsmith: ${{ inputs.publish_cloudsmith || 'posit/r-builds' }}
+      publish_cloudsmith: ${{ inputs.publish_cloudsmith || 'posit/open' }}
       cloudsmith_dry_run: ${{ inputs.cloudsmith_dry_run || false }}
     secrets: inherit

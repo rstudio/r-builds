@@ -50,13 +50,13 @@ on:
         type: string
       publish_cloudsmith:
         description: |
-          Publish to Cloudsmith? Specify repository like "posit/open/r-builds" or leave empty to skip.
+          Publish to Cloudsmith? Specify repository like "posit/open" or leave empty to skip.
         required: false
         default: ''
         type: choice
         options:
           - ''
-          - posit/open/r-builds
+          - posit/open
       cloudsmith_dry_run:
         description: |
           Test Cloudsmith upload without actually publishing.
@@ -101,7 +101,7 @@ on:
         type: string
       publish_cloudsmith:
         description: |
-          Publish to Cloudsmith? Specify repository like "posit/open/r-builds" or leave empty to skip.
+          Publish to Cloudsmith? Specify repository like "posit/open" or leave empty to skip.
         required: false
         default: ''
         type: string
