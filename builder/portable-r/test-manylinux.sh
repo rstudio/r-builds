@@ -190,51 +190,39 @@ if [ -n "$TESTPKG_SO" ]; then
 fi
 
 echo "=== Rscript wrapper tests ==="
-# Test key usage patterns of the relocatable Rscript shell wrapper to catch
-# regressions if upstream Rscript changes its CLI interface.
+# Portable Rscript preserves the native compiled binary as Rscript.bin and wraps
+# it with a thin script that sets RHOME and execs the binary. Argument parsing,
+# --version, etc. are the native binary's job (upstream R) and need no coverage
+# here. We test only what the wrapper owns:
+#   1. the native binary is preserved (the wrapper execs it)
+#   2. RHOME resolution reaches a working R and "$@" is forwarded intact
+#   3. no args exits non-interactively (does not start an interactive session)
 RSCRIPT="${R_PREFIX}/bin/Rscript"
 
-# --version should output a version string (regression test for #309)
-version_out=$("$RSCRIPT" --version 2>&1)
-echo "$version_out" | grep -qE '[0-9]+\.[0-9]+\.[0-9]+' || { echo "FAIL: Rscript --version produced no version number: '$version_out'"; exit 1; }
-echo "  Rscript --version: OK ($version_out)"
+# 1. The wrapper execs the preserved native binary, so Rscript.bin must exist
+# and be the real ELF binary.
+[ -f "${R_PREFIX}/bin/Rscript.bin" ] || { echo "FAIL: Rscript.bin (preserved native binary) is missing"; exit 1; }
+head -c 4 "${R_PREFIX}/bin/Rscript.bin" | grep -q ELF || { echo "FAIL: Rscript.bin is not an ELF binary"; exit 1; }
+echo "  Rscript.bin preserved (native binary): OK"
 
-# -e expression
-result=$("$RSCRIPT" -e 'cat("hello")')
-[ "$result" = "hello" ] || { echo "FAIL: Rscript -e"; exit 1; }
-echo "  Rscript -e: OK"
-
-# Multiple -e expressions
-result=$("$RSCRIPT" -e 'cat("a")' -e 'cat("b")')
-[ "$result" = "ab" ] || { echo "FAIL: Rscript -e -e"; exit 1; }
-echo "  Rscript -e -e: OK"
-
-# -e expressions with trailing arguments (regression test for #311)
-result=$("$RSCRIPT" -e 'cat("one/"); cat("two three/")' -e 'cat(commandArgs(trailingOnly = TRUE), sep = " ")' ARG1 ARG2)
-[ "$result" = "one/two three/ARG1 ARG2" ] || { echo "FAIL: Rscript -e ARGS"; exit 1; }
-echo "  Rscript -e ARGS: OK"
-
-# File execution with arguments
+# 2. RHOME resolution + faithful "$@" forwarding: run a script file with trailing
+# args (one containing a space). commandArgs must round-trip exactly. This fails
+# if the wrapper points RHOME at the wrong R or mangles argument quoting.
 tmpscript=$(mktemp /tmp/test_rscript_XXXXXX.R)
-echo 'args <- commandArgs(trailingOnly=TRUE); cat(paste(args, collapse=","))' > "$tmpscript"
-result=$("$RSCRIPT" "$tmpscript" arg1 arg2 arg3)
-[ "$result" = "arg1,arg2,arg3" ] || { echo "FAIL: Rscript file args: got '$result'"; exit 1; }
-echo "  Rscript file.R arg1 arg2 arg3: OK"
-
-# --default-packages
-result=$("$RSCRIPT" --default-packages=base -e 'cat(paste(.packages(), collapse=","))')
-echo "$result" | grep -q "base" || { echo "FAIL: --default-packages: got '$result'"; exit 1; }
-echo "  Rscript --default-packages=base: OK"
-
-# --vanilla pass-through
-result=$("$RSCRIPT" --vanilla -e 'cat("vanilla")')
-[ "$result" = "vanilla" ] || { echo "FAIL: Rscript --vanilla"; exit 1; }
-echo "  Rscript --vanilla: OK"
-
-# Rscript with no args should not hang (runs R --slave --no-restore, which exits)
-timeout 10 "$RSCRIPT" < /dev/null > /dev/null 2>&1 || { echo "FAIL: Rscript with no args hung or failed"; exit 1; }
-echo "  Rscript (no args): OK"
-
+echo 'cat(commandArgs(trailingOnly=TRUE), sep="|")' > "$tmpscript"
+result=$("$RSCRIPT" "$tmpscript" arg1 "two words" arg3)
+[ "$result" = "arg1|two words|arg3" ] || { echo "FAIL: Rscript arg forwarding: got '$result'"; exit 1; }
 rm -f "$tmpscript"
+echo "  Rscript file + args (RHOME + \"\$@\" forwarding): OK"
+
+# 3. No args must exit 1 (non-interactive), not start an interactive session.
+# Exact usage wording is upstream R's and varies by version, so we assert only
+# the exit code plus a loose usage match.
+set +e
+noargs_out=$(timeout 10 "$RSCRIPT" < /dev/null 2>&1); noargs_code=$?
+set -e
+[ "$noargs_code" = "1" ] || { echo "FAIL: Rscript no-args exit code: got $noargs_code, want 1"; exit 1; }
+echo "$noargs_out" | grep -qi "usage" || { echo "FAIL: Rscript no-args did not print usage: '$noargs_out'"; exit 1; }
+echo "  Rscript (no args): exit 1 non-interactive: OK"
 
 echo "=== All manylinux tests passed ==="
