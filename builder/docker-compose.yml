@@ -51,19 +51,6 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
-  debian-12:
-    command: ./build.sh
-    environment:
-      - R_VERSION=${R_VERSION}
-      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
-      - LOCAL_STORE=/tmp/output
-    build:
-      context: .
-      dockerfile: Dockerfile.debian-12
-    image: r-builds:debian-12
-    volumes:
-      - ./integration/tmp:/tmp/output
-    platform: ${PLATFORM_ARCH}
   debian-13:
     command: ./build.sh
     environment:
