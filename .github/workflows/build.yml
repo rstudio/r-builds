@@ -410,11 +410,6 @@ jobs:
               echo "pkg_type=deb" >> $GITHUB_OUTPUT
               echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
               ;;
-            debian-12)
-              echo "distro=debian/bookworm" >> $GITHUB_OUTPUT
-              echo "pkg_type=deb" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
-              ;;
             debian-13)
               echo "distro=debian/trixie" >> $GITHUB_OUTPUT
               echo "pkg_type=deb" >> $GITHUB_OUTPUT
