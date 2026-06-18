@@ -55,101 +55,42 @@ R_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
   echo "  Patched lib/R/bin/R"
 fi
 
-echo ">>> Replace Rscript with relocatable wrapper"
-# Replace compiled Rscript binary with a relocatable shell wrapper.
-# The compiled Rscript has R_HOME hardcoded at compile time and doesn't check
-# the R_HOME env var, so it can't find bin/R after relocation.
-# The wrapper replicates Rscript's argument handling: options like --verbose,
-# --default-packages are processed; -e expressions pass through; the first
-# positional arg becomes --file=arg; remaining positional args use --args.
+echo ">>> Make Rscript relocatable (preserve binary, wrap with RHOME)"
+# The compiled Rscript binary has R_HOME baked in at compile time, so after
+# relocation it would exec the wrong (build-time) bin/R.
+#
+# But Rscript reads the RHOME environment variable and, when set, execs
+# "${RHOME}/bin/R" instead of the compiled-in path. This has held for every R
+# version we support (3.0+). See getenv("RHOME") in R's src/unix/Rscript.c:
+# https://github.com/wch/r-source/blob/tags/R-4-6-0/src/unix/Rscript.c#L230-L280
+#
+# So we preserve the original binary as Rscript.bin and install a thin wrapper
+# that sets RHOME from its own location and execs the real binary.
+#
+# Rscript depends only on libc + ld (no bundled libs), so the preserved binary
+# needs no RPATH/patchelf handling.
 for rscript in "${R_INSTALL_PATH}/bin/Rscript" "${R_INSTALL_PATH}/lib/R/bin/Rscript"; do
   [ -f "$rscript" ] || continue
-  # Determine R_HOME formula based on location (same logic as bin/R vs lib/R/bin/R)
+  # RHOME must be R_HOME (<prefix>/lib/R). Formula depends on the script's depth,
+  # same logic as the bin/R vs lib/R/bin/R distinction above.
+  #   bin/Rscript        is at <prefix>/bin/Rscript        -> RHOME=<prefix>/lib/R
+  #   lib/R/bin/Rscript  is at <R_HOME>/bin/Rscript        -> RHOME=<R_HOME>
   if [[ "$rscript" == */lib/R/bin/Rscript ]]; then
-    r_home_formula='R_HOME="$(dirname "$(dirname "$(readlink -f "$0")")")"'
+    rhome_formula='RHOME="$(dirname "$(dirname "$(readlink -f "$0")")")"'
   else
-    r_home_formula='R_HOME="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"'
+    rhome_formula='RHOME="$(dirname "$(dirname "$(readlink -f "$0")")")/lib/R"'
   fi
-  cat > "$rscript" <<'RSCRIPT_OUTER'
+  mv "$rscript" "${rscript}.bin"
+  cat > "$rscript" <<'RSCRIPT_HEAD'
 #!/bin/sh
-# Relocatable Rscript wrapper (replaces compiled binary for portability)
-RSCRIPT_OUTER
-  echo "${r_home_formula}" >> "$rscript"
-  cat >> "$rscript" <<'RSCRIPT_EOF'
-export R_HOME
-
-# Process Rscript-specific options, collect pass-through R options.
-# R understands --verbose, --vanilla, --no-environ, --no-site-file, etc.
-# directly, so we only need to handle --default-packages (env var conversion)
-# and file argument conversion (first positional arg -> --file=).
-r_opts=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --help|-h)
-      echo "Usage: Rscript [options] [-e expr [-e expr2 ...] | file] [args]"
-      exit 0
-      ;;
-    --version)
-      exec "${R_HOME}/bin/R" --slave -e 'cat(sprintf("Rscript (R) version %s.%s (%s-%s-%s)\n", R.version$major, R.version$minor, R.version$year, R.version$month, R.version$day))'
-      ;;
-    --default-packages=*)
-      R_DEFAULT_PACKAGES="${1#--default-packages=}"
-      export R_DEFAULT_PACKAGES
-      shift
-      ;;
-    -e)
-      # -e starts expressions -- stop processing options, pass rest to R
-      break
-      ;;
-    --*)
-      # Collect R options (--verbose, --vanilla, --no-environ, etc.)
-      r_opts="$r_opts $1"
-      shift
-      ;;
-    *)
-      # First positional arg is the script file
-      break
-      ;;
-  esac
-done
-
-# $@ now contains: [-e expr [-e expr] [args...]] or [file [args...]] or nothing
-# r_opts contains collected --options (no spaces in individual options)
-if [ $# -eq 0 ]; then
-  # No file or -e: just R options
-  exec "${R_HOME}/bin/R" --slave --no-restore $r_opts
-elif [ "$1" = "-e" ]; then
-  # At least one -e arg before any trailing args - pass these, plus trailing args, to R using "$@" to preserve quoting
-  # We can have multiple -e args, but once we have a trailing arg, all subsequent args are also trailing
-  is_e=0
-  is_trailing=0
-  # Cycle through "$@", dropping each arg from the front and replacing appropriately at the back
-  for arg in "$@"; do
-    shift
-    if [ $is_trailing = 1 ]; then
-      set -- "$@" "$arg"
-    elif [ "$arg" = "-e" ]; then
-      is_e=1
-    elif [ $is_e = 1 ]; then
-      set -- "$@" "-e" "$arg"
-      is_e=0
-    else
-      set -- "$@" "--args" "$arg"
-      is_trailing=1
-    fi
-  done
-  exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "$@"
-else
-  # File argument: convert to --file=, remaining args become --args
-  file="$1"
-  shift
-  if [ $# -gt 0 ]; then
-    exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "--file=$file" --args "$@"
-  else
-    exec "${R_HOME}/bin/R" --slave --no-restore $r_opts "--file=$file"
-  fi
-fi
-RSCRIPT_EOF
+# Relocatable Rscript wrapper: set RHOME from our own location, then exec the
+# preserved native binary, which reads RHOME and execs "${RHOME}/bin/R".
+RSCRIPT_HEAD
+  echo "${rhome_formula}" >> "$rscript"
+  cat >> "$rscript" <<'RSCRIPT_TAIL'
+export RHOME
+exec "$(dirname "$(readlink -f "$0")")/Rscript.bin" "$@"
+RSCRIPT_TAIL
   chmod +x "$rscript"
-  echo "  Replaced $(basename "$(dirname "$rscript")")/Rscript with relocatable wrapper"
+  echo "  Wrapped $(basename "$(dirname "$rscript")")/Rscript (preserved as Rscript.bin)"
 done
