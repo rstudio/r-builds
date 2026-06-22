@@ -1,3 +1,6 @@
+# Older Rscript did not load the methods package by default
+library(methods)
+
 # HTTP mirror to support R 3.1
 options(repos = c("https://cloud.r-project.org", "http://cloud.r-project.org"))
 
