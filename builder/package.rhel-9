@@ -68,9 +68,13 @@ fi
 
 if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
 
+# Allow PACKAGE_VERSION to be overridden for Cloudsmith publishing
+# Default to "1" if not set
+PKG_VERSION=${PACKAGE_VERSION:-1}
+
 cat <<EOF > /tmp/nfpm.yml
 name: R-${R_VERSION}
-version: 1
+version: ${PKG_VERSION}
 version_schema: none
 arch: $(cat /tmp/arch)
 release: 1

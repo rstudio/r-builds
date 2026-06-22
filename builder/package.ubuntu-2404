@@ -22,9 +22,13 @@ if grep -q '^LIBS *=.*[-]lzstd' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
     zstd_libs='- libzstd-dev'
 fi
 
+# Allow PACKAGE_VERSION to be overridden for Cloudsmith publishing
+# Default to "1" if not set
+PKG_VERSION=${PACKAGE_VERSION:-1}
+
 cat <<EOF > /tmp/nfpm.yml
 name: r-${R_VERSION}
-version: 1
+version: ${PKG_VERSION}
 version_schema: none
 section: universe/math
 priority: optional

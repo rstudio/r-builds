@@ -495,6 +495,23 @@ or TeX Live) and Pandoc. For more information on system dependencies, see
 If you want to install multiple versions of R on the same system, you can
 repeat these steps to install a different version of R alongside existing versions.
 
+## Cloudsmith Package Repositories
+
+In addition to direct downloads from the CDN, R builds are also available through Cloudsmith package repositories,
+which provide signed packages that can be installed and updated using your system's native package manager.
+
+### Repository Setup
+
+Visit the Cloudsmith repository page for detailed setup instructions for your distribution:
+https://cloudsmith.io/~posit/repos/open/setup/
+
+### Package Versions
+
+- **Stable releases**: Packages are versioned per-platform and per-R-version in `package-versions.json`. Only builds that need a version bump get an entry; everything else defaults to version `1`.
+- **Development builds**: Packages use date-based versions (e.g., `r-devel_20251027`)
+
+New development builds are published daily at 4 AM UTC and can be updated in place using your package manager.
+
 ---
 
 # Developer Documentation
@@ -629,6 +646,15 @@ A new service in the `test/docker-compose.yml` file named according to the `plat
 
 Update the quick install script at [`install.sh`](install.sh), if necessary, to support the new platform.
 
+### Cloudsmith distro mapping
+
+If the platform is published to Cloudsmith, add a `case` entry for it in the
+`cloudsmith-publish` job in [`.github/workflows/build.yml`](.github/workflows/build.yml).
+This maps the `platform-version` to its Cloudsmith distribution slug (e.g.
+`fedora-43` → `fedora/43`), package type (`deb`/`rpm`), and package glob. This
+list is maintained by hand, so it must be updated whenever a platform is added
+or removed.
+
 Once you've followed the steps above, submit a pull request.
 
 ## R builds tarballs
@@ -647,13 +673,59 @@ The [Check for new R versions](https://github.com/rstudio/r-builds/actions/workf
 checks for new R versions hourly and automatically builds and publishes them.
 
 The [Daily R-devel and R-next builds](https://github.com/rstudio/r-builds/actions/workflows/devel-daily.yml) workflow
-builds and publishes R-devel and R-next each day.
+builds and publishes R-devel and R-next each day to both S3 and Cloudsmith.
 
 The [R builds](https://github.com/rstudio/r-builds/actions/workflows/build.yml) workflow
-tests building the R binaries and optionally publishes them. Builds are not automatically published upon merging to `main`.
+tests building the R binaries and optionally publishes them to S3 and/or Cloudsmith. Builds are not automatically published upon merging to `main`.
 
 After making any changes to R-builds, this workflow may be run manually to test the changes in `staging` first. Then,
 the workflow can be rerun for `production` to build new binaries or rebuild existing binaries.
+
+### Cloudsmith Publishing
+
+R builds can be published to Cloudsmith repositories in addition to S3. To publish to Cloudsmith:
+
+1. Set `publish_cloudsmith` to your Cloudsmith repository (e.g., `posit/open`)
+2. Optionally set `cloudsmith_dry_run: true` for testing
+
+Package versions for stable releases are managed in `package-versions.json`, keyed by
+platform and R version. Builds without an entry default to version `1`. Only add entries
+when a version bump is needed (e.g., a packaging fix for a specific R version or platform).
+
+```json
+// Example: bump centos-8 R 4.2.3 to version 2 after a targeted fix
+{
+  "centos-8": {
+    "4.2.3": 2
+  }
+}
+```
+
+The `package_version` workflow input can override all versions with a single value
+(used by daily devel builds which pass a `YYYYMMDD` date string).
+
+**Example: Publishing a stable release to Cloudsmith**
+```yaml
+platforms: all
+r_versions: 4.4.2
+publish: production          # Also publish to S3
+publish_cloudsmith: posit/open
+cloudsmith_dry_run: false
+# package_version is read from package-versions.json per platform/R-version
+```
+
+**Example: Testing Cloudsmith publishing with a version override**
+```yaml
+platforms: ubuntu-2204
+r_versions: 4.4.1
+package_version: 999         # Overrides package-versions.json
+publish_cloudsmith: posit/open
+cloudsmith_dry_run: true
+```
+
+**Note**: Cloudsmith repositories have force-overwriting disabled. To republish a build,
+add or increment its entry in `package-versions.json`. Daily devel builds
+automatically use date-based versions to avoid conflicts.
 
 ## Testing
 
