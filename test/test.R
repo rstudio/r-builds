@@ -1,3 +1,8 @@
+# Older Rscript did not load the methods package by default
+# This fixes a crash on musllinux 1.2 & R 3.4.x:
+# https://github.com/rstudio/r-builds/pull/317#issuecomment-4749554642
+library(methods)
+
 # HTTP mirror to support R 3.1
 options(repos = c("https://cloud.r-project.org", "http://cloud.r-project.org"))
 
