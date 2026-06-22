@@ -1,8 +1,3 @@
-# Older Rscript did not load the methods package by default
-# This fixes a crash on musllinux 1.2 & R 3.4.x:
-# https://github.com/rstudio/r-builds/pull/317#issuecomment-4749554642
-library(methods)
-
 # HTTP mirror to support R 3.1
 options(repos = c("https://cloud.r-project.org", "http://cloud.r-project.org"))
 
@@ -10,9 +5,18 @@ options(repos = c("https://cloud.r-project.org", "http://cloud.r-project.org"))
 temp_lib <- tempdir()
 .libPaths(temp_lib)
 
+# R 3.4.x has a use-after-free in download.file()'s libcurl path that segfaults
+# on musl (harmless on glibc; fixed upstream in R 3.6.0). Skip the checks that
+# download over libcurl on exactly that combination, detected via the musl
+# dynamic linker. See rstudio/r-builds#317.
+skip_libcurl <- getRversion() >= "3.4" && getRversion() < "3.5" &&
+  length(Sys.glob("/lib/ld-musl-*")) > 0
+
 # Install a package from CRAN
-install.packages("pkgconfig")
-library(pkgconfig)
+if (!skip_libcurl) {
+  install.packages("pkgconfig")
+  library(pkgconfig)
+}
 
 # Install a package with C/C++ and Fortran code, which links against libR, BLAS, LAPACK
 curr_dir <- Sys.getenv("DIR", ".")
@@ -92,7 +96,7 @@ if (length(output) > 0) {
 }
 
 # Check download methods: libcurl (supported in R >= 3.2) and internal (based on libxml)
-if ("libcurl" %in% names(capabilities())) {
+if (!skip_libcurl && "libcurl" %in% names(capabilities())) {
   download.file("https://cloud.r-project.org", tempfile(), "libcurl")
 }
 tmpfile <- tempfile()
