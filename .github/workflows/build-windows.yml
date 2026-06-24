@@ -134,7 +134,11 @@ jobs:
           aws s3 cp "$zip" "s3://$s3Bucket/$s3Key" --acl public-read
 
   update-versions-json:
-    if: ${{ inputs.publish != '' && !cancelled() }}
+    # Only run when the build jobs succeeded. Omitting a status-check function
+    # like !cancelled() keeps the implicit success() gate on `needs`, so a
+    # failed build does not publish the version to versions.json (which would
+    # mark it as built and prevent the hourly checker from retrying it).
+    if: ${{ inputs.publish != '' }}
     needs: [build, setup-matrix]
     runs-on: ubuntu-latest
     steps:
