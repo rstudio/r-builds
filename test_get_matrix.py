@@ -1,13 +1,22 @@
 """Tests for get_matrix.py, focused on keeping the Cloudsmith platform mapping
 in sync with the build matrix's source of truth (PLATFORMS in the Makefile)."""
+import os
 import subprocess
 
 import get_matrix
 
 
 def _makefile_platforms():
-    """The authoritative platform list, straight from `make print-platforms`."""
-    out = subprocess.check_output(['make', 'print-platforms'], text=True)
+    """The authoritative platform list, straight from `make print-platforms`.
+
+    Runs with a cleared MAKEFLAGS/MAKELEVEL and --no-print-directory so that
+    invoking this while nested under `make unit-test` doesn't fold make's
+    recursive "Entering directory" chatter into the platform list.
+    """
+    env = {**os.environ, 'MAKEFLAGS': '', 'MAKELEVEL': '0'}
+    out = subprocess.check_output(
+        ['make', '--no-print-directory', 'print-platforms'], text=True, env=env,
+    )
     return set(out.split())
 
 
