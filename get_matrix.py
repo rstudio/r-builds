@@ -7,6 +7,7 @@ and generates the complex build matrix.
 import argparse
 import json
 import subprocess
+import sys
 
 
 # Platforms whose builds are handled by dedicated reusable workflows
@@ -14,8 +15,53 @@ import subprocess
 _NON_LINUX_PREFIXES = ('macos', 'windows')
 
 
+# Single source of truth for the cloudsmith-publish job's platform -> Cloudsmith
+# distribution mapping (consumed via `get_matrix.py --cloudsmith-info <platform>`).
+# Every distro-package platform in the Makefile's PLATFORMS must appear here or
+# in PORTABLE_PLATFORMS; test_get_matrix.py fails CI otherwise, so this can't
+# silently drift out of sync with the build matrix.
+CLOUDSMITH_DISTROS = {
+    'ubuntu-2004': 'ubuntu/focal',
+    'ubuntu-2204': 'ubuntu/jammy',
+    'ubuntu-2404': 'ubuntu/noble',
+    'ubuntu-2604': 'ubuntu/resolute',
+    'debian-13': 'debian/trixie',
+    'centos-7': 'el/7',
+    'centos-8': 'el/8',
+    'rhel-9': 'el/9',
+    'rhel-10': 'el/10',
+    'opensuse-156': 'opensuse/15.6',
+    'opensuse-160': 'opensuse/16.0',
+    'fedora-42': 'fedora/42',
+    'fedora-43': 'fedora/43',
+}
+
+# Portable builds bundle their dependencies and are distributed as relocatable
+# tarballs / packages via S3/CDN, not per-distro Cloudsmith repos. They are
+# intentionally excluded from Cloudsmith publishing.
+PORTABLE_PLATFORMS = {'manylinux_2_34', 'musllinux_1_2'}
+
+
 def _is_non_linux(platform):
     return any(platform == p or platform.startswith(p + '-') for p in _NON_LINUX_PREFIXES)
+
+
+def cloudsmith_info(platform):
+    """Cloudsmith publish info for a platform.
+
+    Returns a dict with ``distro``, ``pkg_type``, and ``pkg_pattern`` for
+    distro-package platforms, or ``None`` for portable platforms that are not
+    published to Cloudsmith. Raises ``KeyError`` for platforms that are neither
+    mapped nor declared portable.
+    """
+    if platform in PORTABLE_PLATFORMS:
+        return None
+    distro = CLOUDSMITH_DISTROS[platform]  # KeyError = unclassified platform
+    if distro.startswith(('ubuntu/', 'debian/')):
+        pkg_type, pkg_pattern = 'deb', 'r-*.deb'
+    else:
+        pkg_type, pkg_pattern = 'rpm', 'R-*.rpm'
+    return {'distro': distro, 'pkg_type': pkg_type, 'pkg_pattern': pkg_pattern}
 
 
 def main():
@@ -29,8 +75,7 @@ def main():
     parser.add_argument(
         '--versions',
         type=str,
-        required=True,
-        help='Comma-separated list of R versions.'
+        help='Comma-separated list of R versions. Required unless --cloudsmith-info is given.'
     )
     parser.add_argument(
         '--arch',
@@ -38,7 +83,29 @@ def main():
         default='amd64,arm64',
         help='Comma-separated list of architectures.'
     )
+    parser.add_argument(
+        '--cloudsmith-info',
+        type=str,
+        metavar='PLATFORM',
+        help='Print Cloudsmith publish info (JSON) for a single platform and exit. '
+             'Emits {"skip": true} for portable platforms; exits non-zero for unknown ones.'
+    )
     args = parser.parse_args()
+
+    if args.cloudsmith_info:
+        try:
+            info = cloudsmith_info(args.cloudsmith_info)
+        except KeyError:
+            sys.exit(
+                f"Unknown platform: {args.cloudsmith_info}. Add it to CLOUDSMITH_DISTROS "
+                f"or PORTABLE_PLATFORMS in get_matrix.py."
+            )
+        print(json.dumps(info if info is not None else {"skip": True}))
+        return
+
+    if not args.versions:
+        parser.error('--versions is required')
+
     # Re-set to default values if empty string/whitespace explicitly specified (""), which can happen in CI jobs
     platforms = args.platforms if args.platforms else parser.get_default('platforms')
     arch = args.arch if args.arch else parser.get_default('arch')
