@@ -1,13 +1,4 @@
 services:
-  ubuntu-2004:
-    image: ubuntu:focal
-    command: /r-builds/test/test-apt.sh
-    environment:
-      - OS_IDENTIFIER=ubuntu-2004
-      - R_VERSION=${R_VERSION}
-    volumes:
-      - ../:/r-builds
-    platform: ${PLATFORM_ARCH}
   ubuntu-2204:
     image: ubuntu:jammy
     command: /r-builds/test/test-apt.sh
