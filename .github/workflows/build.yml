@@ -316,7 +316,7 @@ jobs:
       
       - name: Upload packages for Cloudsmith
         if: ${{ inputs.publish_cloudsmith != '' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: r-${{ matrix.r_version }}-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
