@@ -229,7 +229,7 @@ jobs:
       # which is still considered experimental.
       # https://github.com/moby/buildkit#github-actions-cache-experimental
       - name: Cache Docker layers
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: /tmp/.buildx-cache
           key: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-${{ github.sha }}
@@ -270,7 +270,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Restore cached Docker layers
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: /tmp/.buildx-cache
           key: ${{ matrix.platform }}-${{ matrix.arch }}-buildx-${{ github.sha }}
