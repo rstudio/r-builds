@@ -648,12 +648,17 @@ Update the quick install script at [`install.sh`](install.sh), if necessary, to 
 
 ### Cloudsmith distro mapping
 
-If the platform is published to Cloudsmith, add a `case` entry for it in the
-`cloudsmith-publish` job in [`.github/workflows/build.yml`](.github/workflows/build.yml).
-This maps the `platform-version` to its Cloudsmith distribution slug (e.g.
-`fedora-43` → `fedora/43`), package type (`deb`/`rpm`), and package glob. This
-list is maintained by hand, so it must be updated whenever a platform is added
-or removed.
+Classify the platform for Cloudsmith publishing in [`get_matrix.py`](get_matrix.py),
+which is the single source of truth the `cloudsmith-publish` job reads:
+
+- A distro package (deb/rpm): add it to `CLOUDSMITH_DISTROS`, mapping the
+  `platform-version` to its Cloudsmith distribution slug (e.g. `fedora-43` →
+  `fedora/43`). Package type and glob are derived from the slug.
+- A portable build (tarball, distributed via S3/CDN, not Cloudsmith): add it to
+  `PORTABLE_PLATFORMS`.
+
+`test_get_matrix.py` fails CI if any platform in `PLATFORMS` is left
+unclassified, so this can't silently drift out of sync.
 
 Once you've followed the steps above, submit a pull request.
 
@@ -729,9 +734,12 @@ automatically use date-based versions to avoid conflicts.
 
 Because each daily build publishes a new date-versioned `R-next`/`R-devel`
 package per platform and architecture, the devel-daily workflow runs
-[`prune_cloudsmith.py`](prune_cloudsmith.py) after a successful publish to keep
+[`prune_cloudsmith.py`](prune_cloudsmith.py) (via the reusable
+`Prune Cloudsmith nightly builds` workflow) after a successful publish to keep
 only the newest 14 versions of each, so the repository doesn't grow without
-bound. Stable release packages are never pruned.
+bound. Stable release packages are never pruned. That workflow can also be run
+manually from the Actions tab; it defaults to a dry run that lists what would
+be deleted without deleting anything.
 
 ## Testing
 

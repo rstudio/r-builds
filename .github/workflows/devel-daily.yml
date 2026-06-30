@@ -54,20 +54,8 @@ jobs:
   prune-cloudsmith:
     needs: r-builds
     if: ${{ success() && (inputs.publish_cloudsmith || 'posit/open') != '' && inputs.cloudsmith_dry_run != true }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Install Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-
-      - name: Install cloudsmith-cli
-        run: pip install --upgrade cloudsmith-cli
-
-      - name: Prune old R-next/R-devel versions
-        env:
-          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
-        run: |
-          python prune_cloudsmith.py --repo "${{ inputs.publish_cloudsmith || 'posit/open' }}" --keep 14
+    uses: ./.github/workflows/cloudsmith-prune.yml
+    with:
+      repo: ${{ inputs.publish_cloudsmith || 'posit/open' }}
+      keep: '14'
+    secrets: inherit

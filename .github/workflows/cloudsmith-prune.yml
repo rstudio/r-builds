@@ -1,0 +1,67 @@
+name: Prune Cloudsmith nightly builds
+
+# Trims old R-next/R-devel nightly packages from Cloudsmith, keeping the newest
+# N versions of each coordinate. Called by devel-daily.yml after a successful
+# publish, and runnable on demand via workflow_dispatch (defaults to a dry run)
+# to preview what would be deleted.
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'Cloudsmith repository (owner/name).'
+        required: false
+        default: 'posit/open'
+        type: string
+      keep:
+        description: 'Number of newest versions to keep per coordinate.'
+        required: false
+        default: '14'
+        type: string
+      dry_run:
+        description: 'Dry run: list what would be deleted without deleting.'
+        required: false
+        default: true
+        type: boolean
+  workflow_call:
+    inputs:
+      repo:
+        required: true
+        type: string
+      keep:
+        required: false
+        default: '14'
+        type: string
+      dry_run:
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      CLOUDSMITH_API_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install cloudsmith-cli
+        run: pip install --upgrade cloudsmith-cli
+
+      - name: Prune old R-next/R-devel versions
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+        run: |
+          python prune_cloudsmith.py \
+            --repo "${{ inputs.repo }}" \
+            --keep "${{ inputs.keep }}" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
