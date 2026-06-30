@@ -2,6 +2,8 @@
 decides which Cloudsmith package versions get deleted. The cloudsmith CLI I/O
 is not exercised here; only the pure selection logic, which is what determines
 whether anything gets destroyed."""
+import sys
+
 import pytest
 
 import prune_cloudsmith
@@ -88,3 +90,22 @@ def test_same_version_slug_different_family_not_merged():
 def test_keep_zero_is_rejected():
     with pytest.raises(ValueError):
         prune_cloudsmith.select_versions_to_delete([], keep=0)
+
+
+def test_main_dry_run_smoke(monkeypatch, capsys):
+    # Exercises main()'s reporting + delete loop end to end (with I/O stubbed),
+    # which the pure-function tests don't cover.
+    pkgs = [_pkg('R-next', f'202606{d:02d}') for d in range(1, 6)]
+    deleted = []
+    monkeypatch.setattr(prune_cloudsmith, 'list_packages', lambda repo: pkgs)
+    monkeypatch.setattr(prune_cloudsmith, 'delete_package',
+                        lambda repo, ident, dry_run: deleted.append(ident))
+    monkeypatch.setattr(sys, 'argv',
+                        ['prune_cloudsmith.py', '--repo', 'posit/open', '--keep', '2', '--dry-run'])
+
+    prune_cloudsmith.main()
+
+    out = capsys.readouterr().out
+    assert 'keeping newest 2' in out
+    assert len(deleted) == 3  # 5 versions, keep 2
+

@@ -124,8 +124,7 @@ def main():
             print(f'WARNING: no identifier for {pkg.get("name")} {pkg.get("version")}; skipping',
                   file=sys.stderr)
             continue
-        name, distro, arch = _coordinate(pkg)
-        print(f'delete {name} {pkg.get("version")} ({distro} {arch}) -> {identifier}')
+        print(f'delete {pkg.get("name")} {pkg.get("version")} {_coordinate(pkg)} -> {identifier}')
         delete_package(args.repo, identifier, args.dry_run)
 
 
