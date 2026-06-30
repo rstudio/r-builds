@@ -47,3 +47,27 @@ jobs:
       publish_cloudsmith: ${{ inputs.publish_cloudsmith || 'posit/open' }}
       cloudsmith_dry_run: ${{ inputs.cloudsmith_dry_run || false }}
     secrets: inherit
+
+  # Trim accumulated R-next/R-devel nightlies so the Cloudsmith repo doesn't
+  # grow without bound. Only runs after a fully successful publish (so a failed
+  # build never triggers deletions) and never during a dry run.
+  prune-cloudsmith:
+    needs: r-builds
+    if: ${{ success() && (inputs.publish_cloudsmith || 'posit/open') != '' && inputs.cloudsmith_dry_run != true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install cloudsmith-cli
+        run: pip install --upgrade cloudsmith-cli
+
+      - name: Prune old R-next/R-devel versions
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+        run: |
+          python prune_cloudsmith.py --repo "${{ inputs.publish_cloudsmith || 'posit/open' }}" --keep 14
