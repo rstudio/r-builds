@@ -380,6 +380,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
       - name: Install cloudsmith-cli
         run: pip install --upgrade cloudsmith-cli
 
@@ -394,74 +399,23 @@ jobs:
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
-          case "$PLATFORM" in
-            ubuntu-2004)
-              echo "distro=ubuntu/focal" >> $GITHUB_OUTPUT
-              echo "pkg_type=deb" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
-              ;;
-            ubuntu-2204)
-              echo "distro=ubuntu/jammy" >> $GITHUB_OUTPUT
-              echo "pkg_type=deb" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
-              ;;
-            ubuntu-2404)
-              echo "distro=ubuntu/noble" >> $GITHUB_OUTPUT
-              echo "pkg_type=deb" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
-              ;;
-            debian-13)
-              echo "distro=debian/trixie" >> $GITHUB_OUTPUT
-              echo "pkg_type=deb" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=r-*.deb" >> $GITHUB_OUTPUT
-              ;;
-            centos-7)
-              echo "distro=el/7" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
-            centos-8)
-              echo "distro=el/8" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
-            rhel-9)
-              echo "distro=el/9" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
-            rhel-10)
-              echo "distro=el/10" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
-            opensuse-156)
-              echo "distro=opensuse/15.6" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
-            opensuse-160)
-              echo "distro=opensuse/16.0" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
-            fedora-42)
-              echo "distro=fedora/42" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
-            fedora-43)
-              echo "distro=fedora/43" >> $GITHUB_OUTPUT
-              echo "pkg_type=rpm" >> $GITHUB_OUTPUT
-              echo "pkg_pattern=R-*.rpm" >> $GITHUB_OUTPUT
-              ;;
-            *)
-              echo "::error::Unknown platform: $PLATFORM"
-              exit 1
-              ;;
-          esac
+          # Resolve the Cloudsmith distro from get_matrix.py, the single source
+          # of truth shared with the build matrix. Portable platforms return
+          # {"skip": true}; unknown platforms exit non-zero (and are caught by
+          # test_get_matrix.py before they ever reach here).
+          info=$(python get_matrix.py --cloudsmith-info "$PLATFORM")
+          if [[ "$(echo "$info" | jq -r '.skip // false')" == "true" ]]; then
+            echo "::notice::$PLATFORM is a portable build; skipping Cloudsmith publish"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "distro=$(echo "$info" | jq -r '.distro')" >> "$GITHUB_OUTPUT"
+            echo "pkg_type=$(echo "$info" | jq -r '.pkg_type')" >> "$GITHUB_OUTPUT"
+            echo "pkg_pattern=$(echo "$info" | jq -r '.pkg_pattern')" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Find and publish package
+        if: ${{ steps.pkg-info.outputs.skip != 'true' }}
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
           PLATFORM: ${{ matrix.platform }}
