@@ -40,9 +40,12 @@ def _coordinate(pkg):
     which can share an rpm filename, so it must be part of the key.
     """
     name = pkg.get('name', '')
-    distro = (pkg.get('distro_version') or {}).get('slug', '')
+    # Key on both the distro family and its version slug: version slugs alone
+    # (e.g. "9", "10") could collide across distro families.
+    distro_family = (pkg.get('distro') or {}).get('slug', '')
+    distro_version = (pkg.get('distro_version') or {}).get('slug', '')
     arch = ','.join(sorted(a.get('name', '') for a in (pkg.get('architectures') or [])))
-    return (name, distro, arch)
+    return (name, distro_family, distro_version, arch)
 
 
 def _uploaded(pkg):

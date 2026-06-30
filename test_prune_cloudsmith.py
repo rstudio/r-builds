@@ -7,15 +7,16 @@ import pytest
 import prune_cloudsmith
 
 
-def _pkg(name, version, distro='fedora/42', arch='x86_64', uploaded=None):
+def _pkg(name, version, distro='fedora/42', arch='x86_64', uploaded=None, family=''):
     """Build a package dict shaped like cloudsmith `list packages -F json`."""
     return {
         'name': name,
         'version': version,
+        'distro': {'slug': family},
         'distro_version': {'slug': distro},
         'architectures': [{'name': arch}],
         'uploaded_at': uploaded or f'2026-06-{version[-2:]}T04:00:00Z',
-        'slug_perm': f'{name}-{version}-{distro}-{arch}'.replace('/', '-'),
+        'slug_perm': f'{name}-{version}-{family}-{distro}-{arch}'.replace('/', '-'),
     }
 
 
@@ -71,6 +72,17 @@ def test_deb_and_rpm_names_both_eligible():
     # Two coordinates, each keeps 1, deletes 3.
     assert len(to_delete) == 6
     assert {p['name'] for p in to_delete} == {'R-next', 'r-next'}
+
+
+def test_same_version_slug_different_family_not_merged():
+    # Two distro families that share a version slug ("10") must stay separate
+    # coordinates, so neither gets over-pruned.
+    el = [_pkg('R-next', f'202606{d:02d}', distro='10', family='el') for d in range(1, 4)]
+    other = [_pkg('R-next', f'202606{d:02d}', distro='10', family='someos') for d in range(1, 4)]
+    to_delete = prune_cloudsmith.select_versions_to_delete(el + other, keep=2)
+    # Two coordinates, each keeps 2 of 3 -> 2 deletions total, not merged into one.
+    assert len(to_delete) == 2
+    assert {p['distro']['slug'] for p in to_delete} == {'el', 'someos'}
 
 
 def test_keep_zero_is_rejected():
