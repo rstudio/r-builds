@@ -31,4 +31,6 @@ jobs:
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
         run: |
-          python prune_cloudsmith.py --repo posit/open --keep 14 --dry-run
+          # keep=1 here only to force the selection/identifier path during this
+          # dry-run validation; the real job uses keep=14.
+          python prune_cloudsmith.py --repo posit/open --keep 1 --dry-run
