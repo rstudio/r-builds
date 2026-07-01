@@ -1,0 +1,111 @@
+"""Tests for prune_cloudsmith.select_versions_to_delete — the logic that
+decides which Cloudsmith package versions get deleted. The cloudsmith CLI I/O
+is not exercised here; only the pure selection logic, which is what determines
+whether anything gets destroyed."""
+import sys
+
+import pytest
+
+import prune_cloudsmith
+
+
+def _pkg(name, version, distro='fedora/42', arch='x86_64', uploaded=None, family=''):
+    """Build a package dict shaped like cloudsmith `list packages -F json`."""
+    return {
+        'name': name,
+        'version': version,
+        'distro': {'slug': family},
+        'distro_version': {'slug': distro},
+        'architectures': [{'name': arch}],
+        'uploaded_at': uploaded or f'2026-06-{version[-2:]}T04:00:00Z',
+        'slug_perm': f'{name}-{version}-{family}-{distro}-{arch}'.replace('/', '-'),
+    }
+
+
+def _names(pkgs):
+    return sorted((p['name'], p['version']) for p in pkgs)
+
+
+def test_keeps_newest_n_per_coordinate():
+    pkgs = [_pkg('R-next', f'202606{d:02d}') for d in range(1, 11)]  # 10 builds
+    to_delete = prune_cloudsmith.select_versions_to_delete(pkgs, keep=3)
+    # Deletes the 7 oldest, keeps 20260608/09/10.
+    assert len(to_delete) == 7
+    assert _names(to_delete) == [('R-next', f'202606{d:02d}') for d in range(1, 8)]
+
+
+def test_fewer_than_keep_deletes_nothing():
+    pkgs = [_pkg('R-devel', '20260601'), _pkg('R-devel', '20260602')]
+    assert prune_cloudsmith.select_versions_to_delete(pkgs, keep=14) == []
+
+
+def test_coordinates_are_independent():
+    # Same name+version across two distros and two arches = four coordinates,
+    # each trimmed to its own newest-N.
+    pkgs = []
+    for distro in ('fedora/42', 'el/9'):
+        for arch in ('x86_64', 'aarch64'):
+            for d in range(1, 6):  # 5 builds per coordinate
+                pkgs.append(_pkg('R-next', f'202606{d:02d}', distro=distro, arch=arch))
+    to_delete = prune_cloudsmith.select_versions_to_delete(pkgs, keep=2)
+    # 4 coordinates * (5 - 2) = 12 deletions; each coordinate keeps its 2 newest.
+    assert len(to_delete) == 12
+    kept = [p for p in pkgs if p not in to_delete]
+    by_coord = {}
+    for p in kept:
+        by_coord.setdefault(prune_cloudsmith._coordinate(p), []).append(p['version'])
+    assert len(by_coord) == 4
+    for versions in by_coord.values():
+        assert sorted(versions) == ['20260604', '20260605']
+
+
+def test_release_packages_are_never_deleted():
+    # A pile of stable release builds plus one nightly; only nightlies are eligible,
+    # and a single nightly version is under any keep threshold.
+    pkgs = [_pkg('R-4.4.3', '1'), _pkg('R-4.5.0', '1'), _pkg('r-4.4.3', '1'),
+            _pkg('R-next', '20260624')]
+    assert prune_cloudsmith.select_versions_to_delete(pkgs, keep=1) == []
+
+
+def test_deb_and_rpm_names_both_eligible():
+    rpm = [_pkg('R-next', f'202606{d:02d}') for d in range(1, 5)]
+    deb = [_pkg('r-next', f'202606{d:02d}', distro='ubuntu/noble') for d in range(1, 5)]
+    to_delete = prune_cloudsmith.select_versions_to_delete(rpm + deb, keep=1)
+    # Two coordinates, each keeps 1, deletes 3.
+    assert len(to_delete) == 6
+    assert {p['name'] for p in to_delete} == {'R-next', 'r-next'}
+
+
+def test_same_version_slug_different_family_not_merged():
+    # Two distro families that share a version slug ("10") must stay separate
+    # coordinates, so neither gets over-pruned.
+    el = [_pkg('R-next', f'202606{d:02d}', distro='10', family='el') for d in range(1, 4)]
+    other = [_pkg('R-next', f'202606{d:02d}', distro='10', family='someos') for d in range(1, 4)]
+    to_delete = prune_cloudsmith.select_versions_to_delete(el + other, keep=2)
+    # Two coordinates, each keeps 2 of 3 -> 2 deletions total, not merged into one.
+    assert len(to_delete) == 2
+    assert {p['distro']['slug'] for p in to_delete} == {'el', 'someos'}
+
+
+def test_keep_zero_is_rejected():
+    with pytest.raises(ValueError):
+        prune_cloudsmith.select_versions_to_delete([], keep=0)
+
+
+def test_main_dry_run_smoke(monkeypatch, capsys):
+    # Exercises main()'s reporting + delete loop end to end (with I/O stubbed),
+    # which the pure-function tests don't cover.
+    pkgs = [_pkg('R-next', f'202606{d:02d}') for d in range(1, 6)]
+    deleted = []
+    monkeypatch.setattr(prune_cloudsmith, 'list_packages', lambda repo: pkgs)
+    monkeypatch.setattr(prune_cloudsmith, 'delete_package',
+                        lambda repo, ident, dry_run: deleted.append(ident))
+    monkeypatch.setattr(sys, 'argv',
+                        ['prune_cloudsmith.py', '--repo', 'posit/open', '--keep', '2', '--dry-run'])
+
+    prune_cloudsmith.main()
+
+    out = capsys.readouterr().out
+    assert 'keeping newest 2' in out
+    assert len(deleted) == 3  # 5 versions, keep 2
+

@@ -732,6 +732,15 @@ cloudsmith_dry_run: true
 add or increment its entry in `package-versions.json`. Daily devel builds
 automatically use date-based versions to avoid conflicts.
 
+Because each daily build publishes a new date-versioned `R-next`/`R-devel`
+package per platform and architecture, the devel-daily workflow runs
+[`prune_cloudsmith.py`](prune_cloudsmith.py) (via the reusable
+`Prune Cloudsmith nightly builds` workflow) after a successful publish to keep
+only the newest 14 versions of each, so the repository doesn't grow without
+bound. Stable release packages are never pruned. That workflow can also be run
+manually from the Actions tab; it defaults to a dry run that lists what would
+be deleted without deleting anything.
+
 ## Testing
 
 Tests are automatically run on each push.

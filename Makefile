@@ -13,7 +13,7 @@ docker-shell-r-env:
 	@cd builder && docker compose run --entrypoint /bin/bash ubuntu-2004
 
 unit-test:
-	python3 -m pytest test_get_matrix.py -v
+	python3 -m pytest test_get_matrix.py test_prune_cloudsmith.py -v
 	cd builder/portable-r && python3 -m pytest test_delocate_r.py test_generate_sbom.py -v
 
 define GEN_TARGETS
