@@ -52,7 +52,7 @@ depends:
 - libXt
 ${zstd_libs}
 - make
-- flexiblas-devel
+- flexiblas-netlib
 - pango
 - pcre2-devel
 - tcl
@@ -62,6 +62,22 @@ ${zstd_libs}
 - xz-devel
 - zip
 - zlib-devel
+# For RHEL 9/10, flexiblas-devel is a weak (Recommends) dependency for UBI 9/10
+# support. UBI 9/10's CRB repos do not provide flexiblas-devel, so we let the
+# RPM install without the optional -devel package.
+#
+# r-builds installs the BLAS development headers by convention, since many R
+# packages need them to compile from source. They are not actually required to
+# run R (only the runtime BLAS library is: flexiblas-netlib, which provides
+# libflexiblas.so.3), so excluding -devel on UBI 9/10 is acceptable. On full
+# RHEL/Rocky, dnf still auto-installs it from CRB.
+#
+# See RHEL-5411: it requested flexiblas-devel in the UBI CRB and was closed as
+# fixed, but the package was never actually shipped (verified absent in UBI 9/10
+# images).
+# https://issues.redhat.com/browse/RHEL-5411
+recommends:
+- flexiblas-devel
 contents:
 - src: ${R_INSTALL_PATH}
   dst: ${R_INSTALL_PATH}
