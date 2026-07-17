@@ -44,7 +44,12 @@ jobs:
       r_versions: 'devel,next'
       publish: production
       package_version: ${{ needs.generate-version.outputs.package_version }}
-      publish_cloudsmith: ${{ inputs.publish_cloudsmith || 'posit/open' }}
+      # Cloudsmith publishing is temporarily disabled for the scheduled run to
+      # stop the daily devel/next uploads from consuming Cloudsmith artifact
+      # storage. The daily S3/CDN builds continue. Manual workflow_dispatch runs
+      # can still publish to Cloudsmith (defaulting to posit/open). Re-enable by
+      # dropping the `github.event_name == 'schedule'` guard below.
+      publish_cloudsmith: ${{ github.event_name == 'schedule' && '' || (inputs.publish_cloudsmith || 'posit/open') }}
       cloudsmith_dry_run: ${{ inputs.cloudsmith_dry_run || false }}
     secrets: inherit
 
