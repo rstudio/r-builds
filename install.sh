@@ -1,30 +1,13 @@
 #!/bin/bash
-THIS_VERSION="1.2.0"
+THIS_VERSION="1.3.0"
 
 # Call with:
 #   bash -c "$(curl -L https://rstd.io/r-install)"
-
-SCRIPT_ACTION=$1
-SCRIPT_ACTION=${SCRIPT_ACTION:-install}
-
-# Set to the full version to install. Must be either available on S3 or in the working directory
-R_VERSION=${R_VERSION:-}
-# The version may optionally be provided as a second argument
-if [[ "$2" != "" ]]; then
-  R_VERSION=$2
-fi
-
-# Run unattended; show no questions, assume default answers.
-# May also be set by the '-y'/'yes' options on the install action.
-RUN_UNATTENDED=${RUN_UNATTENDED:-0}
-if [[ "$3" == "-y" || "$3" == "yes" ]]; then
-  RUN_UNATTENDED=1
-fi
-
-SUDO=
-if [[ $(id -u) != "0" ]]; then
-  SUDO=sudo
-fi
+#
+# Arguments and environment variables are parsed by main() at the bottom of
+# this file. The script may also be sourced to load its functions without
+# running the installer, which the unit tests rely on; see
+# test/test-install-unit.sh.
 
 # The root of the S3 URL for downloads
 CDN_URL='https://cdn.posit.co/r'
@@ -32,17 +15,21 @@ CDN_URL='https://cdn.posit.co/r'
 # The URL for listing available R versions
 VERSIONS_URL="${CDN_URL}/versions.json"
 
-R_VERSIONS=$(curl -s ${VERSIONS_URL} |
-  # Matches the JSON line that contains the r versions
-  grep r_versions |
-  # Gets the value of the `r_version` property (e.g., "[ 3.0.0, 3.0.3, ... ]")
-  cut -f2 -d ":" |
-  # Removes the opening and closing brackets of the array
-  cut -f2 -d "[" | cut -f1 -d "]" |
-  # Removes the quotes and commas from the values
-  sed -e 's/\"//g' | sed -e 's/\,//g' |
-  # Convert to newlines and sort in descending order, with devel/next at the bottom
-  tr ' ' '\n' | sort --numeric-sort --reverse)
+# Fetches and parses the list of available R versions from versions.json,
+# newest first (with devel/next sorted to the bottom).
+load_r_versions () {
+  curl -s ${VERSIONS_URL} |
+    # Matches the JSON line that contains the r versions
+    grep r_versions |
+    # Gets the value of the `r_version` property (e.g., "[ 3.0.0, 3.0.3, ... ]")
+    cut -f2 -d ":" |
+    # Removes the opening and closing brackets of the array
+    cut -f2 -d "[" | cut -f1 -d "]" |
+    # Removes the quotes and commas from the values
+    sed -e 's/\"//g' | sed -e 's/\,//g' |
+    # Convert to newlines and sort in descending order, with devel/next at the bottom
+    tr ' ' '\n' | sort --numeric-sort --reverse
+}
 
 # Returns the OS
 detect_os () {
@@ -163,9 +150,16 @@ download_name () {
       rpm_arch="x86_64"
       deb_arch="amd64"
       ;;
-    "aarch64")
+    # Linux reports 64-bit ARM as "aarch64"; "arm64" is accepted as an alias
+    # (e.g., dpkg's architecture name) so the mapping never silently misses.
+    "aarch64" | "arm64")
       rpm_arch="aarch64"
       deb_arch="arm64"
+      ;;
+    *)
+      # Unsupported architecture. Emit nothing and signal failure so the caller
+      # can report a clear error instead of building a bogus download URL.
+      return 1
       ;;
   esac
   case $os in
@@ -260,7 +254,6 @@ valid_version () {
 }
 
 # Prompts for the version until a valid version is entered.
-SELECTED_VERSION=${R_VERSION}
 prompt_version () {
   while [ "$SELECTED_VERSION" = "" ]; do
     echo "Available Versions"
@@ -522,8 +515,18 @@ do_install () {
 
   arch=$(uname -m)
 
-  # Get the name of the installer to use
-  installer_file_name=$(download_name "${os}" "${SELECTED_VERSION}" "${arch}")
+  # Get the name of the installer to use. download_name returns non-zero for an
+  # unsupported architecture and empty output for an unsupported OS; report each
+  # clearly instead of attempting to download a bogus URL.
+  if ! installer_file_name=$(download_name "${os}" "${SELECTED_VERSION}" "${arch}"); then
+    echo "Unsupported architecture '${arch}' for ${os}."
+    echo "Supported architectures are x86_64/amd64 and aarch64/arm64."
+    exit 1
+  fi
+  if [ -z "${installer_file_name}" ]; then
+    echo "No R package is available for ${os} on ${arch}."
+    exit 1
+  fi
 
   # Get the URL to download from. If the installer already exists in the current
   # directory, this will return a blank string.
@@ -555,18 +558,56 @@ do_show_usage() {
   echo "'-h' or 'help' show this info"
 }
 
-# Choose a command to perform
-case ${SCRIPT_ACTION} in
-  "-i"|"install")
-    do_install
-    ;;
-  "-r"|"rversions")
-    do_show_versions
-    ;;
-  "-v"|"version")
-    echo "r-builds quick install version ${THIS_VERSION}"
-    ;;
-  "-h"|"help"|*)
-    do_show_usage
-    ;;
-esac
+# Parses arguments and the environment, loads the available R versions, and
+# dispatches to the requested action.
+main () {
+  # The action to perform; defaults to "install".
+  SCRIPT_ACTION=${1:-install}
+
+  # The full version to install. May come from the environment or, optionally,
+  # the second argument. Must be available on the CDN or in the working directory.
+  R_VERSION=${R_VERSION:-}
+  if [[ "$2" != "" ]]; then
+    R_VERSION=$2
+  fi
+
+  # Run unattended; show no questions, assume default answers. May be set via
+  # the environment or the '-y'/'yes' third argument on the install action.
+  RUN_UNATTENDED=${RUN_UNATTENDED:-0}
+  if [[ "$3" == "-y" || "$3" == "yes" ]]; then
+    RUN_UNATTENDED=1
+  fi
+
+  SUDO=
+  if [[ $(id -u) != "0" ]]; then
+    SUDO=sudo
+  fi
+
+  # The list of available R versions, used to validate and select a version.
+  R_VERSIONS=$(load_r_versions)
+
+  # The version to install; prompt_version may override this.
+  SELECTED_VERSION=${R_VERSION}
+
+  # Choose a command to perform
+  case ${SCRIPT_ACTION} in
+    "-i"|"install")
+      do_install
+      ;;
+    "-r"|"rversions")
+      do_show_versions
+      ;;
+    "-v"|"version")
+      echo "r-builds quick install version ${THIS_VERSION}"
+      ;;
+    "-h"|"help"|*)
+      do_show_usage
+      ;;
+  esac
+}
+
+# Run the installer unless this script is being sourced (for example by the
+# unit tests), in which case only the function definitions above are loaded.
+if ! (return 0 2>/dev/null); then
+  main "$@"
+fi
