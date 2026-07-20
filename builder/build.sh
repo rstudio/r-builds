@@ -109,7 +109,7 @@ compile_r() {
   fi
 
   # GCC 14 and above makes -Wincompatible-pointer-types a hard error
-  # (e.g., on Alpine 3.21, Fedora 42). Old recommended packages bundled
+  # (e.g., on Alpine 3.21, Fedora 43). Old recommended packages bundled
   # with R (e.g. Matrix's COLAMD) have incompatible pointer type
   # assignments that trigger this.
   if _version_is_less_than "${r_version}" 3.2.0 && _version_is_greater_than "${gcc_major_version}" 13; then
