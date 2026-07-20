@@ -9,7 +9,7 @@ import pytest
 import prune_cloudsmith
 
 
-def _pkg(name, version, distro='fedora/42', arch='x86_64', uploaded=None, family=''):
+def _pkg(name, version, distro='fedora/43', arch='x86_64', uploaded=None, family=''):
     """Build a package dict shaped like cloudsmith `list packages -F json`."""
     return {
         'name': name,
@@ -43,7 +43,7 @@ def test_coordinates_are_independent():
     # Same name+version across two distros and two arches = four coordinates,
     # each trimmed to its own newest-N.
     pkgs = []
-    for distro in ('fedora/42', 'el/9'):
+    for distro in ('fedora/43', 'el/9'):
         for arch in ('x86_64', 'aarch64'):
             for d in range(1, 6):  # 5 builds per coordinate
                 pkgs.append(_pkg('R-next', f'202606{d:02d}', distro=distro, arch=arch))
