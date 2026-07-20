@@ -1,4 +1,4 @@
-PLATFORMS := ubuntu-2004 ubuntu-2204 ubuntu-2404 ubuntu-2604 debian-13 centos-7 centos-8 manylinux_2_34 musllinux_1_2 rhel-9 rhel-10 opensuse-156 opensuse-160 fedora-42 fedora-43 fedora-44
+PLATFORMS := ubuntu-2004 ubuntu-2204 ubuntu-2404 ubuntu-2604 debian-13 centos-7 centos-8 manylinux_2_34 musllinux_1_2 rhel-9 rhel-10 opensuse-156 opensuse-160 fedora-43 fedora-44
 
 docker-build:
 	@cd builder && docker compose build --parallel
@@ -13,6 +13,7 @@ docker-shell-r-env:
 	@cd builder && docker compose run --entrypoint /bin/bash ubuntu-2004
 
 unit-test:
+	bash test/test-install-unit.sh
 	python3 -m pytest test_get_matrix.py test_prune_cloudsmith.py -v
 	cd builder/portable-r && python3 -m pytest test_delocate_r.py test_generate_sbom.py -v
 

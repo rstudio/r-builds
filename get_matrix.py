@@ -32,7 +32,6 @@ CLOUDSMITH_DISTROS = {
     'rhel-10': 'el/10',
     'opensuse-156': 'opensuse/15.6',
     'opensuse-160': 'opensuse/16.0',
-    'fedora-42': 'fedora/42',
     'fedora-43': 'fedora/43',
     'fedora-44': 'fedora/44',
 }
