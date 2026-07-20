@@ -164,3 +164,12 @@ services:
     volumes:
       - ../:/r-builds
     platform: ${PLATFORM_ARCH}
+  fedora-44:
+    image: fedora:44
+    command: /r-builds/test/test-yum.sh
+    environment:
+      - OS_IDENTIFIER=fedora-44
+      - R_VERSION=${R_VERSION}
+    volumes:
+      - ../:/r-builds
+    platform: ${PLATFORM_ARCH}

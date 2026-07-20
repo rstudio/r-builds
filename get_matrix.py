@@ -34,6 +34,7 @@ CLOUDSMITH_DISTROS = {
     'opensuse-160': 'opensuse/16.0',
     'fedora-42': 'fedora/42',
     'fedora-43': 'fedora/43',
+    'fedora-44': 'fedora/44',
 }
 
 # Portable builds bundle their dependencies and are distributed as relocatable
