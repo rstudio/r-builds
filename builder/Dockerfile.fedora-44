@@ -35,6 +35,7 @@ RUN dnf -y upgrade \
     tex \
     texinfo-tex \
     texlive-collection-latexrecommended \
+    texlive-rsfs `# Only R 4.2.2 needs this to build an .Rnw` \
     tk-devel \
     unzip \
     valgrind-devel \
