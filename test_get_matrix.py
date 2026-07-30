@@ -68,3 +68,43 @@ def test_cloudsmith_info_unknown_raises():
     except KeyError:
         return
     raise AssertionError("expected KeyError for unknown platform")
+
+
+def _compose_services(path='builder/docker-compose.yml'):
+    """Parse the compose file into {service_name: [lines]} using a simple
+    indentation-based scan (stdlib only, per project convention)."""
+    services = {}
+    current = None
+    with open(path) as f:
+        for line in f:
+            stripped = line.rstrip('\n')
+            # Service names sit at 2-space indent, e.g. "  ubuntu-2604:"
+            if stripped.startswith('  ') and not stripped.startswith('   ') \
+                    and stripped.endswith(':'):
+                current = stripped.strip()[:-1]
+                services[current] = []
+            elif current is not None:
+                services[current].append(stripped)
+    return services
+
+
+def test_compose_distro_services_declare_package_version():
+    """Every distro platform's compose service must pass PACKAGE_VERSION through
+    to the package script. Without it, the script defaults to version 1 and the
+    daily devel/next Cloudsmith publishes collide with the existing package@1
+    every night (this is how ubuntu-2604 broke the nightly for weeks).
+    Portable platforms are exempt: they ship version-less tarballs/apk."""
+    services = _compose_services()
+    missing = []
+    for platform in get_matrix.CLOUDSMITH_DISTROS:
+        lines = services.get(platform)
+        assert lines is not None, (
+            f"No service named '{platform}' in builder/docker-compose.yml"
+        )
+        if not any('PACKAGE_VERSION=${PACKAGE_VERSION}' in l for l in lines):
+            missing.append(platform)
+    assert not missing, (
+        f"Compose services missing PACKAGE_VERSION in environment: {missing}. "
+        f"Add '- PACKAGE_VERSION=${{PACKAGE_VERSION}}' to each service's "
+        f"environment in builder/docker-compose.yml."
+    )
