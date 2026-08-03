@@ -385,15 +385,10 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install cloudsmith-cli
-        run: pip install --upgrade cloudsmith-cli
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: r-${{ matrix.r_version }}-${{ matrix.platform }}-${{ matrix.arch }}
-          path: packages/
-
+      # This must run before the artifact download: portable platforms (e.g.
+      # musllinux) produce no deb/rpm, so no artifact exists for them and an
+      # unconditional download-artifact would fail the job before the skip
+      # check is ever reached.
       - name: Determine package type and Cloudsmith distro
         id: pkg-info
         env:
@@ -413,6 +408,17 @@ jobs:
             echo "pkg_type=$(echo "$info" | jq -r '.pkg_type')" >> "$GITHUB_OUTPUT"
             echo "pkg_pattern=$(echo "$info" | jq -r '.pkg_pattern')" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Install cloudsmith-cli
+        if: ${{ steps.pkg-info.outputs.skip != 'true' }}
+        run: pip install --upgrade cloudsmith-cli
+
+      - name: Download build artifacts
+        if: ${{ steps.pkg-info.outputs.skip != 'true' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: r-${{ matrix.r_version }}-${{ matrix.platform }}-${{ matrix.arch }}
+          path: packages/
 
       - name: Find and publish package
         if: ${{ steps.pkg-info.outputs.skip != 'true' }}

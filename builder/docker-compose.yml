@@ -47,6 +47,7 @@ services:
       - R_VERSION=${R_VERSION}
       - R_INSTALL_PATH=${R_INSTALL_PATH:-}
       - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
     build:
       context: .
       dockerfile: Dockerfile.ubuntu-2604
