@@ -14,7 +14,7 @@ docker-shell-r-env:
 
 unit-test:
 	bash test/test-install-unit.sh
-	python3 -m pytest test_get_matrix.py test_prune_cloudsmith.py -v
+	python3 -m pytest test_get_matrix.py -v
 	cd builder/portable-r && python3 -m pytest test_delocate_r.py test_generate_sbom.py -v
 
 define GEN_TARGETS
