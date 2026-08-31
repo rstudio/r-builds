@@ -325,6 +325,37 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+      # Daily devel/next packages are built with a date-based version so that
+      # Cloudsmith accepts a new package each night, but the CDN serves them
+      # from fixed URLs (r-next_1_<arch>.deb, R-next-1-1.<arch>.rpm) that rely
+      # on each nightly overwriting the same S3 key. Rename the dated packages
+      # back to their legacy version-1 filenames before the S3 publish so the
+      # stable URLs keep updating and dated files don't accumulate on S3
+      # (see #342). This runs after the Cloudsmith artifact upload, which
+      # needs the dated names.
+      - name: Restore stable package names for S3
+        if: ${{ inputs.publish != '' && (matrix.r_version == 'devel' || matrix.r_version == 'next') }}
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          R_VERSION: ${{ matrix.r_version }}
+          PKG_VERSION: ${{ steps.pkg-version.outputs.version }}
+        run: |
+          if [[ "$PKG_VERSION" == "1" ]]; then
+            echo "Package version is already 1; nothing to rename"
+            exit 0
+          fi
+          cd "builder/integration/tmp/$PLATFORM" 2>/dev/null || exit 0
+          for f in "r-${R_VERSION}_${PKG_VERSION}_"*.deb; do
+            [[ -e "$f" ]] || continue
+            mv -f "$f" "${f/_${PKG_VERSION}_/_1_}"
+            echo "Renamed $f -> ${f/_${PKG_VERSION}_/_1_}"
+          done
+          for f in "R-${R_VERSION}-${PKG_VERSION}-"*.rpm; do
+            [[ -e "$f" ]] || continue
+            mv -f "$f" "${f/-${PKG_VERSION}-/-1-}"
+            echo "Renamed $f -> ${f/-${PKG_VERSION}-/-1-}"
+          done
+
       - name: Configure AWS Credentials
         if: ${{ inputs.publish != '' }}
         uses: aws-actions/configure-aws-credentials@v6
