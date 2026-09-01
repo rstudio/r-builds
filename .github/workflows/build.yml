@@ -345,14 +345,17 @@ jobs:
             exit 0
           fi
           cd "builder/integration/tmp/$PLATFORM" 2>/dev/null || exit 0
+          # The packages were written by the build container as root, so the
+          # directory is root-owned and renaming requires sudo (passwordless on
+          # GitHub-hosted runners).
           for f in "r-${R_VERSION}_${PKG_VERSION}_"*.deb; do
             [[ -e "$f" ]] || continue
-            mv -f "$f" "${f/_${PKG_VERSION}_/_1_}"
+            sudo mv -f "$f" "${f/_${PKG_VERSION}_/_1_}"
             echo "Renamed $f -> ${f/_${PKG_VERSION}_/_1_}"
           done
           for f in "R-${R_VERSION}-${PKG_VERSION}-"*.rpm; do
             [[ -e "$f" ]] || continue
-            mv -f "$f" "${f/-${PKG_VERSION}-/-1-}"
+            sudo mv -f "$f" "${f/-${PKG_VERSION}-/-1-}"
             echo "Renamed $f -> ${f/-${PKG_VERSION}-/-1-}"
           done
 
