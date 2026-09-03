@@ -68,6 +68,9 @@ jobs:
     with:
       r_versions: ${{ needs.check-r-versions.outputs.new_r_versions }}
       publish: ${{ inputs.publish || 'production' }}
+      # Also publish new releases to Cloudsmith, but only for production runs:
+      # Cloudsmith has no staging repository, so staging test runs stay S3-only.
+      publish_cloudsmith: ${{ (inputs.publish || 'production') == 'production' && 'posit/open' || '' }}
     secrets: inherit
 
   # Notify Hosted about new R versions
