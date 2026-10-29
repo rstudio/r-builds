@@ -10,5 +10,5 @@ requests==2.32.3
 s3transfer==0.13.0
 six==1.17.0
 soupsieve==2.7
-typing_extensions==4.13.2
+typing_extensions==4.16.0
 urllib3==2.8.0
