@@ -85,6 +85,13 @@ fi
 
 if [ "$(arch)" == "aarch64" ]; then echo arm64; else echo amd64; fi > /tmp/arch
 
+# R 4.5.0 and later link to libzstd if available, R 4.7.0 and later require it
+# (with headers to link against libR)
+zstd_libs='# - libzstd-devel'
+if grep -q '^LIBS *=.*[-]lzstd' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
+    zstd_libs='- libzstd-devel'
+fi
+
 # Allow PACKAGE_VERSION to be overridden for Cloudsmith publishing
 # Default to "1" if not set
 PKG_VERSION=${PACKAGE_VERSION:-1}
@@ -123,6 +130,7 @@ ${pcre_libs}
 - xz-devel
 - zip
 - zlib-devel
+${zstd_libs}
 ${recommends}
 contents:
 - src: ${R_INSTALL_PATH}
