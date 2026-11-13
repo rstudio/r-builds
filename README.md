@@ -41,7 +41,8 @@ variants post-process the official CRAN binaries so they can be extracted
 anywhere instead of installed system-wide.
 
 - **manylinux** - any Linux distro with glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+,
-  Debian 12+, Amazon Linux 2023+, Arch Linux, etc.)
+  Debian 12+, Amazon Linux 2023+, Arch Linux, etc.), or glibc >= 2.28 for the
+  `manylinux_2_28` variant (adds RHEL 8 and Ubuntu 20.04)
 - **musllinux** - Alpine Linux 3.20+ and other musl-based distros
 - **macOS** - arm64 (Apple Silicon) and x86_64 (Intel), R 4.1.0+
 - **Windows** - x86_64, R 3.6.3+
@@ -193,7 +194,7 @@ Then install the package:
 sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
-#### Portable (manylinux) - any Linux distro with glibc >= 2.34
+#### Portable (manylinux) - any Linux distro with glibc >= 2.28
 
 Portable builds are available that work across Linux distributions without
 distro-specific packages. Most library dependencies are bundled; R auto-detects
@@ -214,9 +215,17 @@ DEB or RPM, use the tarball. The tarball is also the right choice if you need R
 installed to a custom path or without root access, since it can be extracted
 anywhere (R auto-detects its location at runtime).
 
-The portable builds require glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+,
-Amazon Linux 2023+, Arch Linux, etc.). RHEL 8 and Ubuntu 20.04 are not supported;
-use the distro-specific packages above instead.
+There are two portable variants:
+
+- `manylinux_2_34` (built on Rocky Linux 9) requires glibc >= 2.34 (RHEL 9+,
+  Ubuntu 22.04+, Debian 12+, Amazon Linux 2023+, Arch Linux, etc.). Use this
+  one when your distro supports it.
+- `manylinux_2_28` (built on Rocky Linux 8) requires glibc >= 2.28, so it also
+  runs on RHEL 8 and Ubuntu 20.04. It bundles older libraries, such as
+  OpenSSL 1.1.1 instead of 3.x.
+
+The examples below use `manylinux_2_34`. For the `manylinux_2_28` variant,
+replace `manylinux_2_34` with `manylinux_2_28` in the URLs and file names.
 
 Portable builds bundle most shared library dependencies (including OpenSSL and
 libcurl). Unlike distro-specific builds, updating system packages on the host
@@ -286,21 +295,21 @@ Optional - for installing R packages from source (`R CMD INSTALL`):
 ```bash
 # Ubuntu/Debian
 sudo apt-get install -y build-essential gfortran \
-  libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev
+  libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libzstd-dev libicu-dev
   # For R 3.x, also install: libpcre3-dev
 
 # RHEL/Fedora/Rocky/Amazon Linux
 sudo dnf install -y gcc gcc-c++ gcc-gfortran make \
-  pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
+  pcre2-devel xz-devel bzip2-devel zlib-devel libzstd-devel libicu-devel
   # For R 3.x, also install: pcre-devel
 
 # openSUSE/SLES
 sudo zypper install -y gcc gcc-c++ gcc-fortran make \
-  pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
+  pcre2-devel xz-devel libbz2-devel zlib-devel libzstd-devel libicu-devel
   # For R 3.x, also install: pcre-devel
 
 # Arch Linux
-sudo pacman -S base-devel gcc-fortran pcre2 xz bzip2 zlib icu
+sudo pacman -S base-devel gcc-fortran pcre2 xz bzip2 zlib zstd icu
 ```
 
 #### Portable (musllinux) - Alpine Linux and musl-based distros

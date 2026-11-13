@@ -36,7 +36,7 @@ See [builder/patches/README.md](builder/patches/README.md).
 ## Important gotchas
 
 - **Docker rebuild required**: Package scripts (`package.<platform>`) are COPYed into Docker images. After editing them, you must run `make docker-build-<platform>` before building R. Same for Dockerfiles.
-- **OpenBLAS naming inconsistency**: OpenBLAS .so names differ across distros (`libopenblaso.so` on Rocky 9 vs `libopenblas.so` on Ubuntu/Alpine). This is why portable builds use a post-build BLAS swap (keeping Makeconf's `-lRblas`) rather than `--with-blas=<lib>` at configure time.
+- **OpenBLAS naming inconsistency**: OpenBLAS .so names differ across distros (`libopenblaso.so` on Rocky 8 and 9 vs `libopenblas.so` on Ubuntu/Alpine). This is why portable builds use a post-build BLAS swap (keeping Makeconf's `-lRblas`) rather than `--with-blas=<lib>` at configure time.
 - **PCRE2 hidden for R 3.x**: `build.sh` temporarily hides PCRE2 pkg-config during configure for R < 4.0 to prevent unwanted linkage.
 
 ## macOS and Windows builds

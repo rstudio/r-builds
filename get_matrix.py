@@ -39,7 +39,7 @@ CLOUDSMITH_DISTROS = {
 # Portable builds bundle their dependencies and are distributed as relocatable
 # tarballs / packages via S3/CDN, not per-distro Cloudsmith repos. They are
 # intentionally excluded from Cloudsmith publishing.
-PORTABLE_PLATFORMS = {'manylinux_2_34', 'musllinux_1_2'}
+PORTABLE_PLATFORMS = {'manylinux_2_28', 'manylinux_2_34', 'musllinux_1_2'}
 
 
 def _is_non_linux(platform):
