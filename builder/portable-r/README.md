@@ -202,7 +202,7 @@ The tarball is self-contained except for:
 | `ttf-dejavu` (Alpine only) | Fonts for text rendering in plots | `ttf-dejavu` (not pulled in by fontconfig on Alpine) |
 | `which` | Required by R's `utils` package at startup | `which` (RHEL/SUSE; included in `debianutils` on Debian/Ubuntu; in `coreutils` on Alpine) |
 
-For compiling R packages from source, users also need a C/C++/Fortran compiler and dev packages for `pcre2`, `lzma`, `bz2`, `zlib`, `icu`.
+For compiling R packages from source, users also need a C/C++/Fortran compiler and dev packages for `pcre2`, `lzma`, `bz2`, `zlib`, `icu`, and for R 4.5.0 and later, `zstd`.
 
 ### fontconfig handling
 

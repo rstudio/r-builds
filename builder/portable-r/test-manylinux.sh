@@ -34,19 +34,19 @@ if command -v apt-get &>/dev/null; then
   apt-get update -qq
   apt-get install -y --no-install-recommends \
     build-essential gfortran ca-certificates less tar gzip \
-    libpcre2-dev libpcre3-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev \
+    libpcre2-dev libpcre3-dev liblzma-dev libbz2-dev zlib1g-dev libzstd-dev libicu-dev \
     fontconfig tcl tk
 elif command -v dnf &>/dev/null; then
   dnf install -y \
     gcc gcc-c++ gcc-gfortran make ca-certificates less which tar gzip \
-    pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel \
+    pcre2-devel xz-devel bzip2-devel zlib-devel libzstd-devel libicu-devel \
     fontconfig
   # pcre-devel (PCRE1) is only needed for R 3.x and may not exist on newer distros
   dnf install -y pcre-devel 2>/dev/null || true
 elif command -v zypper &>/dev/null; then
   zypper --non-interactive install \
     gcc gcc-c++ gcc-fortran make ca-certificates less which tar gzip \
-    pcre2-devel pcre-devel xz-devel libbz2-devel zlib-devel libicu-devel \
+    pcre2-devel pcre-devel xz-devel libbz2-devel zlib-devel libzstd-devel libicu-devel \
     fontconfig dejavu-fonts
 else
   echo "ERROR: No supported package manager found"

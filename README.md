@@ -295,21 +295,21 @@ Optional - for installing R packages from source (`R CMD INSTALL`):
 ```bash
 # Ubuntu/Debian
 sudo apt-get install -y build-essential gfortran \
-  libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev
+  libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libzstd-dev libicu-dev
   # For R 3.x, also install: libpcre3-dev
 
 # RHEL/Fedora/Rocky/Amazon Linux
 sudo dnf install -y gcc gcc-c++ gcc-gfortran make \
-  pcre2-devel xz-devel bzip2-devel zlib-devel libicu-devel
+  pcre2-devel xz-devel bzip2-devel zlib-devel libzstd-devel libicu-devel
   # For R 3.x, also install: pcre-devel
 
 # openSUSE/SLES
 sudo zypper install -y gcc gcc-c++ gcc-fortran make \
-  pcre2-devel xz-devel libbz2-devel zlib-devel libicu-devel
+  pcre2-devel xz-devel libbz2-devel zlib-devel libzstd-devel libicu-devel
   # For R 3.x, also install: pcre-devel
 
 # Arch Linux
-sudo pacman -S base-devel gcc-fortran pcre2 xz bzip2 zlib icu
+sudo pacman -S base-devel gcc-fortran pcre2 xz bzip2 zlib zstd icu
 ```
 
 #### Portable (musllinux) - Alpine Linux and musl-based distros
