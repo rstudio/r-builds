@@ -25,6 +25,7 @@ RUN dnf -y upgrade \
     libpng-devel \
     libtiff-devel \
     libtool \
+    libzstd-devel `# Required by R >= 4.5.0` \
     make \
     ncurses-devel \
     openblas-openmp `# Bundled as libRblas.so and libRlapack.so (same OpenMP variant as manylinux_2_34)` \
