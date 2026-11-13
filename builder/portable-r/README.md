@@ -54,10 +54,11 @@ The SBOM is generated during the build by `generate_sbom.py`, which reads an int
 
 | Platform | Base image | libc | Compatible distros |
 |---|---|---|---|
+| `manylinux_2_28` | Rocky 8 | glibc 2.28 | RHEL 8+, Ubuntu 20.04+, Debian 10+, openSUSE 15.6+, Fedora 29+, Amazon Linux 2023+, Arch Linux |
 | `manylinux_2_34` | Rocky 9 | glibc 2.34 | RHEL 9+, Ubuntu 22.04+, Debian 12+, openSUSE 15.6+, Fedora 36+, Amazon Linux 2023+, Arch Linux |
 | `musllinux_1_2` | Alpine 3.21 | musl 1.2 | Alpine 3.19+, any musl 1.2+ distro |
 
-We use `manylinux_2_34` (based on RHEL 9) rather than `manylinux_2_28` (RHEL 8) to get newer libraries like OpenSSL 3.x and to work around issues with RHEL 8's old version of fontconfig (2.13, which doesn't understand modern config directives like `<reset-dirs/>`).
+`manylinux_2_34` (based on RHEL 9) is the main build: it has newer libraries like OpenSSL 3.x. `manylinux_2_28` (based on RHEL 8) exists for older distros, mainly RHEL 8. It bundles OpenSSL 1.1.1, and it builds fontconfig 2.15.0 from source because RHEL 8's fontconfig 2.13 doesn't understand modern config directives like `<reset-dirs/>`. Users should pick `manylinux_2_34` when their distro supports it.
 
 ## Platform support
 
@@ -65,7 +66,7 @@ Based on [Posit platform support](https://docs.posit.co/platform-support.html). 
 
 | Distro | EOL | glibc | Minimum manylinux |
 |---|---|---|---|
-| RHEL 8 (Rocky/Alma 8) | May 2029 | 2.28 | manylinux_2_28 (not built) |
+| RHEL 8 (Rocky/Alma 8) | May 2029 | 2.28 | manylinux_2_28 |
 | RHEL 9 (Rocky/Alma 9) | May 2032 | 2.34 | manylinux_2_34 |
 | RHEL 10 | May 2035 | 2.39 | manylinux_2_34 |
 | Ubuntu 22.04 | Apr 2027 | 2.35 | manylinux_2_34 |
@@ -74,7 +75,7 @@ Based on [Posit platform support](https://docs.posit.co/platform-support.html). 
 | Debian 12 | Jun 2026 | 2.36 | manylinux_2_34 |
 | Debian 13 | Jun 2028 | 2.41 | manylinux_2_34 |
 
-All currently supported distros are covered by `manylinux_2_34`, with the exception of RHEL 8 (which would require `manylinux_2_28`). RHEL 8 is still served by the standard distro-specific r-builds packages.
+All currently supported distros are covered by `manylinux_2_34`, with the exception of RHEL 8, which is covered by `manylinux_2_28`. RHEL 8 is also served by the standard distro-specific r-builds packages.
 
 ### manylinux compatibility reference
 
@@ -83,6 +84,7 @@ From [pep600_compliance](https://github.com/mayeut/pep600_compliance), useful ma
 | manylinux | glibc | Build base | Compatible with |
 |---|---|---|---|
 | `manylinux_2_17` | 2.17 | manylinux-2014 | CentOS 7+, Amazon Linux 1+ |
+| `manylinux_2_28` | 2.28 | Rocky/Alma 8 | RHEL 8+, Ubuntu 20.04+, Debian 10+ |
 | `manylinux_2_34` | 2.34 | Rocky/Alma 9 | RHEL 9+, Ubuntu 22.04+, Debian 12+ |
 | `manylinux_2_39` | 2.39 | Rocky/Alma 10 | RHEL 10+, Ubuntu 24.04+, Debian 13+ |
 
@@ -210,7 +212,7 @@ Fontconfig requires special treatment because:
 2. Older fontconfig versions don't understand config directives from newer versions (e.g. `<reset-dirs/>` added in 2.14), causing warnings on modern distros
 3. If fontconfig is not bundled, R's entire graphics stack fails to load on systems without the fontconfig package
 
-The current builds use base images with fontconfig >= 2.14 (Rocky 9 ships 2.14.0, Alpine 3.21 ships 2.15.0), so no source build is needed. If a future manylinux build uses an older base image (e.g. with fontconfig 2.13), fontconfig 2.15.0 would need to be built from source. Version 2.15.0 is the latest release using autotools (2.16+ requires meson) and matches Ubuntu 24.04, RHEL 10, and Debian 13.
+Rocky 9 ships fontconfig 2.14.0 and Alpine 3.21 ships 2.15.0, so `manylinux_2_34` and `musllinux_1_2` use the system fontconfig. Rocky 8 ships 2.13.1, so `Dockerfile.manylinux_2_28` builds fontconfig 2.15.0 from source and installs it over the system copy, and `delocate_r.py` bundles it. Version 2.15.0 is the latest release using autotools (2.16+ requires meson) and matches Ubuntu 24.04, RHEL 10, and Debian 13.
 
 ### BLAS/LAPACK handling
 
@@ -286,15 +288,36 @@ The manylinux_2_34 build uses Rocky 9, which provides:
 RHEL 9+, Ubuntu 22.04+, Debian 12+, Fedora 36+, Amazon Linux 2023+
 
 **Not supported** (glibc < 2.34):
-RHEL 8, Amazon Linux 2
+RHEL 8 (use `manylinux_2_28`), Amazon Linux 2
+
+### manylinux_2_28 system libraries
+
+The manylinux_2_28 build uses Rocky 8, which provides:
+
+| Library | Version |
+|---|---|
+| glibc | 2.28 |
+| OpenSSL | **1.1.1** |
+| fontconfig | 2.13.1 (replaced by **2.15.0** built from source) |
+| ICU | 60.3 |
+| pango | 1.42.4 |
+| cairo | 1.15.12 |
+| GCC | 8.5 |
+
+Other differences from manylinux_2_34: Java 8 instead of Java 11, the `powertools` repo instead of `crb`, and no `INCLUDE_PCRE2_IN_R_3` (Pango on RHEL 8 doesn't need PCRE2 for R 3.x). The package script is the same as `package.manylinux_2_34` apart from comments.
+
+**Compatible distros** (glibc >= 2.28):
+RHEL 8+, Ubuntu 20.04+, Debian 10+, Fedora 29+, Amazon Linux 2023+
+
+**Not supported** (glibc < 2.28):
+Amazon Linux 2, CentOS 7
 
 ### Parallel builds strategy
 
-You can build multiple manylinux versions in parallel:
+Both manylinux versions are built:
 
 - **manylinux_2_34**: Covers all Posit-supported distros except RHEL 8 (EOL May 2029)
-
-A `manylinux_2_28` build for RHEL 8 compatibility could be added in the future if needed (the deleted files are recoverable from git history).
+- **manylinux_2_28**: Adds RHEL 8. Can be dropped once RHEL 8 is no longer supported.
 
 ## musllinux / Alpine
 
@@ -349,6 +372,13 @@ R_VERSION=4.5.3 make test-r-manylinux_2_34-rocky-9
 R_VERSION=4.5.3 make test-r-manylinux_2_34-rhel-10
 R_VERSION=4.5.3 make test-r-manylinux_2_34-opensuse-156
 
+# Same for manylinux_2_28. Its main test (the one CI runs) uses Rocky 8, the
+# oldest target distro, instead of Ubuntu Noble.
+R_VERSION=4.5.3 MAKEFLAGS=-j4 make build-r-manylinux_2_28
+R_VERSION=4.5.3 make test-r-manylinux_2_28
+R_VERSION=4.5.3 make test-r-manylinux_2_28-rhel-10
+R_VERSION=4.5.3 make test-r-manylinux_2_28-opensuse-156
+
 # Build and test musllinux
 R_VERSION=4.5.3 MAKEFLAGS=-j4 make build-r-musllinux_1_2
 R_VERSION=4.5.3 make test-r-musllinux_1_2
@@ -374,7 +404,7 @@ cd builder/portable-r && python3 -m pytest test_delocate_r.py -v
 
 The integration test (`test-manylinux.sh`) runs on multiple distros to validate cross-distro portability. When adding a new manylinux version, test on:
 
-1. The build distro itself (e.g. Rocky 9 for manylinux_2_34)
+1. The build distro itself (e.g. Rocky 9 for manylinux_2_34, Rocky 8 for manylinux_2_28)
 2. A distro with newer glibc that has different library paths (e.g. Ubuntu Noble)
 3. A distro with different package manager (e.g. openSUSE)
 4. The newest Posit-supported distro (to catch fontconfig/config issues)

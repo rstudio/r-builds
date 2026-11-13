@@ -4,7 +4,7 @@ set -ex
 # Test script for manylinux portable R builds.
 # Runs on various distros to validate cross-distro portability.
 #
-# Tested distros: Ubuntu Noble, Rocky Linux 9, Rocky Linux 10, openSUSE 15.6
+# Tested distros: Ubuntu Noble, Rocky Linux 8 (manylinux_2_28 only), Rocky Linux 9, Rocky Linux 10, openSUSE 15.6
 #
 # This script:
 # 1. Installs R from the tarball (not DEB/RPM)

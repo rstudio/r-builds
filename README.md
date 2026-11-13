@@ -41,7 +41,8 @@ variants post-process the official CRAN binaries so they can be extracted
 anywhere instead of installed system-wide.
 
 - **manylinux** - any Linux distro with glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+,
-  Debian 12+, Amazon Linux 2023+, Arch Linux, etc.)
+  Debian 12+, Amazon Linux 2023+, Arch Linux, etc.), or glibc >= 2.28 for the
+  `manylinux_2_28` variant (adds RHEL 8 and Ubuntu 20.04)
 - **musllinux** - Alpine Linux 3.20+ and other musl-based distros
 - **macOS** - arm64 (Apple Silicon) and x86_64 (Intel), R 4.1.0+
 - **Windows** - x86_64, R 3.6.3+
@@ -193,7 +194,7 @@ Then install the package:
 sudo dnf install R-${R_VERSION}-1-1.$(arch).rpm
 ```
 
-#### Portable (manylinux) - any Linux distro with glibc >= 2.34
+#### Portable (manylinux) - any Linux distro with glibc >= 2.28
 
 Portable builds are available that work across Linux distributions without
 distro-specific packages. Most library dependencies are bundled; R auto-detects
@@ -214,9 +215,17 @@ DEB or RPM, use the tarball. The tarball is also the right choice if you need R
 installed to a custom path or without root access, since it can be extracted
 anywhere (R auto-detects its location at runtime).
 
-The portable builds require glibc >= 2.34 (RHEL 9+, Ubuntu 22.04+, Debian 12+,
-Amazon Linux 2023+, Arch Linux, etc.). RHEL 8 and Ubuntu 20.04 are not supported;
-use the distro-specific packages above instead.
+There are two portable variants:
+
+- `manylinux_2_34` (built on Rocky Linux 9) requires glibc >= 2.34 (RHEL 9+,
+  Ubuntu 22.04+, Debian 12+, Amazon Linux 2023+, Arch Linux, etc.). Use this
+  one when your distro supports it.
+- `manylinux_2_28` (built on Rocky Linux 8) requires glibc >= 2.28, so it also
+  runs on RHEL 8 and Ubuntu 20.04. It bundles older libraries, such as
+  OpenSSL 1.1.1 instead of 3.x.
+
+The examples below use `manylinux_2_34`. For the `manylinux_2_28` variant,
+replace `manylinux_2_34` with `manylinux_2_28` in the URLs and file names.
 
 Portable builds bundle most shared library dependencies (including OpenSSL and
 libcurl). Unlike distro-specific builds, updating system packages on the host

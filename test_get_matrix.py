@@ -59,6 +59,7 @@ def test_cloudsmith_info_rpm_platform():
 
 
 def test_cloudsmith_info_portable_is_none():
+    assert get_matrix.cloudsmith_info('manylinux_2_28') is None
     assert get_matrix.cloudsmith_info('manylinux_2_34') is None
 
 
