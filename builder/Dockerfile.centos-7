@@ -5,6 +5,13 @@ ENV OS_IDENTIFIER=centos-7
 # Use vault.centos.org since CentOS 7 is EOL and the official mirrors are no longer available
 RUN sed -i -e 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/*
 
+# R 4.7.0 and later require libzstd, which is only available from EPEL on CentOS 7.
+# EPEL 7 is EOL, so point it at the Fedora archive.
+RUN yum -y install epel-release \
+    && sed -i -e 's|^metalink|#metalink|' \
+              -e 's|^#baseurl=.*/pub/epel/7/|baseurl=https://archives.fedoraproject.org/pub/archive/epel/7/|' \
+              /etc/yum.repos.d/epel*.repo
+
 RUN yum -y update \
     && yum -y install \
     autoconf \
@@ -27,6 +34,7 @@ RUN yum -y update \
     libpng-devel \
     libtiff-devel \
     libtool \
+    libzstd-devel \
     make \
     ncurses-devel \
     pango-devel \

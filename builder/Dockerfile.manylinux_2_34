@@ -25,6 +25,7 @@ RUN dnf -y upgrade \
     libpng-devel \
     libtiff-devel \
     libtool \
+    libzstd-devel \
     make \
     ncurses-devel \
     openblas-openmp `# Bundled as libRblas.so and libRlapack.so (matches RHEL 9 default)` \

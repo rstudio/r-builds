@@ -10,6 +10,13 @@ if [[ "${R_VERSION}" =~ ^3 ]]; then
   pcre_lib='libpcre3-dev'
 fi
 
+# R 4.5.0 and later link to libzstd if available, R 4.7.0 and later require it
+# (with headers to link against libR)
+zstd_libs='# - libzstd-dev'
+if grep -q '^LIBS *=.*[-]lzstd' ${R_INSTALL_PATH}/lib/R/etc/Makeconf; then
+    zstd_libs='- libzstd-dev'
+fi
+
 # Allow PACKAGE_VERSION to be overridden for Cloudsmith publishing
 # Default to "1" if not set
 PKG_VERSION=${PACKAGE_VERSION:-1}
@@ -55,6 +62,7 @@ depends:
 - libtk8.6
 - libx11-6
 - libxt6
+${zstd_libs}
 - make
 - ucf
 - unzip

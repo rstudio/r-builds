@@ -26,6 +26,7 @@ RUN dnf -y upgrade \
     libpng-devel \
     libtiff-devel \
     libtool \
+    libzstd-devel \
     make \
     ncurses-devel \
     pango-devel \
