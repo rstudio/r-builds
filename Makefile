@@ -1,4 +1,4 @@
-PLATFORMS := ubuntu-2004 ubuntu-2204 ubuntu-2404 ubuntu-2604 debian-13 centos-7 centos-8 manylinux_2_34 musllinux_1_2 rhel-9 rhel-10 opensuse-156 opensuse-160 fedora-43 fedora-44
+PLATFORMS := ubuntu-2004 ubuntu-2204 ubuntu-2404 ubuntu-2604 debian-13 centos-7 centos-8 manylinux_2_34 musllinux_1_2 rhel-9 rhel-10 opensuse-156 opensuse-160 fedora-43 fedora-44 fedora-45
 
 docker-build:
 	@cd builder && docker compose build --parallel
