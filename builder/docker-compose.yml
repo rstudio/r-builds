@@ -207,3 +207,17 @@ services:
     volumes:
       - ./integration/tmp:/tmp/output
     platform: ${PLATFORM_ARCH}
+  fedora-45:
+    command: ./build.sh
+    environment:
+      - R_VERSION=${R_VERSION}
+      - R_INSTALL_PATH=${R_INSTALL_PATH:-}
+      - LOCAL_STORE=/tmp/output
+      - PACKAGE_VERSION=${PACKAGE_VERSION}
+    build:
+      context: .
+      dockerfile: Dockerfile.fedora-45
+    image: r-builds:fedora-45
+    volumes:
+      - ./integration/tmp:/tmp/output
+    platform: ${PLATFORM_ARCH}

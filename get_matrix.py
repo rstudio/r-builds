@@ -34,6 +34,7 @@ CLOUDSMITH_DISTROS = {
     'opensuse-160': 'opensuse/16.0',
     'fedora-43': 'fedora/43',
     'fedora-44': 'fedora/44',
+    'fedora-45': 'fedora/45',
 }
 
 # Portable builds bundle their dependencies and are distributed as relocatable
@@ -145,6 +146,9 @@ def _get_matrix(platforms=['all'], versions=[], arch=['amd64', 'arm64']):
                 continue
             if platform == 'ubuntu-2604' and version <= '3.6.3':
                 # Ubuntu 26.04 does not support R 3.x because it does not have PCRE1
+                continue
+            if platform == 'fedora-45' and version <= '3.6.3':
+                # Fedora 45 does not support R 3.x because it does not have PCRE1
                 continue
             for a in arch:
                 include.append({
